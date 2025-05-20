@@ -3,6 +3,7 @@
 import { Navbar } from "@/components/navbar";
 import { HeroSlider } from "@/components/ui/hero-slider";
 import { BestSellerProducts } from "@/components/ui/best-seller-products";
+import { GoldPriceChart } from "@/components/ui/gold-price-chart";
 
 export default function Home() {
   return (
@@ -10,9 +11,14 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <HeroSlider />
+        <section className="w-full py-6 md:py-12 lg:py-16 bg-background">
+          <div className="container px-4 md:px-6">
+            <GoldPriceChart />
+          </div>
+        </section>
         <BestSellerProducts />
         
-        <section className="w-full bg-muted py-12 md:py-24 lg:py-32">
+        <section className="w-full bg-muted py-6 md:py-12 lg:py-16">
           <div className="container px-4 md:px-6">
             <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:gap-12">
               <div className="space-y-2">

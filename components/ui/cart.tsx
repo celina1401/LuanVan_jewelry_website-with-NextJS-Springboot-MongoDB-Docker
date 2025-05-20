@@ -28,49 +28,51 @@ export function Cart() {
         <CardTitle>Your Cart</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {items.map((item) => (
-            <div key={item.id} className="flex items-center gap-4">
-              <div className="relative h-20 w-20">
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  fill
-                  className="object-cover rounded-md"
-                />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium">{item.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  ${item.price.toLocaleString()}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                  >
-                    -
-                  </Button>
-                  <span className="w-8 text-center">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  >
-                    +
-                  </Button>
+        <div className="max-h-[400px] overflow-y-auto pr-2">
+          <div className="space-y-4">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center gap-4">
+                <div className="relative h-20 w-20">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    className="object-cover rounded-md"
+                  />
                 </div>
+                <div className="flex-1">
+                  <h3 className="font-medium">{item.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    ${item.price.toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                    >
+                      -
+                    </Button>
+                    <span className="w-8 text-center">{item.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeItem(item.id)}
+                >
+                  Remove
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeItem(item.id)}
-              >
-                Remove
-              </Button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
