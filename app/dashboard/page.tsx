@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, useApi } from "../api/apiClient";
+import { useApi } from "../api/apiClient";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useUser, useAuth, SignedIn, SignedOut } from "@clerk/nextjs";
 
 export default function DashboardPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { isLoaded, userId, sessionId } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const api = useApi();
   const { toast } = useToast();
@@ -17,7 +19,11 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!userId) {
       router.push("/login");
       return;
     }
@@ -30,7 +36,7 @@ export default function DashboardPage() {
         setUserContent(userData);
 
         // Try to fetch admin content if the user has admin role
-        if (user?.roles.includes("ROLE_ADMIN")) {
+        if (user?.publicMetadata.role === "admin") {
           try {
             const adminData = await api.get("/test/admin");
             setAdminContent(adminData);
@@ -50,82 +56,79 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [isAuthenticated, router, api, user, toast]);
-
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
-  }
+  }, [isLoaded, userId, router, api, user, toast]);
 
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       
-      <main className="flex-1 p-4 md:p-8">
-        <div className="mx-auto max-w-6xl space-y-8">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.username}</p>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Profile</CardTitle>
-                <CardDescription>Your account information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Username:</span>
-                    <span className="font-medium">{user?.username}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Email:</span>
-                    <span className="font-medium">{user?.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Roles:</span>
-                    <span className="font-medium">{user?.roles.join(", ")}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>User Content</CardTitle>
-                <CardDescription>Content for authenticated users</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-20 flex items-center justify-center">
-                    <p className="text-muted-foreground">Loading...</p>
-                  </div>
-                ) : (
-                  <p>{userContent}</p>
+      <main className="flex-1 flex items-center justify-center p-4 md:p-8">
+        {!isLoaded ? (
+          <div>Loading...</div>
+        ) : (
+          <>
+            <SignedIn>
+              <div className="w-full max-w-4xl space-y-6">
+                <h1 className="text-3xl font-bold">Dashboard</h1>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Information</CardTitle>
+                    <CardDescription>Details about the authenticated user</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {user ? (
+                      <div>
+                        <p>User ID: {user.id}</p>
+                        <p>Username: {user.username}</p>
+                        <p>Email: {user.emailAddresses[0].emailAddress}</p>
+                      </div>
+                    ) : (
+                      <p>Loading user data...</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Content</CardTitle>
+                    <CardDescription>Content for authenticated users</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="h-20 flex items-center justify-center">
+                        <p className="text-muted-foreground">Loading...</p>
+                      </div>
+                    ) : (
+                      <p>{userContent}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {user?.publicMetadata.role === "admin" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Admin Content</CardTitle>
+                      <CardDescription>Content for administrators only</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? (
+                        <div className="h-20 flex items-center justify-center">
+                          <p className="text-muted-foreground">Loading...</p>
+                        </div>
+                      ) : (
+                        <p>{adminContent}</p>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-            </Card>
-            
-            {user?.roles.includes("ROLE_ADMIN") && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Admin Content</CardTitle>
-                  <CardDescription>Content for administrators only</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="h-20 flex items-center justify-center">
-                      <p className="text-muted-foreground">Loading...</p>
-                    </div>
-                  ) : (
-                    <p>{adminContent}</p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+              </div>
+            </SignedIn>
+            <SignedOut>
+              <div>Redirecting to login...</div>
+            </SignedOut>
+          </>
+        )}
       </main>
     </div>
   );

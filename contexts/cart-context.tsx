@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { createContext, useContext, useState } from "react"
-import { useAuth } from "./auth-context"
+import { useAuth } from "@clerk/nextjs"
 import { useToast } from "./use-toast"
 
 interface CartItem {
@@ -25,11 +25,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
-  const { isAuthenticated } = useAuth()
+  const { userId, isLoaded } = useAuth()
   const { toast } = useToast()
 
   const addItem = (item: Omit<CartItem, "quantity">) => {
-    if (!isAuthenticated) {
+    if (!isLoaded || !userId) {
       toast({
         title: "Authentication required",
         description: "Please login to add items to your cart",

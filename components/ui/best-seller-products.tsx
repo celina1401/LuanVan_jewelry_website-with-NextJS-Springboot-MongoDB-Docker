@@ -10,7 +10,7 @@ import { Badge } from "./badge"
 import useEmblaCarousel from "embla-carousel-react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useCart } from "../../contexts/cart-context"
-import { useAuth } from "../../contexts/auth-context"
+import { useAuth } from "@clerk/nextjs"
 
 const bestSellerProducts = [
   {
@@ -57,7 +57,7 @@ const bestSellerProducts = [
 
 export function BestSellerProducts() {
   const { addItem } = useCart()
-  const { isAuthenticated } = useAuth()
+  const { userId, isLoaded } = useAuth()
   const router = useRouter()
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
@@ -89,7 +89,7 @@ export function BestSellerProducts() {
   }, [emblaApi, onSelect])
 
   const handleAddToCart = (product: any) => {
-    if (!isAuthenticated) {
+    if (!isLoaded || !userId) {
       router.push('/login')
       return
     }

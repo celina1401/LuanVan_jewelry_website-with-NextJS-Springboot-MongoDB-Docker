@@ -1,42 +1,37 @@
 "use client"
 
-import Link from "next/link";
-import { ThemeToggle } from "./theme-toggle";
-import { Button } from "./ui/button";
-import { useAuth } from "@/app/api/apiClient";
-import { Cart } from "./ui/cart";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "./ui/sheet";
+import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
-import { useCart } from "../contexts/cart-context";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Cart } from "@/components/ui/cart";
+import { useCart } from "@/contexts/cart-context";
+import { ThemeToggle } from "@/components/theme-toggle";
+import Link from "next/link";
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export function Navbar() {
-  const { user, logout, isAuthenticated } = useAuth();
   const { items } = useCart();
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold">T&C Jewellery</span>
+      <div className="container flex h-16 items-center justify-between">
+        <Link href="/" className="font-bold text-xl">
+          Luxury Jewellery
         </Link>
-        <nav className="hidden gap-6 md:flex">
-          <Link href="/" className="text-sm font-medium hover:underline underline-offset-4">
-            Home
+
+        <nav className="hidden md:flex items-center gap-6">
+          <Link href="/products" className="text-sm font-medium hover:underline">
+            Products
           </Link>
-          <Link href="/dashboard" className="text-sm font-medium hover:underline underline-offset-4">
-            Dashboard
-          </Link>
-          <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">
+          <Link href="/about" className="text-sm font-medium hover:underline">
             About
           </Link>
+          <Link href="/contact" className="text-sm font-medium hover:underline">
+            Contact
+          </Link>
         </nav>
+
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <Sheet>
@@ -59,23 +54,20 @@ export function Navbar() {
               </div>
             </SheetContent>
           </Sheet>
-          {isAuthenticated ? (
-            <div className="flex items-center gap-4">
-              <span className="text-sm">Welcome, {user?.username}</span>
-              <Button variant="outline" onClick={logout}>
-                Logout
-              </Button>
-            </div>
-          ) : (
+
+          <SignedOut>
             <div className="flex items-center gap-2">
-              <Link href="/login">
+              <SignInButton mode="modal">
                 <Button variant="ghost">Login</Button>
-              </Link>
-              <Link href="/register">
-                <Button>Register</Button>
-              </Link>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button>Sign Up</Button>
+              </SignUpButton>
             </div>
-          )}
+          </SignedOut>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
         </div>
       </div>
     </header>
