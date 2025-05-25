@@ -6,17 +6,12 @@ import { CartProvider } from "../contexts/cart-context"
 import { Toaster } from "@/components/ui/toaster"
 import {
   ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
 } from '@clerk/nextjs'
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Luxury Jewellery Website',
+  title: 'T&C Jewelry',
   description: 'Next.js + Spring Boot + MongoDB full stack application',
 };
 
