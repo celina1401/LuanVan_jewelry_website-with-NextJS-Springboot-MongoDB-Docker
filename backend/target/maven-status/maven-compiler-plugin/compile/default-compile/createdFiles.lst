@@ -1,8 +1,6 @@
 com\example\fullstackapp\security\JwtTokenProvider.class
 com\example\fullstackapp\model\User$UserBuilder.class
-com\example\fullstackapp\payload\request\SignupRequest.class
 com\example\fullstackapp\security\UserDetailsServiceImpl.class
-com\example\fullstackapp\payload\request\LoginRequest.class
 com\example\fullstackapp\security\JwtAuthenticationEntryPoint.class
 com\example\fullstackapp\FullstackApplication.class
 com\example\fullstackapp\security\UserDetailsImpl.class
@@ -11,7 +9,5 @@ com\example\fullstackapp\payload\response\MessageResponse.class
 com\example\fullstackapp\controller\TestController.class
 com\example\fullstackapp\security\JwtAuthenticationFilter.class
 com\example\fullstackapp\config\WebSecurityConfig.class
-com\example\fullstackapp\controller\AuthController.class
 com\example\fullstackapp\repository\UserRepository.class
-com\example\fullstackapp\payload\response\JwtResponse.class
 com\example\fullstackapp\model\User.class

@@ -15,7 +15,6 @@ export default function DashboardPage() {
   const api = useApi();
   const { toast } = useToast();
   const [userContent, setUserContent] = useState<string | null>(null);
-  const [adminContent, setAdminContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -32,18 +31,9 @@ export default function DashboardPage() {
       setIsLoading(true);
       try {
         // Fetch user content
-        const userData = await api.get("/test/user");
+        const userData = await api.get("/role/user");
         setUserContent(userData);
 
-        // Try to fetch admin content if the user has admin role
-        if (user?.publicMetadata.role === "admin") {
-          try {
-            const adminData = await api.get("/test/admin");
-            setAdminContent(adminData);
-          } catch (error) {
-            console.log("User is not an admin");
-          }
-        }
       } catch (error: any) {
         toast({
           title: "Error",
@@ -105,23 +95,6 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                {user?.publicMetadata.role === "admin" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Admin Content</CardTitle>
-                      <CardDescription>Content for administrators only</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoading ? (
-                        <div className="h-20 flex items-center justify-center">
-                          <p className="text-muted-foreground">Loading...</p>
-                        </div>
-                      ) : (
-                        <p>{adminContent}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             </SignedIn>
             <SignedOut>
