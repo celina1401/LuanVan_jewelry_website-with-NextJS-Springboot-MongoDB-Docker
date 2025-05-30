@@ -8,12 +8,20 @@ export const useApi = () => {
   const { getToken, isLoaded } = useAuth(); // Use Clerk's useAuth and getToken
 
   const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
+    if (!isLoaded) {
+      throw new Error('Auth not loaded');
+    }
+
     // Get Clerk session token
-    const token = isLoaded ? await getToken() : null;
+    const token = await getToken();
     
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
     const headers = {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      'Authorization': `Bearer ${token}`,
       ...(options.headers || {}),
     };
     
@@ -21,7 +29,13 @@ export const useApi = () => {
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers,
+        credentials: 'include',
       });
+      
+      if (response.status === 401) {
+        // Handle unauthorized access
+        throw new Error('Unauthorized access');
+      }
       
       const data = await response.json();
       
