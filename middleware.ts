@@ -3,28 +3,44 @@ import type { NextRequest } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 export default clerkMiddleware(async (auth: any, request: NextRequest) => {
-  // Access userId and sessionClaims safely
   const userId = auth?.userId;
   const sessionClaims = auth?.sessionClaims;
 
   // Handle admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
-    const userRole = (sessionClaims?.publicMetadata as { role?: string })?.role;
-    
     if (!userId) {
       // Redirect to login if not authenticated
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
+    // Kiểm tra role từ session claims
+    const userRole = (sessionClaims?.publicMetadata as { role?: string })?.role;
+    
     if (userRole !== "admin") {
       // Redirect to home if not admin
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
+  // Handle API routes that require authentication
+  // API routes will be protected by the backend, but we can add an initial check here
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+     // Optional: Add basic check for authenticated users accessing API routes
+     if (!userId) {
+       return new NextResponse(
+         JSON.stringify({ error: "Unauthorized" }),
+         { status: 401, headers: { "Content-Type": "application/json" } }
+       );
+     }
+  }
+
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
-}; 
+  matcher: [
+    "/((?!.+\\.[\\w]+$|_next|login/sso-callback|login/sign-in).*)", 
+    "/", 
+    "/(api|trpc)(.*)"
+  ],
+};

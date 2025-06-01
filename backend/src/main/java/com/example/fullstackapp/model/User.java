@@ -47,7 +47,13 @@ public class User {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-
+    
+    // Thêm các trường mới
+    private String provider; // "google", "facebook", "clerk", etc.
+    private String firstName;
+    private String lastName;
+    private String imageUrl;
+    
     public String getId() {
         return id;
     }
@@ -102,5 +108,38 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    // Thêm getters và setters cho các trường mới
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

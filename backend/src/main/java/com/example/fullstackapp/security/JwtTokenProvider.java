@@ -32,6 +32,7 @@ public class JwtTokenProvider {
         throw new UnsupportedOperationException("Token generation is handled by Clerk");
     }
 
+    // Inside getUsernameFromToken method
     public String getUsernameFromToken(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -39,25 +40,31 @@ public class JwtTokenProvider {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
-
-            return claims.getSubject();
-        } catch (SignatureException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
-            throw new RuntimeException("Error extracting username from token", e);
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
-            throw new RuntimeException("Error extracting username from token", e);
-        } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
-            throw new RuntimeException("Error extracting username from token", e);
-        } catch (UnsupportedJwtException e) {
-            log.error("JWT token is unsupported: {}", e.getMessage());
-            throw new RuntimeException("Error extracting username from token", e);
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
-            throw new RuntimeException("Error extracting username from token", e);
-        } catch (IOException e) {
-            log.error("Error reading public key: {}", e.getMessage());
+    
+            // Try to get username from various sources
+            String username = claims.get("username", String.class);
+            if (username == null) {
+                // Try first_name + last_name
+                String firstName = claims.get("first_name", String.class);
+                String lastName = claims.get("last_name", String.class);
+                
+                if (firstName != null && lastName != null) {
+                    username = firstName.toLowerCase() + "." + lastName.toLowerCase();
+                } else {
+                    // Try email
+                    String email = claims.get("email", String.class);
+                    if (email != null) {
+                        username = email.split("@")[0];
+                    } else {
+                        // Use subject (user ID) as username
+                        username = claims.getSubject();
+                    }
+                }
+            }
+    
+            return username;
+        } catch (Exception e) {
+            log.error("Error extracting username from token: {}", e.getMessage());
             throw new RuntimeException("Error extracting username from token", e);
         }
     }

@@ -32,7 +32,7 @@ export default function DashboardPage() {
       try {
         // Fetch user content
         const userData = await api.get("/role/user");
-        setUserContent(userData);
+        setUserContent(userData.message); // Access the message property
 
       } catch (error: any) {
         toast({
