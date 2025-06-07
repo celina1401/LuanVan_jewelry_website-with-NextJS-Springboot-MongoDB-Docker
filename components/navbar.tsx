@@ -1,25 +1,43 @@
-"use client"
+// File: components/Navbar.tsx
+"use client";
 
+import React from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Cart } from "@/components/ui/cart";
 import { useCart } from "@/contexts/cart-context";
 import { ThemeToggle } from "@/components/theme-toggle";
-import Link from "next/link";
-import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { useUser, SignedIn, SignedOut } from "@clerk/nextjs";
+import { AuthActions } from "@/app/components/AuthActions";
 
 export function Navbar() {
+  // Cart state
   const { items } = useCart();
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Clerk user + role
+  const { user, isLoaded } = useUser();
+  const role = isLoaded
+    ? (user?.publicMetadata?.role as string | undefined)
+    : undefined;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
+        {/* Brand */}
         <Link href="/" className="font-bold text-xl">
           T&C Jewelry
         </Link>
 
+        {/* Main nav links */}
         <nav className="flex items-center gap-6">
           <Link href="/products" className="text-sm font-medium hover:underline">
             Products
@@ -30,15 +48,32 @@ export function Navbar() {
           <Link href="/contact" className="text-sm font-medium hover:underline">
             Contact
           </Link>
+
+          {/* Signed-in only: Dashboard + Admin link */}
           <SignedIn>
-            <Link href="/dashboard" className="text-sm font-medium hover:underline">
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium hover:underline"
+            >
               Dashboard
             </Link>
+            {role === "admin" && (
+              <Link
+                href="/admin"
+                className="text-sm font-medium hover:underline text-red-500"
+              >
+                Admin Panel
+              </Link>
+            )}
           </SignedIn>
         </nav>
 
+        {/* Right‐hand actions */}
         <div className="flex items-center gap-4">
+          {/* Theme switcher */}
           <ThemeToggle />
+
+          {/* Cart sheet */}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -60,19 +95,8 @@ export function Navbar() {
             </SheetContent>
           </Sheet>
 
-          <SignedOut>
-            <div className="flex items-center gap-2">
-              <SignInButton mode="modal">
-                <Button variant="ghost">Login</Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button>Sign Up</Button>
-              </SignUpButton>
-            </div>
-          </SignedOut>
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
+          {/* Auth buttons / user menu */}
+          <AuthActions />
         </div>
       </div>
     </header>
