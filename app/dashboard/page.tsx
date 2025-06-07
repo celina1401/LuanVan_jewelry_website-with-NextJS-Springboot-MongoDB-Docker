@@ -11,6 +11,31 @@ import { useUser, useAuth, SignedIn, SignedOut } from "@clerk/nextjs";
 export default function DashboardPage() {
   const { isLoaded, userId, sessionId } = useAuth();
   const { user } = useUser();
+
+  useEffect(() => {
+    if (!isLoaded || !userId || !user) {
+      return;
+    }
+
+    // Lấy role từ public_metadata
+    const userRole = user.publicMetadata?.role;
+    console.log("User Role:", userRole);
+    
+    // Đồng bộ role với backend
+    const syncRole = async () => {
+      try {
+        await api.post("/api/users/sync-role", {
+          userId: user.id,
+          role: userRole || "user" // Mặc định là "user" nếu không có role
+        });
+        console.log("Role synced with backend");
+      } catch (error) {
+        console.error("Failed to sync role with backend", error);
+      }
+    };
+
+    syncRole();
+  }, [isLoaded, userId, user]);
   const router = useRouter();
   const api = useApi();
   const { toast } = useToast();

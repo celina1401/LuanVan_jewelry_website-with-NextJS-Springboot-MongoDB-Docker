@@ -2,208 +2,182 @@ package com.example.fullstackapp.security;
 
 import com.example.fullstackapp.model.User;
 import com.example.fullstackapp.repository.UserRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Map;
 
-// Import JWT Classes
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.Claims;
-
+@Component
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtTokenProvider tokenProvider;
+    private final JwtTokenProvider tokenProvider;
+    private final UserDetailsServiceImpl userDetailsService;
+    private final UserRepository userRepository;
+    private final String headerName;
+    private final String tokenPrefix;
 
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService; // Keep if you still need UserDetailsImpl for roles/authorities
-
-    @Autowired
-    private UserRepository userRepository;
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider,
+                                   UserDetailsServiceImpl userDetailsService,
+                                   UserRepository userRepository,
+                                   @Value("${clerk.token.header:Authorization}") String headerName,
+                                   @Value("${clerk.token.prefix:Bearer }") String tokenPrefix) {
+        this.tokenProvider     = tokenProvider;
+        this.userDetailsService = userDetailsService;
+        this.userRepository    = userRepository;
+        this.headerName        = headerName;
+        this.tokenPrefix       = tokenPrefix;
+    }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+                                    throws ServletException, IOException {
         try {
-            String jwt = getJwtFromRequest(request);
-    
+            String jwt = extractToken(request);
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-                // Get claims from the token
+                // Parse claims and extract user info
                 Claims claims = Jwts.parserBuilder()
                                     .setSigningKey(tokenProvider.getClerkPublicKey())
                                     .build()
                                     .parseClaimsJws(jwt)
                                     .getBody();
-    
-                String clerkUserId = claims.getSubject(); // Subject (sub) claim in JWT is usually the user ID
-                String email = claims.get("email", String.class); // Assuming Clerk adds email claim
-                String username = claims.get("username", String.class); // Assuming Clerk adds username claim
-                
-                // Thêm xử lý cho OAuth providers (Google, Facebook)
-                String provider = null;
-                String firstName = null;
-                String lastName = null;
-                String imageUrl = null;
-                
-                // Kiểm tra thông tin OAuth provider từ claims
-                if (claims.containsKey("oauth_provider")) {
-                    provider = claims.get("oauth_provider", String.class);
-                }
-                
-                // Lấy thông tin tên từ claims
-                if (claims.containsKey("first_name")) {
-                    firstName = claims.get("first_name", String.class);
-                } else if (claims.containsKey("given_name")) {
-                    firstName = claims.get("given_name", String.class);
-                }
-                
-                if (claims.containsKey("last_name")) {
-                    lastName = claims.get("last_name", String.class);
-                } else if (claims.containsKey("family_name")) {
-                    lastName = claims.get("family_name", String.class);
-                }
-                
-                // Lấy avatar URL nếu có
-                if (claims.containsKey("picture")) {
-                    imageUrl = claims.get("picture", String.class);
-                } else if (claims.containsKey("image_url")) {
-                    imageUrl = claims.get("image_url", String.class);
-                }
-    
-                // *** Lấy publicMetadata và role từ claims ***
+
+                String clerkUserId = claims.getSubject();
+                String email       = claims.get("email", String.class);
+                String username    = claims.get("username", String.class);
+
+                // OAuth provider info
+                String provider = claims.get("oauth_provider", String.class);
+                String firstName = claims.containsKey("first_name")
+                                    ? claims.get("first_name", String.class)
+                                    : claims.get("given_name", String.class);
+                String lastName  = claims.containsKey("last_name")
+                                    ? claims.get("last_name", String.class)
+                                    : claims.get("family_name", String.class);
+                String imageUrl  = claims.containsKey("picture")
+                                    ? claims.get("picture", String.class)
+                                    : claims.get("image_url", String.class);
+
+                // Role from public_metadata
                 String role = null;
-                if (claims.containsKey("public_metadata")) {
-                    Object publicMetadata = claims.get("public_metadata");
-                    if (publicMetadata instanceof Map) {
-                        Map<?, ?> publicMetadataMap = (Map<?, ?>) publicMetadata;
-                        if (publicMetadataMap.containsKey("role")) {
-                            role = publicMetadataMap.get("role").toString();
-                        }
+                Object pm = claims.get("public_metadata");
+                if (pm instanceof Map) {
+                    Map<?,?> map = (Map<?,?>) pm;
+                    if (map.containsKey("role")) {
+                        role = map.get("role").toString();
                     }
                 }
-                // *****************************************
-    
-                // Check if user exists in DB, if not, save them
-                Optional<User> existingUser = userRepository.findById(clerkUserId);
-    
+
+                // Persist or update User in DB
+                Optional<User> opt = userRepository.findById(clerkUserId);
                 User currentUser;
-    
-                if (!existingUser.isPresent()) {
-                    // Nếu username chưa có, tạo từ firstName và lastName hoặc email
-                    if (username == null) {
-                        if (firstName != null && lastName != null) {
+                if (opt.isEmpty()) {
+                    // Determine username if absent
+                    if (!StringUtils.hasText(username)) {
+                        if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
                             username = firstName.toLowerCase() + "." + lastName.toLowerCase();
-                        } else if (email != null) {
+                        } else if (StringUtils.hasText(email)) {
                             username = email.split("@")[0];
                         } else {
                             username = clerkUserId;
                         }
                     }
-                    
-                    User newUser = User.builder()
-                                     .id(clerkUserId)
-                                     .username(username)
-                                     .email(email)
-                                     .roles(role != null ? Set.of("ROLE_" + role.toUpperCase()) : Set.of("ROLE_USER"))
-                                     .createdAt(new Date().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime())
-                                     .updatedAt(new Date().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime())
-                                     .provider(provider) // Lưu thông tin provider
-                                     .firstName(firstName)
-                                     .lastName(lastName)
-                                     .imageUrl(imageUrl)
-                                     .build();
-                    currentUser = userRepository.save(newUser);
-                    log.info("New user saved to DB: {}", currentUser.getUsername());
+                    currentUser = User.builder()
+                            .id(clerkUserId)
+                            .username(username)
+                            .email(email)
+                            .roles(role != null
+                                ? Set.of("ROLE_" + role.toUpperCase())
+                                : Set.of("ROLE_USER"))
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .provider(provider)
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .imageUrl(imageUrl)
+                            .build();
+                    currentUser = userRepository.save(currentUser);
+                    log.info("New user saved: {}", currentUser.getUsername());
                 } else {
-                     // Optional: Update user info and role if needed
-                     User userToUpdate = existingUser.get();
-                     boolean updated = false;
-                     
-                     // Cập nhật thông tin cơ bản
-                     if (email != null && !email.equals(userToUpdate.getEmail())) {
-                         userToUpdate.setEmail(email);
-                         updated = true;
-                     }
-                     if (username != null && !username.equals(userToUpdate.getUsername())) {
-                         userToUpdate.setUsername(username);
-                         updated = true;
-                     }
-                     
-                     // Cập nhật thông tin từ OAuth provider
-                     if (provider != null && !provider.equals(userToUpdate.getProvider())) {
-                         userToUpdate.setProvider(provider);
-                         updated = true;
-                     }
-                     if (firstName != null && !firstName.equals(userToUpdate.getFirstName())) {
-                         userToUpdate.setFirstName(firstName);
-                         updated = true;
-                     }
-                     if (lastName != null && !lastName.equals(userToUpdate.getLastName())) {
-                         userToUpdate.setLastName(lastName);
-                         updated = true;
-                     }
-                     if (imageUrl != null && !imageUrl.equals(userToUpdate.getImageUrl())) {
-                         userToUpdate.setImageUrl(imageUrl);
-                         updated = true;
-                     }
-                     
-                     // *** Cập nhật role nếu có trong claims và khác với role hiện tại ***
-                     Set<String> currentRoles = userToUpdate.getRoles();
-                     Set<String> newRoles = role != null ? Set.of("ROLE_" + role.toUpperCase()) : Set.of("ROLE_USER");
-    
-                     if (!currentRoles.equals(newRoles)) {
-                         userToUpdate.setRoles(newRoles);
-                         updated = true;
-                     }
-                     // **********************************************************
-    
-                     if (updated) {
-                         userToUpdate.setUpdatedAt(new Date().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
-                         currentUser = userRepository.save(userToUpdate);
-                         log.info("User info updated for: {}", currentUser.getUsername());
-                     } else {
-                         currentUser = userToUpdate;
-                     }
+                    // Optional: update existing user's info/roles if changed
+                    currentUser = opt.get();
+                    boolean updated = false;
+
+                    if (StringUtils.hasText(email) && !email.equals(currentUser.getEmail())) {
+                        currentUser.setEmail(email);
+                        updated = true;
+                    }
+                    if (StringUtils.hasText(username) && !username.equals(currentUser.getUsername())) {
+                        currentUser.setUsername(username);
+                        updated = true;
+                    }
+                    if (StringUtils.hasText(provider) && !provider.equals(currentUser.getProvider())) {
+                        currentUser.setProvider(provider);
+                        updated = true;
+                    }
+                    if (StringUtils.hasText(firstName) && !firstName.equals(currentUser.getFirstName())) {
+                        currentUser.setFirstName(firstName);
+                        updated = true;
+                    }
+                    if (StringUtils.hasText(lastName) && !lastName.equals(currentUser.getLastName())) {
+                        currentUser.setLastName(lastName);
+                        updated = true;
+                    }
+                    if (StringUtils.hasText(imageUrl) && !imageUrl.equals(currentUser.getImageUrl())) {
+                        currentUser.setImageUrl(imageUrl);
+                        updated = true;
+                    }
+                    Set<String> newRoles = role != null
+                        ? Set.of("ROLE_" + role.toUpperCase())
+                        : Set.of("ROLE_USER");
+                    if (!currentUser.getRoles().equals(newRoles)) {
+                        currentUser.setRoles(newRoles);
+                        updated = true;
+                    }
+                    if (updated) {
+                        currentUser.setUpdatedAt(LocalDateTime.now());
+                        currentUser = userRepository.save(currentUser);
+                        log.info("User updated: {}", currentUser.getUsername());
+                    }
                 }
-    
-                // Proceed with setting authentication in SecurityContextHolder
-                // We now have the User object with correct roles from DB
-                // We need UserDetails based on the roles saved in our DB
-                UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getId()); // Assuming UserDetailsServiceImpl can load by ID and get roles from the User object
-    
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+
+                // Build Authentication and set in context
+                UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getId());
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-    
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
             }
-        } catch (Exception e) {
-            log.error("Cannot set user authentication: {}", e.getMessage());
+        } catch (Exception ex) {
+            log.error("Cannot set user authentication: {}", ex.getMessage());
         }
-    
         filterChain.doFilter(request, response);
     }
 
-    private String getJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+    private String extractToken(HttpServletRequest request) {
+        String header = request.getHeader(headerName);
+        if (StringUtils.hasText(header) && header.startsWith(tokenPrefix)) {
+            return header.substring(tokenPrefix.length());
         }
         return null;
     }

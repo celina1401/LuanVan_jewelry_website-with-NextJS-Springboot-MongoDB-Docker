@@ -35,26 +35,28 @@ export default function AdminGuard({ children }: AdminGuardProps) {
         }
 
         // Gọi API để verify quyền admin
-        const response = await api.get("/auth/verify-admin");
+        const response = await api.get("/api/admin/verify");
         
-        if (!response.isAdmin) {
-          console.log("User is not an admin");
-          setError("Bạn không có quyền truy cập trang này");
+        // Check if the response is valid and indicates admin status
+        if (response && typeof response === 'object' && response.isAdmin === true) {
+          setIsVerifying(false);
+          setError(null);
+        } else {
+          // If the response is not as expected (e.g., not JSON, missing isAdmin), treat as not authorized
+          console.log("User is not an admin or unexpected response format.");
+          setError("Bạn không có quyền truy cập trang này.");
           router.push("/");
-          return;
         }
-
-        setIsVerifying(false);
-        setError(null);
       } catch (error: any) {
         console.error("Error verifying admin access:", error);
-        setError(error.message || "Lỗi xác thực quyền truy cập");
-        router.push("/login");
+        // Any error during this specific API call implies unauthorized access or a critical issue preventing verification.
+        setError("Không có quyền truy cập hoặc lỗi xác thực.");
+        router.push("/"); // Redirect on any error during verification
       }
     };
 
     verifyAdminAccess();
-  }, [isLoaded, user, router, getToken]);
+  }, [isLoaded, user, router, getToken, api]);
 
   if (isVerifying) {
     return <div className="flex items-center justify-center min-h-screen">

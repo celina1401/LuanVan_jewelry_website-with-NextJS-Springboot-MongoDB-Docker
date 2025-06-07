@@ -173,7 +173,7 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
             <Button 
               className="w-full"
               onClick={() => addItem({
-                id: product.id,
+                id: product.id.toString(),
                 name: product.name,
                 price: product.price,
                 image: product.image

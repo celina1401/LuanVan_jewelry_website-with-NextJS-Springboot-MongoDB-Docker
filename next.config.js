@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  eslint: { ignoreDuringBuilds: true },
   images: { unoptimized: true },
   experimental: {
     serverActions: {
@@ -10,12 +8,21 @@ const nextConfig = {
     },
   },
   env: {
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_test_ZmFpci10b3J0b2lzZS0xMS5jbGVyay5hY2NvdW50cy5kZXYk',
-    CLERK_SECRET_KEY: 'sk_test_3Q2pFiQgUEcP5Tt7NCSWQ41pzpTg2kAXhkrhMhKpvQ',
-    NEXT_PUBLIC_CLERK_SIGN_IN_URL: '/login',
-    NEXT_PUBLIC_CLERK_SIGN_UP_URL: '/register',
-    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: '/dashboard',
-    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: '/dashboard',
+    // Clerk keys & URLs
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_CLERK_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
+    NEXT_PUBLIC_CLERK_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL,
+    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL,
+    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL,
+
+    // API / JWT config
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_BACKEND_API_URL: process.env.NEXT_PUBLIC_BACKEND_API_URL,
+    NEXT_PUBLIC_JWKS_URL: process.env.NEXT_PUBLIC_JWKS_URL,
+    NEXT_PUBLIC_JWKS_PUBLIC_KEY: process.env.NEXT_PUBLIC_JWKS_PUBLIC_KEY,
+
+    // Tuyệt đối không expose secret key lên client:
+    // CLERK_SECRET_KEY chỉ nên dùng ở server-side (API routes), không để trong env: {}
   },
 };
 

@@ -2,15 +2,18 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 
 export default function SSOCallback() {
   const router = useRouter();
+  const { isLoaded, userId } = useAuth();
 
   useEffect(() => {
-    // Handle the SSO callback by redirecting to the dashboard
-    // The actual authentication will be handled by Clerk
+    if (!isLoaded) return;
+
+    // Người dùng đã được xác thực, chuyển hướng đến dashboard
     router.push("/dashboard");
-  }, [router]);
+  }, [isLoaded, userId, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">

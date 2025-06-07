@@ -1,74 +1,53 @@
 package com.example.fullstackapp.security;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.SignatureException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.security.PublicKey;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
 import org.apache.commons.io.IOUtils;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.lang.JoseException;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
 
 @Component
 @Slf4j
 public class JwtTokenProvider {
 
-    @Value("${clerk.jwks.url}")
-    private String clerkJwksUrl;
+    private final ClerkProperties clerkProps;
 
-    public String generateToken(Authentication authentication) {
-        // This method might not be needed if token generation is handled by Clerk
-        // If you need to generate tokens on the backend for other purposes,
-        // you'll need a private key and use SignatureAlgorithm.RS256
-        throw new UnsupportedOperationException("Token generation is handled by Clerk");
+    public JwtTokenProvider(ClerkProperties clerkProps) {
+        this.clerkProps = clerkProps;
     }
 
-    // Inside getUsernameFromToken method
-    public String getUsernameFromToken(String token) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getClerkPublicKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-    
-            // Try to get username from various sources
-            String username = claims.get("username", String.class);
-            if (username == null) {
-                // Try first_name + last_name
-                String firstName = claims.get("first_name", String.class);
-                String lastName = claims.get("last_name", String.class);
-                
-                if (firstName != null && lastName != null) {
-                    username = firstName.toLowerCase() + "." + lastName.toLowerCase();
-                } else {
-                    // Try email
-                    String email = claims.get("email", String.class);
-                    if (email != null) {
-                        username = email.split("@")[0];
-                    } else {
-                        // Use subject (user ID) as username
-                        username = claims.getSubject();
-                    }
-                }
-            }
-    
-            return username;
-        } catch (Exception e) {
-            log.error("Error extracting username from token: {}", e.getMessage());
-            throw new RuntimeException("Error extracting username from token", e);
+    /**
+     * Lấy PublicKey từ JWKS URL cấu hình trong ClerkProperties
+     */
+    public PublicKey getClerkPublicKey() throws IOException {
+        String jwksUrl = clerkProps.getJwksUrl();
+        try (InputStream is = new URL(jwksUrl).openStream()) {
+            String jwksJson = IOUtils.toString(is, StandardCharsets.UTF_8);
+            JsonWebKeySet jwkSet = new JsonWebKeySet(jwksJson);
+            JsonWebKey jwk = jwkSet.getJsonWebKeys().get(0); // có thể lọc theo kid nếu cần
+            return (PublicKey) jwk.getKey();
+        } catch (JoseException | IOException e) {
+            log.error("Error fetching Clerk public key from {}: {}", jwksUrl, e.getMessage());
+            throw new IOException("Failed to load Clerk JWKS", e);
         }
     }
 
+    /**
+     * Kiểm tra tính hợp lệ của JWT
+     */
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -92,20 +71,14 @@ public class JwtTokenProvider {
         return false;
     }
 
-    public PublicKey getClerkPublicKey() throws IOException {
-        try {
-            URL url = new URL(clerkJwksUrl);
-            try (InputStream is = url.openStream()) {
-                String jwksJson = IOUtils.toString(is, StandardCharsets.UTF_8);
-                JsonWebKeySet jwkSet = new JsonWebKeySet(jwksJson);
-
-                // Get the first public key (can be improved later to match by "kid")
-                JsonWebKey jwk = jwkSet.getJsonWebKeys().get(0);
-                return (PublicKey) jwk.getKey();
-            }
-        } catch (JoseException | IOException e) {
-            log.error("Error fetching Clerk public key: {}", e.getMessage());
-            throw new IOException("Error parsing Clerk JWKS", e);
-        }
+    /**
+     * Trích Claims ra từ JWT sau khi đã validate
+     */
+    public Claims parseClaims(String token) throws IOException {
+        return Jwts.parserBuilder()
+                   .setSigningKey(getClerkPublicKey())
+                   .build()
+                   .parseClaimsJws(token)
+                   .getBody();
     }
 }
