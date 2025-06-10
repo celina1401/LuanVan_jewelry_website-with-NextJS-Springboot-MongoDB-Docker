@@ -6,23 +6,31 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+// 1️⃣ Thêm @PreAuthorize để chỉ ADMIN mới truy cập được
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
+    /**
+     * Khi user có JWT hợp lệ và đã được convert claim public_metadata.role -> ROLE_ADMIN,
+     * thì mới cho phép vào method này.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/verify")
-    public ResponseEntity<?> verifyAdminAccess() {
-        // If this endpoint is reached, it means the user has the ADMIN role 
-        // due to Spring Security configuration.
-        return ResponseEntity.ok().body(new AdminVerificationResponse(true));
+    public ResponseEntity<AdminVerificationResponse> verifyAdminAccess() {
+        return ResponseEntity.ok(new AdminVerificationResponse(true));
     }
 
-    // Helper class for the response body
-    static class AdminVerificationResponse {
-        public boolean isAdmin;
+    // DTO cho response JSON
+    public static class AdminVerificationResponse {
+        private final boolean isAdmin;
 
         public AdminVerificationResponse(boolean isAdmin) {
             this.isAdmin = isAdmin;
         }
+
+        public boolean isAdmin() {
+            return isAdmin;
+        }
     }
-} 
+}

@@ -15,7 +15,7 @@ import {
 import { Cart } from "@/components/ui/cart";
 import { useCart } from "@/contexts/cart-context";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useUser, SignedIn, SignedOut } from "@clerk/nextjs";
+import { useUser, SignedIn } from "@clerk/nextjs";
 import { AuthActions } from "@/app/components/AuthActions";
 
 export function Navbar() {
@@ -37,35 +37,46 @@ export function Navbar() {
           T&C Jewelry
         </Link>
 
-        {/* Main nav links */}
+        {/* Main nav links: switch based on role */}
         <nav className="flex items-center gap-6">
-          <Link href="/products" className="text-sm font-medium hover:underline">
-            Products
-          </Link>
-          <Link href="/about" className="text-sm font-medium hover:underline">
-            About
-          </Link>
-          <Link href="/contact" className="text-sm font-medium hover:underline">
-            Contact
-          </Link>
-
-          {/* Signed-in only: Dashboard + Admin link */}
-          <SignedIn>
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium hover:underline"
-            >
-              Dashboard
-            </Link>
-            {role === "admin" && (
-              <Link
-                href="/admin"
-                className="text-sm font-medium hover:underline text-red-500"
-              >
-                Admin Panel
+          {role === "admin" ? (
+            /* Admin navigation */
+            <>
+              <Link href="/admin/reports" className="text-sm font-medium hover:underline">
+                Reports
               </Link>
-            )}
-          </SignedIn>
+              <Link href="/admin/inventory" className="text-sm font-medium hover:underline">
+                Inventory
+              </Link>
+              <Link href="/admin/products" className="text-sm font-medium hover:underline">
+                Manage Products
+              </Link>
+              <Link href="/admin/users" className="text-sm font-medium hover:underline">
+                User Management
+              </Link>
+            </>
+          ) : (
+            /* Customer navigation */
+            <>
+              <Link href="/products" className="text-sm font-medium hover:underline">
+                Products
+              </Link>
+              <Link href="/about" className="text-sm font-medium hover:underline">
+                About
+              </Link>
+              <Link href="/contact" className="text-sm font-medium hover:underline">
+                Contact
+              </Link>
+              <SignedIn>
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium hover:underline"
+                >
+                  Dashboard
+                </Link>
+              </SignedIn>
+            </>
+          )}
         </nav>
 
         {/* Right‐hand actions */}
@@ -73,7 +84,8 @@ export function Navbar() {
           {/* Theme switcher */}
           <ThemeToggle />
 
-          {/* Cart sheet */}
+          {/* Cart sheet */
+          role !== "admin"?(
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -95,6 +107,7 @@ export function Navbar() {
             </SheetContent>
           </Sheet>
 
+          ):null}
           {/* Auth buttons / user menu */}
           <AuthActions />
         </div>
