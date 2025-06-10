@@ -12,7 +12,7 @@ export default function SSOCallback() {
     if (!isLoaded) return;
 
     // Người dùng đã được xác thực, chuyển hướng đến dashboard
-    router.push("/dashboard");
+    router.push("/");
   }, [isLoaded, userId, router]);
 
   return (

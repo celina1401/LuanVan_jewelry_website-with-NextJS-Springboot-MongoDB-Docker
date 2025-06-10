@@ -10,47 +10,48 @@ interface AdminGuardProps {
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
-  const { user, isLoaded } = useUser();
-  const { getToken } = useAuth();
-  const router = useRouter();
-  const api = useApi();
-  const [isVerifying, setIsVerifying] = useState(true);
+  const { user, isLoaded } = useUser();  // Get user and loading state from Clerk
+  const { getToken } = useAuth();  // Get Clerk auth methods
+  const router = useRouter();  // To navigate to other pages
+  const api = useApi();  // API client to interact with backend
+  const [isVerifying, setIsVerifying] = useState(true);  // State to track admin verification process
 
   useEffect(() => {
     const verifyAdminAccess = async () => {
-      // Nếu Clerk chưa load xong hoặc chưa có user → tạm dừng verify
+      // If Clerk hasn't loaded or the user is not available, skip verification
       if (!isLoaded || !user) {
-        setIsVerifying(false);
+        setIsVerifying(false);  // Stop verification process
         return;
       }
 
       try {
-        // Đảm bảo có JWT
+        // Ensure a valid JWT token is available
         const token = await getToken();
         if (!token) {
-          throw new Error("Không có token xác thực");
+          throw new Error("No authentication token available");
         }
 
-        // Gọi đúng endpoint (useApi sẽ prepend "/api")
-        const data = (await api.get("/admin/verify")) as { isAdmin: boolean };
+        // Make API request to verify admin access
+        const data = await api.get("/admin/verify") as { isAdmin: boolean };
 
         if (!data.isAdmin) {
-          throw new Error("Không phải admin");
+          throw new Error("You are not an admin");
         }
 
-        // Nếu là admin, cho phép tiếp tục
+        // If the user is an admin, proceed to render children
         setIsVerifying(false);
       } catch (err) {
         console.error("Error verifying admin access:", err);
-        // Redirect về trang home nếu không có quyền
+        // If not an admin, redirect to home page
         router.replace("/");
       }
     };
 
     verifyAdminAccess();
-  }, [isLoaded, user, getToken, api, router]);
+  }, [isLoaded, user, getToken, api, router]);  // Dependencies to re-run effect
 
   if (isVerifying) {
+    // Show loading spinner while verifying admin access
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -61,5 +62,6 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
+  // If verification is complete, render the children (protected content)
   return <>{children}</>;
 }

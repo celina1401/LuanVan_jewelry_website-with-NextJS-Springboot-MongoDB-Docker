@@ -14,4 +14,3 @@ com\example\fullstackapp\controller\ApiController.class
 com\example\fullstackapp\security\JwtAuthenticationFilter.class
 com\example\fullstackapp\repository\UserRepository.class
 com\example\fullstackapp\model\User.class
-com\example\fullstackapp\security\ClerkProperties.class

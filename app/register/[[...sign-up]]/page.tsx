@@ -19,8 +19,8 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <SignUp 
-              afterSignUpUrl="/dashboard"
-              signInUrl="/dashboard" 
+              afterSignUpUrl="/"
+              signInUrl="/" 
             />
           </CardContent>
         </Card>

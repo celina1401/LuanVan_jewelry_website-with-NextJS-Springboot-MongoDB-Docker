@@ -17,6 +17,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.example.fullstackapp.model.ClerkProperties;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -31,14 +33,17 @@ public class SecurityConfig {
     private final ClerkProperties clerkProps;
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Autowired
     public SecurityConfig(ClerkProperties clerkProps,
                           JwtAuthenticationEntryPoint unauthorizedHandler,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+                          JwtAuthenticationFilter jwtAuthenticationFilter,
+                          CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.clerkProps = clerkProps;
         this.unauthorizedHandler = unauthorizedHandler;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     /**
@@ -100,26 +105,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // Cấu hình CORS
+            .csrf(csrf -> csrf.disable())  // Tắt CSRF cho các API sử dụng JWT
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(unauthorizedHandler)  // Entry point cho các request không hợp lệ
+                .accessDeniedHandler(customAccessDeniedHandler)  // Access denied handler cho quyền không đủ
+            )
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // Stateless session (không lưu session)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/products/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/role/user").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/api/role/admin").hasRole("ADMIN")
-                .anyRequest().authenticated()
+                .requestMatchers("/api/auth/**", "/api/products/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()  // Cho phép công khai các API auth và public
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")  // Chỉ ADMIN có quyền truy cập vào các API admin
+                .requestMatchers("/api/role/user").hasAnyRole("USER", "ADMIN")  // Cho phép cả USER và ADMIN truy cập vào "/api/role/user"
+                .requestMatchers("/api/role/admin").hasRole("ADMIN")  // Chỉ ADMIN có quyền truy cập vào "/api/role/admin"
+                .anyRequest().authenticated()  // Các yêu cầu còn lại phải được xác thực
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                    .decoder(jwtDecoder())  // Cấu hình JwtDecoder
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())  // Cấu hình converter để lấy roles từ JWT
                 )
             );
 
         // Thêm custom filter đã được Spring quản lý
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);  // Thêm filter kiểm tra JWT vào trước filter authentication mặc định
+        return http.build();  // Xây dựng và trả về cấu hình HTTP
     }
 }

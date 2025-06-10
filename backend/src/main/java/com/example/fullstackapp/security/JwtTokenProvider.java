@@ -13,6 +13,8 @@ import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.lang.JoseException;
 import org.springframework.stereotype.Component;
 
+import com.example.fullstackapp.model.ClerkProperties;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;

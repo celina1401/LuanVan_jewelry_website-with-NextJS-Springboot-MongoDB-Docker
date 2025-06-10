@@ -1,4 +1,4 @@
-package com.example.fullstackapp.security;
+package com.example.fullstackapp.model;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

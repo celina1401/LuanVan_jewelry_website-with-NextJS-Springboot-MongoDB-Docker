@@ -20,7 +20,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -78,13 +77,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     ? claims.get("picture", String.class)
                                     : claims.get("image_url", String.class);
 
-                // Role from public_metadata
+                // Role from public_metadata hoặc từ session token lồng bên trong
                 String role = null;
+                // 1. Lấy role từ public_metadata của claims ngoài cùng (nếu có)
                 Object pm = claims.get("public_metadata");
                 if (pm instanceof Map) {
                     Map<?,?> map = (Map<?,?>) pm;
                     if (map.containsKey("role")) {
                         role = map.get("role").toString();
+                    }
+                }
+                // 2. Nếu chưa có role, thử lấy từ token trong trường "session"
+                if (role == null) {
+                    String sessionToken = claims.get("session", String.class);
+                    if (sessionToken != null) {
+                        Claims sessionClaims = Jwts.parserBuilder()
+                            .setSigningKey(tokenProvider.getClerkPublicKey())
+                            .build()
+                            .parseClaimsJws(sessionToken)
+                            .getBody();
+                        // Lấy role trực tiếp
+                        role = sessionClaims.get("role", String.class);
+                        // Hoặc lấy từ publicMetadata nếu có
+                        Map<String, Object> publicMetadata = sessionClaims.get("publicMetadata", Map.class);
+                        if (publicMetadata != null && publicMetadata.containsKey("role")) {
+                            role = publicMetadata.get("role").toString();
+                        }
                     }
                 }
 

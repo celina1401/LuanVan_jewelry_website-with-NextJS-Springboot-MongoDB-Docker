@@ -8,7 +8,7 @@ export default function SSOCallback() {
 
   useEffect(() => {
     // Redirect to dashboard after Clerk handles the authentication
-    router.push("/dashboard");
+    router.push("/");
   }, [router]);
 
   return (
