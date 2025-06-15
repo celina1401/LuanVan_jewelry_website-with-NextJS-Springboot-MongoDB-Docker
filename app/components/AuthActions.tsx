@@ -18,7 +18,7 @@ export function AuthActions() {
         <SignInButton mode="modal">
           <Button variant="ghost">Login</Button>
         </SignInButton>
-        <SignUpButton mode="modal">
+        <SignUpButton mode="modal" >
           <Button>Sign Up</Button>
         </SignUpButton>
       </SignedOut>

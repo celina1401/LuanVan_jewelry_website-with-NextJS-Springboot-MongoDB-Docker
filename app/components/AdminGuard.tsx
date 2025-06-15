@@ -31,8 +31,9 @@ export default function AdminGuard({ children }: AdminGuardProps) {
           throw new Error("No authentication token available");
         }
 
-        // Make API request to verify admin access
-        const data = await api.get("/admin/verify") as { isAdmin: boolean };
+        // Gọi đúng endpoint (useApi sẽ prepend "/api")
+        console.log("[AdminGuard] User role:", user?.publicMetadata?.role);
+        const data = (await api.get("/admin/verify")) as { isAdmin: boolean };
 
         if (!data.isAdmin) {
           throw new Error("You are not an admin");

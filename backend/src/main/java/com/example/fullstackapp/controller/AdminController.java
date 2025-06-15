@@ -1,31 +1,55 @@
 package com.example.fullstackapp.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import com.example.fullstackapp.model.User;
+import com.example.fullstackapp.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
-/**
- * 1️⃣ Thêm @PreAuthorize để chỉ ADMIN mới truy cập được.
- * 
- * REST Controller cho API quản lý admin. Chỉ cho phép những người dùng có vai trò 'ADMIN'
- * được truy cập các API liên quan đến quản lý admin, trong đó có phương thức xác thực quyền admin.
- */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    /**
-     * Phương thức này sẽ chỉ được truy cập khi người dùng có token hợp lệ và vai trò là 'ROLE_ADMIN'.
-     * Phương thức này xác nhận rằng người dùng có quyền truy cập vào các API liên quan đến admin.
-     *
-     * @return ResponseEntity chứa thông tin xác thực quyền admin.
-     */
-    // @PreAuthorize("hasRole('ADMIN')") // Chỉ người dùng có vai trò 'ROLE_ADMIN' mới có thể truy cập.
+    @Autowired
+    private UserRepository userRepository;
+
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/verify")
     public ResponseEntity<AdminVerificationResponse> verifyAdminAccess() {
-        return ResponseEntity.ok(new AdminVerificationResponse(true)); // Trả về phản hồi xác thực admin
+        return ResponseEntity.ok(new AdminVerificationResponse(true));
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/create-admin")
+    public ResponseEntity<?> createAdminUser(@RequestBody User user) {
+        // Kiểm tra email đã tồn tại chưa
+        if (userRepository.existsByEmail(user.getEmail())) {
+            return ResponseEntity.badRequest().body("Email already exists");
+        }
+
+        // Kiểm tra username đã tồn tại chưa
+        if (userRepository.existsByUsername(user.getUsername())) {
+            return ResponseEntity.badRequest().body("Username already exists");
+        }
+
+        // Set role ADMIN cho user
+        Set<String> roles = new HashSet<>();
+        roles.add("ROLE_ADMIN");
+        user.setRoles(roles);
+
+        // Set thời gian tạo và cập nhật
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+
+        // Lưu user vào database
+        User savedUser = userRepository.save(user);
+
+        return ResponseEntity.ok(savedUser);
     }
 
     // DTO cho response JSON

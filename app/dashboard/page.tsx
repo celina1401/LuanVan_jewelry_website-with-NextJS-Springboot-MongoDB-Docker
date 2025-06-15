@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser, useAuth, SignedIn, SignedOut } from "@clerk/nextjs";
 
 export default function DashboardPage() {
-  const { isLoaded, userId, sessionId } = useAuth();
+  const { isLoaded, userId, sessionId, isSignedIn } = useAuth();
   const { user } = useUser();
 
   useEffect(() => {
@@ -43,12 +43,11 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    if (!userId) {
-      router.push("/login");
+    if (!isLoaded || !userId || !isSignedIn) {
+      // Optionally redirect to login if user is not authenticated and isLoaded is true
+      if (isLoaded) {
+        router.push("/login");
+      }
       return;
     }
 
@@ -71,7 +70,7 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [isLoaded, userId, router, api, user, toast]);
+  }, [isLoaded, userId, isSignedIn, router, api, user, toast]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -94,9 +93,17 @@ export default function DashboardPage() {
                   <CardContent>
                     {user ? (
                       <div>
-                        <p>User ID: {user.id}</p>
-                        <p>Username: {user.username}</p>
-                        <p>Email: {user.emailAddresses[0].emailAddress}</p>
+                        <p><b>User ID:</b> {user.id}</p>
+                        <p><b>Username:</b> {user.username}</p>
+                        <p><b>Email:</b> {user.emailAddresses[0]?.emailAddress}</p>
+                        <p><b>Role:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : (user.publicMetadata?.role ? JSON.stringify(user.publicMetadata.role) : "user")}</p>
+                        {user.imageUrl && (
+                          <img
+                            src={user.imageUrl}
+                            alt="User Avatar"
+                            className="w-16 h-16 rounded-full mt-2"
+                          />
+                        )}
                       </div>
                     ) : (
                       <p>Loading user data...</p>

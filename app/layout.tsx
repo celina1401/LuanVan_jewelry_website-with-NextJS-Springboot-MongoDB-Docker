@@ -1,9 +1,11 @@
+// app/layout.tsx
 import './globals.css';
-import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { CartProvider } from '../contexts/cart-context';
 import { Toaster } from '@/components/ui/toaster';
+import { Providers } from './providers';
 import { ClerkProvider } from '@clerk/nextjs';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -23,24 +25,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider
       publishableKey={clerkPublishableKey ?? ''}
-      // afterSignInUrl="/dashboard"
-      // afterSignUpUrl="/dashboard"
-      afterSignInUrl="/"
-      afterSignUpUrl="/"
-      >
+      signInUrl="/login"
+      signUpUrl="/register"
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
+    >
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className} suppressHydrationWarning>
-          <CartProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              {children}
-            </ThemeProvider>
+          <Providers>
+            <CartProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </CartProvider>
             <Toaster />
-          </CartProvider>
+          </Providers>
         </body>
       </html>
     </ClerkProvider>

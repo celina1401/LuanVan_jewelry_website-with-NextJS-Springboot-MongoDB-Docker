@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -52,10 +53,19 @@ public class JwtTokenProvider {
      */
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
+            Claims claims = Jwts.parserBuilder()
                 .setSigningKey(getClerkPublicKey())
                 .build()
-                .parseClaimsJws(token);
+                .parseClaimsJws(token)
+                .getBody();
+
+            // Validate issuer
+            String issuer = claims.getIssuer();
+            if (!clerkProps.getIssuer().equals(issuer)) {
+                log.error("Invalid JWT issuer: {}", issuer);
+                return false;
+            }
+
             return true;
         } catch (SignatureException e) {
             log.error("Invalid JWT signature: {}", e.getMessage());
@@ -82,5 +92,29 @@ public class JwtTokenProvider {
                    .build()
                    .parseClaimsJws(token)
                    .getBody();
+    }
+
+    public String extractRole(Claims claims) {
+        // Try to get role from public_metadata
+        Map<String, Object> publicMetadata = claims.get("public_metadata", Map.class);
+        if (publicMetadata != null && publicMetadata.containsKey("role")) {
+            return publicMetadata.get("role").toString();
+        }
+
+        // Try to get role from session token
+        String sessionToken = claims.get("session", String.class);
+        if (sessionToken != null) {
+            try {
+                Claims sessionClaims = parseClaims(sessionToken);
+                Map<String, Object> sessionMetadata = sessionClaims.get("public_metadata", Map.class);
+                if (sessionMetadata != null && sessionMetadata.containsKey("role")) {
+                    return sessionMetadata.get("role").toString();
+                }
+            } catch (Exception e) {
+                log.error("Error parsing session token: {}", e.getMessage());
+            }
+        }
+
+        return "user"; // Default role
     }
 }

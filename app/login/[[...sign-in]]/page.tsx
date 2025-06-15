@@ -2,7 +2,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SignIn } from "@clerk/nextjs";
+import { SignIn } from "@clerk/nextjs"; // Sửa từ SignUp thành SignIn
 
 export default function Page() {
   return (
@@ -18,7 +18,16 @@ export default function Page() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SignIn />
+            <SignIn 
+              appearance={{
+                elements: {
+                  formButtonPrimary: 
+                    'bg-primary text-primary-foreground hover:bg-primary/90',
+                  footerActionLink: 
+                    'text-primary hover:text-primary/90',
+                }
+              }}
+            />
           </CardContent>
         </Card>
       </main>

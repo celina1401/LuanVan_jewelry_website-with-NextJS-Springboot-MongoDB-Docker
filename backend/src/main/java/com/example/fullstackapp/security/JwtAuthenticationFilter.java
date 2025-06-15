@@ -77,34 +77,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     ? claims.get("picture", String.class)
                                     : claims.get("image_url", String.class);
 
-                // Role from public_metadata hoặc từ session token lồng bên trong
-                String role = null;
-                // 1. Lấy role từ public_metadata của claims ngoài cùng (nếu có)
-                Object pm = claims.get("public_metadata");
-                if (pm instanceof Map) {
-                    Map<?,?> map = (Map<?,?>) pm;
-                    if (map.containsKey("role")) {
-                        role = map.get("role").toString();
-                    }
-                }
-                // 2. Nếu chưa có role, thử lấy từ token trong trường "session"
-                if (role == null) {
-                    String sessionToken = claims.get("session", String.class);
-                    if (sessionToken != null) {
-                        Claims sessionClaims = Jwts.parserBuilder()
-                            .setSigningKey(tokenProvider.getClerkPublicKey())
-                            .build()
-                            .parseClaimsJws(sessionToken)
-                            .getBody();
-                        // Lấy role trực tiếp
-                        role = sessionClaims.get("role", String.class);
-                        // Hoặc lấy từ publicMetadata nếu có
-                        Map<String, Object> publicMetadata = sessionClaims.get("publicMetadata", Map.class);
-                        if (publicMetadata != null && publicMetadata.containsKey("role")) {
-                            role = publicMetadata.get("role").toString();
-                        }
-                    }
-                }
+                // Get role using the new extraction method
+                String role = tokenProvider.extractRole(claims);
 
                 // Persist or update User in DB
                 Optional<User> opt = userRepository.findById(clerkUserId);
@@ -124,9 +98,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .id(clerkUserId)
                             .username(username)
                             .email(email)
-                            .roles(role != null
-                                ? Set.of("ROLE_" + role.toUpperCase())
-                                : Set.of("ROLE_USER"))
+                            .roles(Set.of("ROLE_" + role.toUpperCase()))
                             .createdAt(LocalDateTime.now())
                             .updatedAt(LocalDateTime.now())
                             .provider(provider)
@@ -137,7 +109,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     currentUser = userRepository.save(currentUser);
                     log.info("New user saved: {}", currentUser.getUsername());
                 } else {
-                    // Optional: update existing user's info/roles if changed
+                    // Update existing user's info/roles if changed
                     currentUser = opt.get();
                     boolean updated = false;
 
@@ -165,9 +137,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         currentUser.setImageUrl(imageUrl);
                         updated = true;
                     }
-                    Set<String> newRoles = role != null
-                        ? Set.of("ROLE_" + role.toUpperCase())
-                        : Set.of("ROLE_USER");
+                    Set<String> newRoles = Set.of("ROLE_" + role.toUpperCase());
                     if (!currentUser.getRoles().equals(newRoles)) {
                         currentUser.setRoles(newRoles);
                         updated = true;

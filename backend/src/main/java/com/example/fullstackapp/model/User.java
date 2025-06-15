@@ -11,11 +11,13 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import jakarta.annotation.Nullable;
 
 @Data
 @Builder
@@ -26,20 +28,21 @@ public class User {
     @Id
     private String id;
 
-    @NotBlank
     @Size(max = 50)
+    @Nullable
     private String username;
 
-    @NotBlank
     @Size(max = 50)
     @Email
     @Indexed(unique = true)
+    @Nullable
     private String email;
 
-    @NotBlank
     @Size(max = 120)
+    @Nullable
     private String password;
 
+    @Size(min = 1)
     private Set<String> roles = new HashSet<>();
 
     @CreatedDate
@@ -47,99 +50,25 @@ public class User {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-    
-    // Thêm các trường mới
-    private String provider; // "google", "facebook", "clerk", etc.
-    private String firstName;
-    private String lastName;
-    private String imageUrl;
-    
-    public String getId() {
-        return id;
-    }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    @Nullable
+    private String provider = "clerk";
 
-    public @NotBlank @Size(max = 50) String getUsername() {
-        return username;
-    }
+    @Nullable
+    private String firstName = "";
 
-    public void setUsername(@NotBlank @Size(max = 50) String username) {
-        this.username = username;
-    }
+    @Nullable
+    private String lastName = "";
 
-    public @NotBlank @Size(max = 50) @Email String getEmail() {
-        return email;
-    }
+    @Nullable
+    private String imageUrl = "";
 
-    public void setEmail(@NotBlank @Size(max = 50) @Email String email) {
-        this.email = email;
-    }
-
-    public @NotBlank @Size(max = 120) String getPassword() {
-        return password;
-    }
-
-    public void setPassword(@NotBlank @Size(max = 120) String password) {
-        this.password = password;
-    }
-
-    public Set<String> getRoles() {
-        return roles;
-    }
-
+    // Phương thức đảm bảo vai trò hợp lệ
     public void setRoles(Set<String> roles) {
-        this.roles = roles;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-    
-    // Thêm getters và setters cho các trường mới
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+        Set<String> validRoles = new HashSet<>(Set.of("user", "admin"));
+        this.roles = roles.stream()
+                .filter(validRoles::contains)
+                .collect(Collectors.toSet());
+        if (this.roles.isEmpty()) this.roles.add("user");
     }
 }

@@ -19,8 +19,9 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <SignUp 
-              afterSignUpUrl="/"
-              signInUrl="/" 
+              // afterSignUpUrl="/register/sso-callback"
+              // signInUrl="/login"
+              // redirectUrl="/register/sso-callback"
             />
           </CardContent>
         </Card>
