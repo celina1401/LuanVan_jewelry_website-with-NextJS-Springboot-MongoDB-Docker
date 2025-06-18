@@ -10,7 +10,8 @@ export function AuthActions() {
   if (!isLoaded) return null; // chờ load xong
 
   // Lấy role từ publicMetadata
-  const role = user?.publicMetadata?.role as string | undefined;
+  const role = user?.publicMetadata?.role as string | "user";
+  console.log(role)
 
   return (
     <div className="flex items-center gap-2">

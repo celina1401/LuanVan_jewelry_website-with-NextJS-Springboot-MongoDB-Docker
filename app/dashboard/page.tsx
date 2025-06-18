@@ -21,6 +21,12 @@ export default function DashboardPage() {
     const userRole = user.publicMetadata?.role;
     console.log("User Role:", userRole);
     
+    // Chuyển hướng dựa trên role
+    if (userRole === "admin") {
+      router.push("/admin");
+      return;
+    }
+    
     // Đồng bộ role với backend
     const syncRole = async () => {
       try {

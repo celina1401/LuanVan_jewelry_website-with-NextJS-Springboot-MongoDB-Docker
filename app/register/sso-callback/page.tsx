@@ -1,139 +1,104 @@
-// "use client";
+'use client';
 
-// import { useEffect } from "react";
-// import { useRouter } from "next/navigation";
-// import { useAuth, useUser } from "@clerk/nextjs";
-
-// export default function SSOCallback() {
-//   const router = useRouter();
-//   const { isLoaded, userId } = useAuth();
-//   const { user } = useUser();
-
-//   useEffect(() => {
-//     if (!isLoaded) return;
-
-//     if (!userId || !user) {
-//       console.error("Không có thông tin người dùng hoặc userId");
-//       return;
-//     }
-
-//     const syncUserWithBackend = async () => {
-//       try {
-//         // Get user data from Clerk
-//         const userData = {
-//           userId: user.id,
-//           email: user.emailAddresses[0]?.emailAddress,
-//           username: user.username || user.emailAddresses[0]?.emailAddress,
-//           firstName: user.firstName,
-//           lastName: user.lastName,
-//           imageUrl: user.imageUrl,
-//           provider: user.externalAccounts?.[0]?.provider || 'clerk', // Thêm kiểm tra an toàn
-//           role: user.publicMetadata?.role || 'user'
-//         };
-
-//         // Sync user data with backend
-//         const response = await fetch('/api/users/sync-role', {
-//           method: 'POST',
-//           headers: {
-//             'Content-Type': 'application/json',
-//           },
-//           body: JSON.stringify(userData),
-//         });
-
-//         if (!response.ok) {
-//           throw new Error('Failed to sync user data');
-//         }
-
-//         // Redirect to homepage after successful registration
-//         router.push("/");
-
-//       } catch (error) {
-//         console.error('Error syncing user data:', error);
-//         // Thêm thông báo lỗi chi tiết hơn
-//         router.push("/register?error=sync_failed");
-//       }
-//     };
-
-//     syncUserWithBackend();
-//   }, [isLoaded, userId, user, router]);
-
-//   return (
-//     <div className="flex min-h-screen items-center justify-center">
-//       <div className="text-center">
-//         <p className="text-lg mb-4">Completing registration...</p>
-//         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-//       </div>
-//     </div>
-//   );
-// }
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth, useUser, useClerk } from "@clerk/nextjs";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 
 export default function SSOCallback() {
   const router = useRouter();
-  const { isLoaded, isSignedIn } = useAuth();
-  const { user } = useUser();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
   const { handleRedirectCallback } = useClerk();
 
+  // 1. Handle redirect callback from SSO
   useEffect(() => {
-    // Handle Clerk's SSO redirect callback
     const processSSOCallback = async () => {
       try {
         await handleRedirectCallback({
-          redirectUrl: "/", // Redirect to homepage on success
-          afterSignInUrl: "/", // Fallback for sign-in
-          afterSignUpUrl: "/", // Fallback for sign-up
+          redirectUrl: '/',
+          afterSignInUrl: '/',
+          afterSignUpUrl: '/',
         });
       } catch (error) {
-        console.error("Error processing SSO callback:", error);
-        router.push("/register?error=sso_failed");
+        console.error('Error processing SSO callback:', error);
+        router.push('/register?error=sso_failed');
       }
     };
 
     processSSOCallback();
   }, [handleRedirectCallback, router]);
 
+  // 2. Sync user to backend
   useEffect(() => {
-    // Only sync user data with backend if user is loaded, signed in, and user data exists
-    if (!isLoaded || !isSignedIn || !user) return;
+    if (!isLoaded || !isSignedIn || !user || !userLoaded) return;
 
     const syncUserWithBackend = async () => {
       try {
+        const token = await getToken();
+        if (!token) throw new Error('No authentication token available');
+
+        // 🟨 Gọi set-role nếu publicMetadata.role chưa có
+        let role = user.publicMetadata?.role;
+        if (!role) {
+          role = 'user';
+          await fetch('/api/set-role', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ userId: user.id, role }),
+          });
+          console.log('Role "user" set via /api/set-role');
+        }
+
+        // 🟩 Chuẩn bị payload gửi backend
         const userData = {
           userId: user.id,
-          email: user.primaryEmailAddress?.emailAddress || "",
-          username: user.username || user.primaryEmailAddress?.emailAddress || "",
-          firstName: user.firstName || "",
-          lastName: user.lastName || "",
-          imageUrl: user.imageUrl || "",
-          provider: user.externalAccounts?.[0]?.provider || "clerk",
-          role: user.publicMetadata?.role || "user",
+          email: user.primaryEmailAddress?.emailAddress || '',
+          username: user.username || user.primaryEmailAddress?.emailAddress || '',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          imageUrl: user.imageUrl || '',
+          provider: user.externalAccounts?.[0]?.provider || 'clerk',
+          role,
         };
 
-        const response = await fetch("/api/users/sync-role", {
-          method: "POST",
+        console.log('Syncing user data:', userData);
+
+        const response = await fetch('http://localhost:8080/api/users/sync-role', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(userData),
+          credentials: 'include',
         });
 
         if (!response.ok) {
-          throw new Error("Failed to sync user data");
+          const errorData = await response.text();
+          console.error('Sync failed:', errorData);
+          throw new Error(`Failed to sync user data: ${errorData}`);
         }
 
-        router.push("/");
+        const savedUser = await response.json();
+        console.log('User synced successfully:', savedUser);
+
+        // 3. Redirect based on role
+        if (role !== 'admin') {
+          router.push('/');
+        } else {
+          router.push('/');
+        }
       } catch (error) {
-        console.error("Error syncing user data:", error);
-        router.push("/register?error=sync_failed");
+        console.error('Error syncing user data:', error);
+        router.push('/register?error=sync_failed');
       }
     };
 
     syncUserWithBackend();
-  }, [isLoaded, isSignedIn, user, router]);
+  }, [isLoaded, isSignedIn, user, userLoaded, getToken, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">

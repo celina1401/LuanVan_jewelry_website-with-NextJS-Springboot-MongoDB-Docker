@@ -16,6 +16,8 @@ import com.example.fullstackapp.repository.UserRepository;
 
 import jakarta.servlet.http.HttpSession;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,8 +70,7 @@ public class UserController {
     }
 
     @PostMapping("/sync-role")
-    public ResponseEntity<?> syncUserRole(@RequestBody Map<String, Object> payload, HttpSession session) {
-        System.out.println("Received payload: " + payload);
+    public ResponseEntity<?> syncUserRole(@RequestBody Map<String, Object> payload) {
         try {
             String userId = (String) payload.get("userId");
             String role = (String) payload.get("role");
@@ -80,51 +81,55 @@ public class UserController {
             String imageUrl = (String) payload.get("imageUrl");
             String provider = (String) payload.get("provider");
 
-            System.out.println("Extracted from payload: userId=" + userId + ", email=" + email + ", role=" + role);
-
             if (userId == null || email == null) {
-                System.err.println("Validation error: User ID or email is missing.");
                 return ResponseEntity.badRequest().body("User ID and email are required");
             }
 
-            Optional<User> userData = userRepository.findById(userId);
+            Optional<User> existingUser = userRepository.findById(userId);
             User user;
 
-            if (userData.isPresent()) {
-                user = userData.get();
-                System.out.println("User exists, updating: " + user.getId());
+            if (existingUser.isPresent()) {
+                // Update existing user
+                user = existingUser.get();
                 user.setEmail(email);
-                if (username != null) user.setUsername(username);
-                if (firstName != null) user.setFirstName(firstName);
-                if (lastName != null) user.setLastName(lastName);
-                if (imageUrl != null) user.setImageUrl(imageUrl);
-                if (provider != null) user.setProvider(provider);
+                user.setUsername(username);
+                user.setFirstName(firstName);
+                user.setLastName(lastName);
+                user.setImageUrl(imageUrl);
+                user.setProvider(provider);
+                user.setUpdatedAt(LocalDateTime.now());
+                
+                // Update role if provided
+                if (role != null) {
+                    Set<String> roles = new HashSet<>();
+                    roles.add("ROLE_" + role.toUpperCase());
+                    user.setRoles(roles);
+                }
             } else {
-                user = new User();
-                user.setId(userId);
-                user.setEmail(email);
-                user.setUsername(username != null ? username : email);
-                user.setFirstName(firstName != null ? firstName : "");
-                user.setLastName(lastName != null ? lastName : "");
-                user.setImageUrl(imageUrl != null ? imageUrl : "");
-                user.setProvider(provider != null ? provider : "clerk");
-                System.out.println("New user, creating: " + user.getId());
+                // Create new user
+                user = User.builder()
+                    .id(userId)
+                    .email(email)
+                    .username(username)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .imageUrl(imageUrl)
+                    .provider(provider)
+                    .roles(new HashSet<>(Collections.singletonList("ROLE_" + (role != null ? role.toUpperCase() : "USER"))))
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
             }
 
-            Set<String> roles = new HashSet<>();
-            // Always set role to "user" for new registrations/updates
-            roles.add("user"); 
-            user.setRoles(roles);
-            System.out.println("User roles set to: " + user.getRoles());
+            User savedUser = userRepository.save(user);
+            return ResponseEntity.ok(savedUser);
 
-            userRepository.save(user);
-            System.out.println("User saved successfully: " + user.getId());
-            return ResponseEntity.ok("User data synced successfully");
         } catch (Exception e) {
-            System.err.println("Error syncing user data: " + e.getMessage());
-            e.printStackTrace(); // In toàn bộ stack trace để gỡ lỗi chi tiết
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to sync user data: " + e.getMessage());
+                .body("Error syncing user data: " + e.getMessage());
         }
     }
+
+    
+    
 }

@@ -17,14 +17,11 @@ public class AdminController {
     @Autowired
     private UserRepository userRepository;
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/verify")
-    public ResponseEntity<AdminVerificationResponse> verifyAdminAccess() {
-        return ResponseEntity.ok(new AdminVerificationResponse(true));
-    }
+    // @GetMapping("/verify")
+    // public ResponseEntity<AdminVerificationResponse> verifyAdminAccess() {
+    //     return ResponseEntity.ok(new AdminVerificationResponse(true));
+    // }
 
-
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create-admin")
     public ResponseEntity<?> createAdminUser(@RequestBody User user) {
         // Kiểm tra email đã tồn tại chưa

@@ -23,29 +23,34 @@ export default function AdminGuard({ children }: AdminGuardProps) {
         setIsVerifying(false);  // Stop verification process
         return;
       }
+    const role = user?.publicMetadata.role;
+    if (role !== "admin"){
+      router.replace("/");
+    } else {
+      setIsVerifying(false);
+    }
+      // try {
+      //   // Ensure a valid JWT token is available
+      //   const token = await getToken();
+      //   if (!token) {
+      //     throw new Error("No authentication token available");
+      //   }
 
-      try {
-        // Ensure a valid JWT token is available
-        const token = await getToken();
-        if (!token) {
-          throw new Error("No authentication token available");
-        }
+      //   // Gọi đúng endpoint (useApi sẽ prepend "/api")
+      //   console.log("[AdminGuard] User role:", user?.publicMetadata?.role);
+      //   const data = (await api.get("/admin/verify")) as { isAdmin: boolean };
 
-        // Gọi đúng endpoint (useApi sẽ prepend "/api")
-        console.log("[AdminGuard] User role:", user?.publicMetadata?.role);
-        const data = (await api.get("/admin/verify")) as { isAdmin: boolean };
+      //   if (!data.isAdmin) {
+      //     throw new Error("You are not an admin");
+      //   }
 
-        if (!data.isAdmin) {
-          throw new Error("You are not an admin");
-        }
-
-        // If the user is an admin, proceed to render children
-        setIsVerifying(false);
-      } catch (err) {
-        console.error("Error verifying admin access:", err);
-        // If not an admin, redirect to home page
-        router.replace("/");
-      }
+      //   // If the user is an admin, proceed to render children
+      //   setIsVerifying(false);
+      // } catch (err) { 
+      //   console.error("Error verifying admin access:", err);
+      //   // If not an admin, redirect to home page
+      //   router.replace("/");
+      // }
     };
 
     verifyAdminAccess();

@@ -23,7 +23,7 @@ public class ApiController {
     }
 
     @GetMapping("/user")
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    // @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<Map<String, String>> userAccess() {
         Map<String, String> response = new HashMap<>();
         response.put("message", "User Content.");
@@ -31,7 +31,7 @@ public class ApiController {
     }
 
     @GetMapping("/admin")
-    @PreAuthorize("hasRole('ADMIN')")  // phải là 'ADMIN', match GrantedAuthority 'ROLE_ADMIN'
+    // @PreAuthorize("hasRole('ADMIN')")  // phải là 'ADMIN', match GrantedAuthority 'ROLE_ADMIN'
     public ResponseEntity<Map<String, String>> adminAccess() {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Admin Board.");

@@ -97,6 +97,8 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -119,9 +121,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/api/products/**", "/api-docs/**", "/swagger-ui/**",
                                 "/swagger-ui.html", "/api/users/**")
                         .permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/role/user").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/role/admin").hasRole("ADMIN")
+                        // .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // .requestMatchers("/api/role/user").hasAnyRole("USER", "ADMIN")
+                        // .requestMatchers("/api/role/admin").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt

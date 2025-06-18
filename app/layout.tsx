@@ -7,6 +7,7 @@ import { CartProvider } from '../contexts/cart-context';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from './providers';
 import { ClerkProvider } from '@clerk/nextjs';
+import { RedirectAdmin } from './components/RedirectAdmin';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className} suppressHydrationWarning>
+          <RedirectAdmin/>
           <Providers>
             <CartProvider>
               <ThemeProvider
