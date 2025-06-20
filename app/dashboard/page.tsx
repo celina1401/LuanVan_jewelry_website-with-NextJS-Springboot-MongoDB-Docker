@@ -38,7 +38,7 @@ export default function DashboardPage() {
       } catch (error) {
         console.error("Failed to sync role with backend", error);
       }
-    };
+    }; 
 
     syncRole();
   }, [isLoaded, userId, user]);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useApi } from "../api/apiClient";
 
@@ -10,54 +10,34 @@ interface AdminGuardProps {
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
-  const { user, isLoaded } = useUser();  // Get user and loading state from Clerk
-  const { getToken } = useAuth();  // Get Clerk auth methods
-  const router = useRouter();  // To navigate to other pages
-  const api = useApi();  // API client to interact with backend
-  const [isVerifying, setIsVerifying] = useState(true);  // State to track admin verification process
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const api = useApi();
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
     const verifyAdminAccess = async () => {
-      // If Clerk hasn't loaded or the user is not available, skip verification
       if (!isLoaded || !user) {
-        setIsVerifying(false);  // Stop verification process
+        setIsVerifying(false);
         return;
       }
-    const role = user?.publicMetadata.role;
-    if (role !== "admin"){
-      router.replace("/");
-    } else {
-      setIsVerifying(false);
-    }
-      // try {
-      //   // Ensure a valid JWT token is available
-      //   const token = await getToken();
-      //   if (!token) {
-      //     throw new Error("No authentication token available");
-      //   }
 
-      //   // Gọi đúng endpoint (useApi sẽ prepend "/api")
-      //   console.log("[AdminGuard] User role:", user?.publicMetadata?.role);
-      //   const data = (await api.get("/admin/verify")) as { isAdmin: boolean };
+      const role = user?.publicMetadata.role;
+      const isAdminRoute = pathname.startsWith("/admin");
 
-      //   if (!data.isAdmin) {
-      //     throw new Error("You are not an admin");
-      //   }
-
-      //   // If the user is an admin, proceed to render children
-      //   setIsVerifying(false);
-      // } catch (err) { 
-      //   console.error("Error verifying admin access:", err);
-      //   // If not an admin, redirect to home page
-      //   router.replace("/");
-      // }
+      if (isAdminRoute && role !== "admin") {
+        router.replace("/"); // hoặc "/unauthorized"
+      } else {
+        setIsVerifying(false);
+      }
     };
 
     verifyAdminAccess();
-  }, [isLoaded, user, getToken, api, router]);  // Dependencies to re-run effect
+  }, [isLoaded, user, pathname, getToken, api, router]);
 
   if (isVerifying) {
-    // Show loading spinner while verifying admin access
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -68,6 +48,5 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  // If verification is complete, render the children (protected content)
   return <>{children}</>;
 }

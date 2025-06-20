@@ -18,6 +18,7 @@ export default function InventoryPage() {
     category: "",
     sku: "",
     image: "" as string | File,
+    tags: [] as string[],
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -57,6 +58,14 @@ export default function InventoryPage() {
     console.log("New product:", form);
     // TODO: call API or update state
   }
+  function handleTagChange(tag: string) {
+    setForm(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
+    }));
+  }
   return (
     <div className="w-full max-w-6xl mx-auto py-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -67,38 +76,77 @@ export default function InventoryPage() {
               Add New Item
             </button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl w-full overflow-y-auto max-h-screen">
+          <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-screen">
             <DialogModalHeader>
               <DialogModalTitle className="text-2xl font-bold mb-2">Add New Product</DialogModalTitle>
             </DialogModalHeader>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left column */}
               <div className="flex flex-col gap-6">
-                <div>
-                  <label className="font-semibold text-base mb-1">Product Name</label>
-                  <Input name="name" value={form.name} onChange={handleChange} required className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary" />
+                <div className="space-y-2">
+                  <label className="font-semibold text-base">Product Name</label>
+                  <Input
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                    className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary"
+                  />
                 </div>
+
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className="font-semibold text-base mb-1">Weight (g)</label>
-                    <Input name="weight" type="number" min={0} value={form.weight} onChange={handleChange} required className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary" />
+                  <div className="flex-1 space-y-2">
+                    <label className="font-semibold text-base">Weight (g)</label>
+                    <Input
+                      name="weight"
+                      type="number"
+                      min={0}
+                      value={form.weight}
+                      onChange={handleChange}
+                      required
+                      className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary"
+                    />
                   </div>
-                  <div className="flex-1">
-                    <label className="font-semibold text-base mb-1">Gold Age</label>
-                    <Input name="goldAge" value={form.goldAge} onChange={handleChange} required className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary" />
+                  <div className="flex-1 space-y-2">
+                    <label className="font-semibold text-base">Gold Age</label>
+                    <Input
+                      name="goldAge"
+                      value={form.goldAge}
+                      onChange={handleChange}
+                      required
+                      className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary"
+                    />
                   </div>
                 </div>
-                <div>
-                  <label className="font-semibold text-base mb-1">Origin</label>
-                  <Input name="origin" value={form.origin} onChange={handleChange} required className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary" />
+
+                <div className="space-y-2">
+                  <label className="font-semibold text-base">Origin</label>
+                  <Input
+                    name="origin"
+                    value={form.origin}
+                    onChange={handleChange}
+                    required
+                    className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary"
+                  />
                 </div>
-                <div>
-                  <label className="font-semibold text-base mb-1">Brand</label>
-                  <Input name="brand" value={form.brand} onChange={handleChange} required className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary" />
+
+                <div className="space-y-2">
+                  <label className="font-semibold text-base">Brand</label>
+                  <Input
+                    name="brand"
+                    value={form.brand}
+                    onChange={handleChange}
+                    required
+                    className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary"
+                  />
                 </div>
-                <div>
-                  <label className="font-semibold text-base mb-1">Category</label>
-                  <Select value={form.category} onValueChange={v => handleSelect("category", v)}>
+
+                <div className="space-y-2">
+                  <label className="font-semibold text-base">Category</label>
+                  <Select
+                    value={form.category}
+                    onValueChange={(v) => handleSelect("category", v)}
+                  >
                     <SelectTrigger className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -110,26 +158,76 @@ export default function InventoryPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <label className="font-semibold text-base mb-1">SKU (auto)</label>
-                  <Input name="sku" value={form.sku} readOnly className="bg-muted rounded-xl px-4 py-3 text-base" />
+
+                <div className="space-y-2">
+                  <label className="font-semibold text-base">SKU (auto)</label>
+                  <Input
+                    name="sku"
+                    value={form.sku}
+                    readOnly
+                    className="bg-muted rounded-xl px-4 py-3 text-base"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="font-semibold text-base">Tags</label>
+                  <div className="flex gap-4 flex-wrap">
+                    {["Newest", "Most Popular", "Best Seller", "Sale"].map(tag => (
+                      <label key={tag} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={form.tags.includes(tag)}
+                          onChange={() => handleTagChange(tag)}
+                          className="accent-primary w-4 h-4"
+                        />
+                        {tag}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
+
               {/* Right column: Upload image + barcode */}
               <div className="flex flex-col gap-4 items-center justify-center">
-                <label className="font-semibold text-base mb-1">Product Image</label>
-                <input type="file" accept="image/*" onChange={handleImageChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90" />
+                <div className="space-y-2 w-full text-center">
+                  <label className="font-semibold text-base">Product Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  />
+                </div>
+
                 {imagePreview && (
-                  <img src={imagePreview} alt="Preview" className="w-40 h-40 object-cover rounded-xl border" />
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-40 h-40 object-cover rounded-xl border"
+                  />
                 )}
+
                 <div className="mt-4 flex justify-center w-full">
-                  <Barcode value={form.sku || "SKU"} height={60} width={2} fontSize={16} displayValue={true} />
+                  <Barcode
+                    value={form.sku || "SKU"}
+                    height={60}
+                    width={2}
+                    fontSize={16}
+                    displayValue={true}
+                  />
                 </div>
               </div>
+
               <DialogFooter className="md:col-span-2">
-                <button type="submit" className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-xl text-lg font-bold hover:bg-primary/90 transition-colors mt-2">Add Product</button>
+                <button
+                  type="submit"
+                  className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-xl text-lg font-bold hover:bg-primary/90 transition-colors mt-2"
+                >
+                  Add Product
+                </button>
               </DialogFooter>
             </form>
+
           </DialogContent>
         </Dialog>
       </div>

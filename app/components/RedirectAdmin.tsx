@@ -13,8 +13,10 @@ export function RedirectAdmin() {
     if (!isLoaded || !user) return;
 
     const role = user.publicMetadata?.role;
-    if (role !== 'admin') {
-      router.replace('/');
+    const isAdminRoute = pathname.startsWith('/admin');
+
+    if (isAdminRoute && role !== 'admin') {
+      router.replace('/'); // hoặc "/unauthorized" nếu muốn
     }
   }, [user, isLoaded, router, pathname]);
 

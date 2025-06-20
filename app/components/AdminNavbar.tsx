@@ -46,8 +46,7 @@ export default function AdminNavbar() {
           <AuthActions />
         </div>
       </div>
-      {/* Mobile nav (optional) */}
-      {/* Có thể thêm menu mobile ở đây nếu cần */}
+
     </header>
   );
 } 

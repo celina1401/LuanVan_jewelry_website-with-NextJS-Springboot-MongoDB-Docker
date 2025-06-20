@@ -129,7 +129,7 @@ export function HeroSlider() {
                   <h2 className="text-3xl md:text-5xl font-bold mb-2">{slide.title}</h2>
                   <p className="text-lg md:text-xl mb-6">{slide.subtitle}</p>
                   {isLoaded ? (
-                    <Link href={userId ? slide.link : "/login"}>
+                    <Link href={userId ? "/products" : "/login"}>
                       <Button size="lg" variant="secondary">
                         Shop Now
                       </Button>
