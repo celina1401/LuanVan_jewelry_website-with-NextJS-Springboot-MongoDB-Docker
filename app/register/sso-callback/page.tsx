@@ -10,7 +10,7 @@ export default function SSOCallback() {
   const { user, isLoaded: userLoaded } = useUser();
   const { handleRedirectCallback } = useClerk();
 
-  // 1. Handle redirect callback from SSO
+  // B1: Xử lý redirect sau SSO
   useEffect(() => {
     const processSSOCallback = async () => {
       try {
@@ -28,7 +28,7 @@ export default function SSOCallback() {
     processSSOCallback();
   }, [handleRedirectCallback, router]);
 
-  // 2. Sync user to backend
+  // B2: Gán role "user" nếu chưa có và đồng bộ backend
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user || !userLoaded) return;
 
@@ -37,11 +37,12 @@ export default function SSOCallback() {
         const token = await getToken();
         if (!token) throw new Error('No authentication token available');
 
-        // 🟨 Gọi set-role nếu publicMetadata.role chưa có
         let role = user.publicMetadata?.role;
+
+        // Gán role nếu chưa có
         if (!role) {
           role = 'user';
-          await fetch('/api/set-role', {
+          const res = await fetch('http://localhost:3000/api/set-role', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -49,10 +50,17 @@ export default function SSOCallback() {
             },
             body: JSON.stringify({ userId: user.id, role }),
           });
-          console.log('Role "user" set via /api/set-role');
+
+          if (!res.ok) {
+            const err = await res.text();
+            throw new Error(`Failed to set role: ${err}`);
+          }
+
+          const data = await res.json();
+          console.log('✅ Set role response:', data);
         }
 
-        // 🟩 Chuẩn bị payload gửi backend
+        // Gửi dữ liệu đồng bộ backend (Spring Boot + MongoDB)
         const userData = {
           userId: user.id,
           email: user.primaryEmailAddress?.emailAddress || '',
@@ -63,8 +71,6 @@ export default function SSOCallback() {
           provider: user.externalAccounts?.[0]?.provider || 'clerk',
           role,
         };
-
-        console.log('Syncing user data:', userData);
 
         const response = await fetch('http://localhost:8080/api/users/sync-role', {
           method: 'POST',
@@ -78,21 +84,16 @@ export default function SSOCallback() {
 
         if (!response.ok) {
           const errorData = await response.text();
-          console.error('Sync failed:', errorData);
-          throw new Error(`Failed to sync user data: ${errorData}`);
+          throw new Error(`❌ Failed to sync user data: ${errorData}`);
         }
 
-        const savedUser = await response.json();
-        console.log('User synced successfully:', savedUser);
+        const syncedUser = await response.json();
+        console.log('✅ User synced to backend:', syncedUser);
 
-        // 3. Redirect based on role
-        if (role !== 'admin') {
-          router.push('/');
-        } else {
-          router.push('/');
-        }
+        router.push('/');
+
       } catch (error) {
-        console.error('Error syncing user data:', error);
+        console.error('❌ Error syncing user data:', error);
         router.push('/register?error=sync_failed');
       }
     };

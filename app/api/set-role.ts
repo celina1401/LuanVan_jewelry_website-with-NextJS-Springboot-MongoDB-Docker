@@ -1,26 +1,26 @@
-// pages/api/set-role.ts
+import { clerkClient } from '@clerk/clerk-sdk-node';
+import { NextRequest, NextResponse } from 'next/server';
 
-import { clerkClient } from '@clerk/nextjs/server';
-import type { NextApiRequest, NextApiResponse } from 'next';
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end();
-
-  const { userId, role } = req.body;
-
-  if (!userId || !role) {
-    return res.status(400).json({ error: 'Missing userId or role' });
-  }
-
+export async function POST(req: NextRequest) {
   try {
-    const user = await clerkClient();
-    await user.users.updateUserMetadata(userId, {
+    const { userId, role } = await req.json();
+
+    if (!userId || !role) {
+      return new NextResponse('Missing userId or role', { status: 400 });
+    }
+
+    // Log để debug
+    console.log('Updating user:', userId, 'with role:', role);
+
+    const result = await clerkClient.users.updateUser(userId, {
       publicMetadata: { role },
     });
 
-    res.status(200).json({ message: 'Role set successfully' });
+    console.log('Update result:', result);
+
+    return NextResponse.json({ success: true, message: `Role "${role}" set for user ${userId}` });
   } catch (error) {
-    console.error('Failed to update role:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error setting role:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

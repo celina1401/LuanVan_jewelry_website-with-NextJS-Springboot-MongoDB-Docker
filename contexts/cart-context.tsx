@@ -5,19 +5,24 @@ import { createContext, useContext, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useToast } from "./use-toast"
 
+// Loại sản phẩm trong giỏ
 interface CartItem {
   id: string
   name: string
   price: number
   quantity: number
   image: string
+  metadata?: {
+    color?: string
+  }
 }
 
+// API context
 interface CartContextType {
   items: CartItem[]
-  addItem: (item: Omit<CartItem, "quantity">) => void
-  removeItem: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
+  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void
+  removeItem: (id: string, metadata?: CartItem["metadata"]) => void
+  updateQuantity: (id: string, quantity: number, metadata?: CartItem["metadata"]) => void
   total: number
 }
 
@@ -28,7 +33,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { userId, isLoaded } = useAuth()
   const { toast } = useToast()
 
-  const addItem = (item: Omit<CartItem, "quantity">) => {
+  const addItem = (item: Omit<CartItem, "quantity">, quantity: number = 1) => {
     if (!isLoaded || !userId) {
       toast({
         title: "Authentication required",
@@ -39,28 +44,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     setItems((currentItems) => {
-      const existingItem = currentItems.find((i) => i.id === item.id)
+      const existingItem = currentItems.find(
+        (i) =>
+          i.id === item.id &&
+          i.metadata?.color === item.metadata?.color
+      )
+
       if (existingItem) {
         return currentItems.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id && i.metadata?.color === item.metadata?.color
+            ? { ...i, quantity: i.quantity + quantity }
+            : i
         )
       }
-      return [...currentItems, { ...item, quantity: 1 }]
+
+      return [...currentItems, { ...item, quantity }]
     })
   }
 
-  const removeItem = (id: string) => {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== id))
+  const removeItem = (id: string, metadata?: CartItem["metadata"]) => {
+    setItems((currentItems) =>
+      currentItems.filter(
+        (item) =>
+          item.id !== id ||
+          item.metadata?.color !== metadata?.color
+      )
+    )
   }
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number, metadata?: CartItem["metadata"]) => {
     if (quantity < 1) {
-      removeItem(id)
+      removeItem(id, metadata)
       return
     }
+
     setItems((currentItems) =>
       currentItems.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        item.id === id && item.metadata?.color === metadata?.color
+          ? { ...item, quantity }
+          : item
       )
     )
   }
@@ -85,4 +107,4 @@ export function useCart() {
     throw new Error("useCart must be used within a CartProvider")
   }
   return context
-} 
+}

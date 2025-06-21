@@ -3,7 +3,6 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
-import { CartProvider } from '../contexts/cart-context';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from './providers';
 import { ClerkProvider } from '@clerk/nextjs';
@@ -35,16 +34,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body className={inter.className} suppressHydrationWarning>
           <RedirectAdmin/>
           <Providers>
-            <CartProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                {children}
-              </ThemeProvider>
-            </CartProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
             <Toaster />
           </Providers>
         </body>

@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/navbar";
+import BusinessMap from "../components/BusinessMap";
 
 export default function AboutPage() {
   return (
@@ -72,6 +73,13 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+        <section className="w-full py-12">
+          <div className="container px-4 md:px-6">
+            <h2 className="text-2xl font-bold mb-4">Địa chỉ doanh nghiệp</h2>
+            <p className="mb-4">123 Đường ABC, Quận XYZ, Hà Nội</p>
+            <BusinessMap />
           </div>
         </section>
       </main>

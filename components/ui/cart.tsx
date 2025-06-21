@@ -41,10 +41,25 @@ export function Cart() {
                   />
                 </div>
                 <div className="flex-1">
+                  {/* <h3 className="font-medium">{item.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    ${item.price.toLocaleString()}
+                  </p> */}
+
                   <h3 className="font-medium">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     ${item.price.toLocaleString()}
                   </p>
+                  {item.metadata?.color && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500">Màu:</span>
+                      <span
+                        className="inline-block w-4 h-4 rounded-full border"
+                        style={{ backgroundColor: item.metadata.color }}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 mt-2">
                     <Button
                       variant="outline"
@@ -66,7 +81,7 @@ export function Cart() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => removeItem(item.id)}
+                  onClick={() => removeItem(item.id, item.metadata)}
                 >
                   Remove
                 </Button>

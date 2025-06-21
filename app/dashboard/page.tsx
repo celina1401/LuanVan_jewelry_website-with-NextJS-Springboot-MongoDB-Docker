@@ -30,7 +30,7 @@ export default function DashboardPage() {
     // Đồng bộ role với backend
     const syncRole = async () => {
       try {
-        await api.post("/api/users/sync-role", {
+        await api.post("/api/users/sync-role", {      //Lỗi
           userId: user.id,
           role: userRole || "user" // Mặc định là "user" nếu không có role
         });
@@ -61,7 +61,7 @@ export default function DashboardPage() {
       setIsLoading(true);
       try {
         // Fetch user content
-        const userData = await api.get("/role/user");
+        const userData = await api.get("/role/user");    //Loi
         setUserContent(userData.message); // Access the message property
 
       } catch (error: any) {

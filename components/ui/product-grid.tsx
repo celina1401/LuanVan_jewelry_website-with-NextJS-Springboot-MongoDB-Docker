@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import Image from "next/image"
-import Link from "next/link"
 import { Button } from "./button"
 import { Card, CardContent, CardFooter, CardHeader } from "./card"
 import { Badge } from "./badge"
 import { useCart } from "../../contexts/cart-context"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 // Mock data - In real app, this would come from an API
 const products = [
@@ -65,6 +66,8 @@ interface ProductGridProps {
 
 export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) {
   const { addItem } = useCart()
+  const router = useRouter();
+  const { toast } = useToast();
   const filteredProducts = React.useMemo(() => {
     return products
       .filter((product) => {
@@ -120,7 +123,11 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {filteredProducts.map((product) => (
-        <Card key={product.id} className="overflow-hidden group">
+        <Card
+          key={product.id}
+          className="overflow-hidden group cursor-pointer hover:shadow-lg transition"
+          onClick={() => router.push(`/products/${product.id}`)}
+        >
           <CardHeader className="p-0">
             <div className="relative aspect-square">
               <Image
@@ -172,12 +179,19 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
           <CardFooter className="p-4 pt-0">
             <Button 
               className="w-full"
-              onClick={() => addItem({
-                id: product.id.toString(),
-                name: product.name,
-                price: product.price,
-                image: product.image
-              })}
+              onClick={(e) => {
+                e.stopPropagation();
+                addItem({
+                  id: product.id.toString(),
+                  name: product.name,
+                  price: product.price,
+                  image: product.image
+                });
+                toast({
+                  title: "Đã thêm vào giỏ hàng!",
+                  description: product.name,
+                });
+              }}
             >
               Add to Cart
             </Button>
