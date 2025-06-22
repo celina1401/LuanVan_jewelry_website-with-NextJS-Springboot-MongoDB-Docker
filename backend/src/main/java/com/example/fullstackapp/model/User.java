@@ -9,6 +9,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -27,6 +28,10 @@ import jakarta.annotation.Nullable;
 public class User {
     @Id
     private String id;
+
+    @Field("userId")
+    @Indexed(unique = true)
+    private String userId;
 
     @Size(max = 50)
     @Nullable
@@ -75,8 +80,8 @@ public class User {
     // Getters và setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-    public String getUserId() { return id; }
-    public void setUserId(String userId) { this.id = userId; }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getUsername() { return username; }

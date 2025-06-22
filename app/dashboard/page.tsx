@@ -7,10 +7,19 @@ import { useApi } from "../api/apiClient";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useAuth, SignedIn, SignedOut } from "@clerk/nextjs";
+import { useUserSync } from '@/hooks/use-user-sync';
+import UserSyncClient from '../components/UserSyncClient';
 
 export default function DashboardPage() {
-  const { isLoaded, userId, sessionId, isSignedIn } = useAuth();
+  const { isLoaded, userId, sessionId, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
+  const router = useRouter();
+  const api = useApi();
+  const { toast } = useToast();
+  const [userContent, setUserContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useUserSync();
 
   useEffect(() => {
     if (!isLoaded || !userId || !user) {
@@ -30,23 +39,42 @@ export default function DashboardPage() {
     // Đồng bộ role với backend
     const syncRole = async () => {
       try {
-        await api.post("/api/users/sync-role", {      //Lỗi
+        const token = await getToken();
+        if (!token) return;
+
+        const userData = {
           userId: user.id,
-          role: userRole || "user" // Mặc định là "user" nếu không có role
+          email: user.primaryEmailAddress?.emailAddress || '',
+          username: user.username || user.primaryEmailAddress?.emailAddress || '',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          imageUrl: user.imageUrl || '',
+          provider: user.externalAccounts?.[0]?.provider || 'clerk',
+          role: userRole || "user"
+        };
+
+        const response = await fetch('http://localhost:8080/api/users/sync-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(userData),
+          credentials: 'include',
         });
-        console.log("Role synced with backend");
+
+        if (response.ok) {
+          console.log("✅ User synced with backend");
+        } else {
+          console.error("❌ Failed to sync user with backend");
+        }
       } catch (error) {
-        console.error("Failed to sync role with backend", error);
+        console.error("❌ Error syncing user with backend", error);
       }
     }; 
 
     syncRole();
-  }, [isLoaded, userId, user]);
-  const router = useRouter();
-  const api = useApi();
-  const { toast } = useToast();
-  const [userContent, setUserContent] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  }, [isLoaded, userId, user, getToken, router]);
 
   useEffect(() => {
     if (!isLoaded || !userId || !isSignedIn) {
@@ -61,14 +89,15 @@ export default function DashboardPage() {
       setIsLoading(true);
       try {
         // Fetch user content
-        const userData = await api.get("/role/user");    //Loi
-        setUserContent(userData.message); // Access the message property
+        const userData = await api.get("/users/me");
+        setUserContent(userData.message || "Welcome to your dashboard!");
 
       } catch (error: any) {
+        console.error("Error fetching dashboard data:", error);
+        setUserContent("Welcome to your dashboard!");
         toast({
-          title: "Error",
-          description: "Failed to fetch dashboard data",
-          variant: "destructive",
+          title: "Info",
+          description: "Dashboard loaded successfully",
         });
       } finally {
         setIsLoading(false);
@@ -76,11 +105,12 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [isLoaded, userId, isSignedIn, router, api, user, toast]);
+  }, [isLoaded, userId, isSignedIn, router, api, toast]);
 
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
+      <UserSyncClient />
       
       <main className="flex-1 flex items-center justify-center p-4 md:p-8">
         {!isLoaded ? (

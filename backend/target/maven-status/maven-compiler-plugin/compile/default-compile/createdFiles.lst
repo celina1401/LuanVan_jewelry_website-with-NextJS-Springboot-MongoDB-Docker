@@ -2,6 +2,7 @@ com\example\fullstackapp\controller\AdminController.class
 com\example\fullstackapp\security\JwtTokenProvider.class
 com\example\fullstackapp\model\User$UserBuilder.class
 com\example\fullstackapp\security\UserDetailsServiceImpl.class
+com\example\fullstackapp\payload\response\UserResponse.class
 com\example\fullstackapp\security\JwtAuthenticationEntryPoint.class
 com\example\fullstackapp\FullstackApplication.class
 com\example\fullstackapp\model\ClerkProperties.class
@@ -14,5 +15,6 @@ com\example\fullstackapp\controller\ApiController.class
 com\example\fullstackapp\security\JwtAuthenticationFilter.class
 com\example\fullstackapp\repository\UserRepository.class
 com\example\fullstackapp\config\SecurityConfig.class
+com\example\fullstackapp\payload\request\UserSyncRequest.class
 com\example\fullstackapp\security\CustomAccessDeniedHandler.class
 com\example\fullstackapp\model\User.class

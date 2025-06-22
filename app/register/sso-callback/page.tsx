@@ -14,13 +14,9 @@ export default function SSOCallback() {
   useEffect(() => {
     const processSSOCallback = async () => {
       try {
-        await handleRedirectCallback({
-          redirectUrl: '/',
-          afterSignInUrl: '/',
-          afterSignUpUrl: '/',
-        });
+        await handleRedirectCallback({});
       } catch (error) {
-        console.error('Error processing SSO callback:', error);
+        console.error('SSO_CALLBACK_ERROR:', error);
         router.push('/register?error=sso_failed');
       }
     };
@@ -33,16 +29,19 @@ export default function SSOCallback() {
     if (!isLoaded || !isSignedIn || !user || !userLoaded) return;
 
     const syncUserWithBackend = async () => {
+      console.log('SYNC_REGISTER: Starting user sync...');
       try {
         const token = await getToken();
-        if (!token) throw new Error('No authentication token available');
+        if (!token) {
+          console.error('SYNC_REGISTER: No token available.');
+          return;
+        }
 
-        let role = user.publicMetadata?.role;
+        let role = user.publicMetadata?.role || 'user';
 
-        // Gán role nếu chưa có
-        if (!role) {
-          role = 'user';
-          const res = await fetch('http://localhost:3000/api/set-role', {
+        if (!user.publicMetadata?.role) {
+          console.log('SYNC_REGISTER: User has no role, setting default "user" role in Clerk...');
+          await fetch('/api/set-role', { // Sử dụng relative path
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -50,17 +49,8 @@ export default function SSOCallback() {
             },
             body: JSON.stringify({ userId: user.id, role }),
           });
-
-          if (!res.ok) {
-            const err = await res.text();
-            throw new Error(`Failed to set role: ${err}`);
-          }
-
-          const data = await res.json();
-          console.log('✅ Set role response:', data);
         }
 
-        // Gửi dữ liệu đồng bộ backend (Spring Boot + MongoDB)
         const userData = {
           userId: user.id,
           email: user.primaryEmailAddress?.emailAddress || '',
@@ -72,6 +62,8 @@ export default function SSOCallback() {
           role,
         };
 
+        console.log('SYNC_REGISTER: Sending data to backend:', userData);
+
         const response = await fetch('http://localhost:8080/api/users/sync-role', {
           method: 'POST',
           headers: {
@@ -82,19 +74,18 @@ export default function SSOCallback() {
           credentials: 'include',
         });
 
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`❌ Failed to sync user data: ${errorData}`);
+        if (response.ok) {
+          const syncedUser = await response.json();
+          console.log('✅ SYNC_REGISTER: User synced successfully:', syncedUser);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ SYNC_REGISTER: Failed to sync user. Status: ${response.status}`, errorText);
         }
-
-        const syncedUser = await response.json();
-        console.log('✅ User synced to backend:', syncedUser);
-
-        router.push('/');
-
       } catch (error) {
-        console.error('❌ Error syncing user data:', error);
-        router.push('/register?error=sync_failed');
+        console.error('❌ SYNC_REGISTER: An exception occurred during fetch:', error);
+      } finally {
+        console.log('SYNC_REGISTER: Redirecting to dashboard...');
+        router.push('/dashboard');
       }
     };
 

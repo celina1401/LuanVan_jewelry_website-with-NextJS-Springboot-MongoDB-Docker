@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Providers } from './providers';
 import { ClerkProvider } from '@clerk/nextjs';
 import { RedirectAdmin } from './components/RedirectAdmin';
+import UserSyncClient from './components/UserSyncClient';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,14 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider
       publishableKey={clerkPublishableKey ?? ''}
-      signInUrl="/login"
-      signUpUrl="/register"
-      afterSignInUrl="/dashboard"
-      afterSignUpUrl="/dashboard"
     >
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className} suppressHydrationWarning>
           <RedirectAdmin/>
+          <UserSyncClient />
           <Providers>
             <ThemeProvider
               attribute="class"

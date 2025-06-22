@@ -19,6 +19,9 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <SignIn 
+              routing="path"
+              path="/login"
+              fallbackRedirectUrl="/login/sso-callback"
               appearance={{
                 elements: {
                   formButtonPrimary: 

@@ -82,79 +82,89 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Persist or update User in DB
                 Optional<User> opt = userRepository.findById(clerkUserId);
-                User currentUser;
-                if (opt.isEmpty()) {
-                    // Determine username if absent
-                    if (!StringUtils.hasText(username)) {
-                        if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
-                            username = firstName.toLowerCase() + "." + lastName.toLowerCase();
-                        } else if (StringUtils.hasText(email)) {
-                            username = email.split("@")[0];
-                        } else {
-                            username = clerkUserId;
-                        }
-                    }
-                    currentUser = User.builder()
-                            .id(clerkUserId)
-                            .username(username)
-                            .email(email)
-                            .roles(Set.of("ROLE_" + role.toUpperCase()))
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
-                            .provider(provider)
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .imageUrl(imageUrl)
-                            .build();
-                    currentUser = userRepository.save(currentUser);
-                    log.info("New user saved: {}", currentUser.getUsername());
-                } else {
-                    // Update existing user's info/roles if changed
-                    currentUser = opt.get();
-                    boolean updated = false;
+                // // 
+                // User currentUser;
+                // if (opt.isEmpty()) {
+                //     // Determine username if absent
+                //     if (!StringUtils.hasText(username)) {
+                //         if (StringUtils.hasText(firstName) && StringUtils.hasText(lastName)) {
+                //             username = firstName.toLowerCase() + "." + lastName.toLowerCase();
+                //         } else if (StringUtils.hasText(email)) {
+                //             username = email.split("@")[0];
+                //         } else {
+                //             username = clerkUserId;
+                //         }
+                //     }
+                //     currentUser = User.builder()
+                //             .id(clerkUserId)
+                //             .username(username)
+                //             .email(email)
+                //             .roles(Set.of("ROLE_" + role.toUpperCase()))
+                //             .createdAt(LocalDateTime.now())
+                //             .updatedAt(LocalDateTime.now())
+                //             .provider(provider)
+                //             .firstName(firstName)
+                //             .lastName(lastName)
+                //             .imageUrl(imageUrl)
+                //             .build();
+                //     currentUser = userRepository.save(currentUser);
+                //     log.info("New user saved: {}", currentUser.getUsername());
+                // } else {
+                //     // Update existing user's info/roles if changed
+                //     currentUser = opt.get();
+                //     boolean updated = false;
 
-                    if (StringUtils.hasText(email) && !email.equals(currentUser.getEmail())) {
-                        currentUser.setEmail(email);
-                        updated = true;
-                    }
-                    if (StringUtils.hasText(username) && !username.equals(currentUser.getUsername())) {
-                        currentUser.setUsername(username);
-                        updated = true;
-                    }
-                    if (StringUtils.hasText(provider) && !provider.equals(currentUser.getProvider())) {
-                        currentUser.setProvider(provider);
-                        updated = true;
-                    }
-                    if (StringUtils.hasText(firstName) && !firstName.equals(currentUser.getFirstName())) {
-                        currentUser.setFirstName(firstName);
-                        updated = true;
-                    }
-                    if (StringUtils.hasText(lastName) && !lastName.equals(currentUser.getLastName())) {
-                        currentUser.setLastName(lastName);
-                        updated = true;
-                    }
-                    if (StringUtils.hasText(imageUrl) && !imageUrl.equals(currentUser.getImageUrl())) {
-                        currentUser.setImageUrl(imageUrl);
-                        updated = true;
-                    }
-                    Set<String> newRoles = Set.of("ROLE_" + role.toUpperCase());
-                    if (!currentUser.getRoles().equals(newRoles)) {
-                        currentUser.setRoles(newRoles);
-                        updated = true;
-                    }
-                    if (updated) {
-                        currentUser.setUpdatedAt(LocalDateTime.now());
-                        currentUser = userRepository.save(currentUser);
-                        log.info("User updated: {}", currentUser.getUsername());
-                    }
+                //     if (StringUtils.hasText(email) && !email.equals(currentUser.getEmail())) {
+                //         currentUser.setEmail(email);
+                //         updated = true;
+                //     }
+                //     if (StringUtils.hasText(username) && !username.equals(currentUser.getUsername())) {
+                //         currentUser.setUsername(username);
+                //         updated = true;
+                //     }
+                //     if (StringUtils.hasText(provider) && !provider.equals(currentUser.getProvider())) {
+                //         currentUser.setProvider(provider);
+                //         updated = true;
+                //     }
+                //     if (StringUtils.hasText(firstName) && !firstName.equals(currentUser.getFirstName())) {
+                //         currentUser.setFirstName(firstName);
+                //         updated = true;
+                //     }
+                //     if (StringUtils.hasText(lastName) && !lastName.equals(currentUser.getLastName())) {
+                //         currentUser.setLastName(lastName);
+                //         updated = true;
+                //     }
+                //     if (StringUtils.hasText(imageUrl) && !imageUrl.equals(currentUser.getImageUrl())) {
+                //         currentUser.setImageUrl(imageUrl);
+                //         updated = true;
+                //     }
+                //     Set<String> newRoles = Set.of("ROLE_" + role.toUpperCase());
+                //     if (!currentUser.getRoles().equals(newRoles)) {
+                //         currentUser.setRoles(newRoles);
+                //         updated = true;
+                //     }
+                //     if (updated) {
+                //         currentUser.setUpdatedAt(LocalDateTime.now());
+                //         currentUser = userRepository.save(currentUser);
+                //         log.info("User updated: {}", currentUser.getUsername());
+                //     }
+                // }
+
+                // // Build Authentication and set in context
+                // UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getId());
+                // UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                //         userDetails, null, userDetails.getAuthorities());
+                // auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                // SecurityContextHolder.getContext().setAuthentication(auth);
+                User currentUser = opt.orElse(null);
+                // Build Authentication and set in context nếu user đã tồn tại
+                if (currentUser != null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getId());
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
                 }
-
-                // Build Authentication and set in context
-                UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getId());
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
             }
         } catch (Exception ex) {
             log.error("Cannot set user authentication: {}", ex.getMessage());

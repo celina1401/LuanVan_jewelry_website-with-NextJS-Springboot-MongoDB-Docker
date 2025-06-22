@@ -1,11 +1,13 @@
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\controller\AdminController.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\security\CustomAccessDeniedHandler.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\security\JwtAuthenticationEntryPoint.java
+D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\payload\response\UserResponse.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\security\UserDetailsImpl.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\payload\response\MessageResponse.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\controller\UserController.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\security\JwtTokenProvider.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\config\SecurityConfig.java
+D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\payload\request\UserSyncRequest.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\model\User.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\security\JwtAuthenticationFilter.java
 D:\.Mon_hoc\LV_TotNghiep\LuanVan_1\project\backend\src\main\java\com\example\fullstackapp\model\ClerkProperties.java
