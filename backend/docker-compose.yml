@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  discoveryserver:
+    build:
+      context: ./discoveryserver     
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - microservice-networks
+
+  apigateway:
+    build:
+      context: ./apigateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discoveryserver
+    networks:
+      - microservice-networks
+
+  notificationservice:
+    build:
+      context: ./notificationservice
+    ports:
+      - "9002:9002"
+    depends_on:
+      - discoveryserver
+    networks:
+      - microservice-networks
+
+  orderservice:
+    build:
+      context: ./orderservice
+    ports:
+      - "9003:9003"
+    depends_on:
+      - discoveryserver
+    networks:
+      - microservice-networks
+
+  productservice:
+    build:
+      context: ./productservice
+    ports:
+      - "9004:9004"
+    depends_on:
+      - discoveryserver
+    networks:
+      - microservice-networks
+
+  userservice:
+    build:
+      context: ./userservice
+    ports:
+      - "9001:9001"
+    depends_on:
+      - discoveryserver
+    networks:
+      - microservice-networks
+
+networks:
+  microservice-networks:
+    driver: bridge
