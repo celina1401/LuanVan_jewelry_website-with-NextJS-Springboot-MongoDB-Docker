@@ -17,6 +17,7 @@ import { useCart } from "@/contexts/cart-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useUser, SignedIn } from "@clerk/nextjs";
 import { AuthActions } from "@/app/components/AuthActions";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   // Cart state
@@ -28,6 +29,9 @@ export function Navbar() {
   const role = isLoaded
     ? (user?.publicMetadata?.role as string | undefined)
     : undefined;
+
+  // Lấy pathname hiện tại
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,35 +46,35 @@ export function Navbar() {
           {role === "admin" ? (
             /* Admin navigation */
             <>
-              <Link href="/admin/reports" className="text-sm font-medium hover:underline">
+              <Link href="/admin/reports" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/reports") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 Reports
               </Link>
-              <Link href="/admin/inventory" className="text-sm font-medium hover:underline">
+              <Link href="/admin/inventory" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/inventory") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 Inventory
               </Link>
-              <Link href="/admin/products" className="text-sm font-medium hover:underline">
+              <Link href="/admin/products" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/products") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 Manage Products
               </Link>
-              <Link href="/admin/users" className="text-sm font-medium hover:underline">
+              <Link href="/admin/users" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/users") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 User Management
               </Link>
             </>
           ) : (
             /* Customer navigation */
             <>
-              <Link href="/products" className="text-sm font-medium hover:underline">
+              <Link href="/products" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/products") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 Products
               </Link>
-              <Link href="/about" className="text-sm font-medium hover:underline">
+              <Link href="/about" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/about") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 About
               </Link>
-              <Link href="/contact" className="text-sm font-medium hover:underline">
+              <Link href="/contact" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/contact") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 Contact
               </Link>
               <SignedIn>
                 <Link
                   href="/dashboard"
-                  className="text-sm font-medium hover:underline"
+                  className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/dashboard") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                 >
                   Dashboard
                 </Link>

@@ -5,9 +5,11 @@ import Image from "next/image"
 import { Button } from "./button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./card"
 import { useCart } from "../../contexts/cart-context"
+import { useRouter } from "next/navigation"
 
 export function Cart() {
   const { items, removeItem, updateQuantity, total } = useCart()
+  const router = useRouter()
 
   if (items.length === 0) {
     return (
@@ -95,7 +97,7 @@ export function Cart() {
           <span>Total:</span>
           <span>${total.toLocaleString()}</span>
         </div>
-        <Button className="w-full">Checkout</Button>
+        <Button className="w-full" onClick={() => router.push("/order")}>Checkout</Button>
       </CardFooter>
     </Card>
   )

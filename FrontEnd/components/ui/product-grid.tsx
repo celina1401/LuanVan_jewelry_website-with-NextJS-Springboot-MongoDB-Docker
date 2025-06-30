@@ -64,12 +64,38 @@ interface ProductGridProps {
   sortBy: string
 }
 
+// Hook quản lý danh sách sản phẩm yêu thích trong localStorage
+function useFavorites() {
+  const [favorites, setFavorites] = React.useState<number[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(localStorage.getItem('favorites') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = (id: number) => {
+    setFavorites(favs => favs.includes(id) ? favs.filter(f => f !== id) : [...favs, id]);
+  };
+
+  const isFavorite = (id: number) => favorites.includes(id);
+
+  return { favorites, toggleFavorite, isFavorite };
+}
+
 export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) {
   const { addItem } = useCart()
   const router = useRouter();
   const { toast } = useToast();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+
   const filteredProducts = React.useMemo(() => {
-    return products
+    let filtered = products
       .filter((product) => {
         // Filter by category
         if (category !== "All" && product.category !== category) {
@@ -107,7 +133,11 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
             return b.reviews - a.reviews
         }
       })
-  }, [category, priceRange, sortBy])
+    if (sortBy === "favorite") {
+      filtered = filtered.filter(product => favorites.includes(product.id));
+    }
+    return filtered;
+  }, [category, priceRange, sortBy, favorites])
 
   if (filteredProducts.length === 0) {
     return (
@@ -144,6 +174,16 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
                   New
                 </Badge>
               )}
+              {/* Icon tim yêu thích */}
+              <button
+                className={`absolute bottom-2 right-2 text-xl z-10 transition-colors ${isFavorite(product.id) ? "text-rose-500" : "text-gray-300 hover:text-rose-400"}`}
+                onClick={e => { e.stopPropagation(); toggleFavorite(product.id); }}
+                title={isFavorite(product.id) ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+              </button>
             </div>
           </CardHeader>
           <CardContent className="p-4">

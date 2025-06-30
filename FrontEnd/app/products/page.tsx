@@ -27,7 +27,8 @@ const sortOptions = [
   { label: "Most Popular", value: "popular" },
   { label: "Newest", value: "newest" },
   { label: "Price: Low to High", value: "price-asc" },
-  { label: "Price: High to Low", value: "price-desc" }
+  { label: "Price: High to Low", value: "price-desc" },
+  { label: "Favorite", value: "favorite" },
 ]
 
 export default function ProductsPage() {

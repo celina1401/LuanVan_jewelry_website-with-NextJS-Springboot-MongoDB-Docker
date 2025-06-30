@@ -7,6 +7,8 @@ import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
 import { FaRegHeart, FaTruck, FaSyncAlt, FaShieldAlt, FaComments } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
+import { useFavorites } from "@/hooks/use-favorites";
 
 type Product = {
   id: number;
@@ -125,11 +127,11 @@ function CommentForm({ onSubmit }: { onSubmit: (data: { content: string; images:
         value={content}
         onChange={e => setContent(e.target.value)}
         placeholder="Nhập bình luận..."
-        className="w-full border rounded p-2"
+        className="w-full border rounded p-2 bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
         required
       />
-      <input type="file" multiple accept="image/*" onChange={handleImageChange} />
-      <button type="submit" className="mt-2 px-4 py-2 bg-blue-500 text-white rounded">Gửi</button>
+      <input type="file" multiple accept="image/*" onChange={handleImageChange} className="mt-2 dark:text-gray-100" />
+      <button type="submit" className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">Gửi</button>
     </form>
   );
 }
@@ -138,16 +140,16 @@ function CommentList({ comments }: { comments: Comment[] }) {
   return (
     <div>
       {comments.map((cmt) => (
-        <div key={cmt.id} className="border-b py-2">
+        <div key={cmt.id} className="border-b py-2 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <img src={cmt.avatar} alt="" className="w-8 h-8 rounded-full" />
-            <span className="font-semibold">{cmt.user}</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{cmt.user}</span>
             <span className="text-xs text-gray-400">{new Date(cmt.createdAt).toLocaleString()}</span>
           </div>
-          <p>{cmt.content}</p>
+          <p className="text-gray-900 dark:text-gray-100">{cmt.content}</p>
           <div className="flex gap-2 mt-1">
             {cmt.images.map((img) => (
-              <img key={img} src={img} alt="" className="w-16 h-16 object-cover rounded" />
+              <img key={img} src={img} alt="" className="w-16 h-16 object-cover rounded border dark:border-gray-700" />
             ))}
           </div>
         </div>
@@ -157,6 +159,8 @@ function CommentList({ comments }: { comments: Comment[] }) {
 }
 
 export default function ProductDetailPage() {
+  const { theme } = useTheme();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const params = useParams<{ productId: string }>();
   const productId = params.productId;
   const product = mockProducts.find((p) => p.id.toString() === productId);
@@ -186,11 +190,11 @@ export default function ProductDetailPage() {
 
   const buyNow = (product: Product) => {
     addToCart(product);
-    router.push("/cart");
+    router.push("/order");
   };
 
   const goToCheckout = () => {
-    router.push("/cart");
+    router.push("/order");
   };
 
   const handleCommentSubmit = ({ content, images }: { content: string; images: File[] }) => {
@@ -206,7 +210,7 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       <Navbar />
       <div className="max-w-6xl mx-auto py-10 px-4">
         <div className="flex flex-col md:flex-row gap-10 items-start">
@@ -234,13 +238,18 @@ export default function ProductDetailPage() {
             </div>
           </div>
           {/* Thông tin sản phẩm */}
-          <div className="flex-1 flex flex-col gap-4 bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex-1 flex flex-col gap-4 bg-white dark:bg-[#18181b] rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-3xl font-extrabold text-gray-900">{product.name}</h1>
-              <button className="text-gray-400 hover:text-red-500 text-2xl"><FaRegHeart /></button>
+              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">{product.name}</h1>
+              <button
+                className={`text-2xl transition-colors ${isFavorite(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                onClick={() => toggleFavorite(product.id)}
+              >
+                <FaRegHeart />
+              </button>
             </div>
-            <p className="mb-1 text-lg text-gray-700 font-medium">{product.description}</p>
-            <p className="mb-1 text-sm text-gray-500">Mã sản phẩm: <span className="font-semibold">{product.code}</span></p>
+            <p className="mb-1 text-lg text-gray-700 dark:text-gray-300 font-medium">{product.description}</p>
+            <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">Mã sản phẩm: <span className="font-semibold">{product.code}</span></p>
             <p className="mb-2 text-3xl font-extrabold text-rose-500">{product.price.toLocaleString()}₫</p>
             {/* Chọn màu */}
             {product.colors && (
@@ -248,7 +257,7 @@ export default function ProductDetailPage() {
                 {product.colors.map((color) => (
                   <button
                     key={color}
-                    className={`w-7 h-7 rounded-full border-2 ${selectedColor === color ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-300"}`}
+                    className={`w-7 h-7 rounded-full border-2 ${selectedColor === color ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-300 dark:border-gray-700"}`}
                     style={{ background: color }}
                     onClick={() => setSelectedColor(color)}
                   />
@@ -259,7 +268,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2 mb-2">
               <span className="font-medium">Số lượng:</span>
               <button
-                className="w-8 h-8 rounded bg-gray-200 text-lg font-bold"
+                className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold"
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
               >-</button>
               <input
@@ -267,10 +276,10 @@ export default function ProductDetailPage() {
                 min={1}
                 value={quantity}
                 onChange={e => setQuantity(Math.max(1, Number(e.target.value)))}
-                className="w-12 text-center border rounded"
+                className="w-12 text-center border rounded dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
               />
               <button
-                className="w-8 h-8 rounded bg-gray-200 text-lg font-bold"
+                className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold"
                 onClick={() => setQuantity(q => q + 1)}
               >+</button>
               <span className="ml-2 text-sm text-gray-500">{product.stock === 0 ? "Hết hàng" : null}</span>
@@ -285,7 +294,7 @@ export default function ProductDetailPage() {
                 ĐẶT MỚI
               </button>
               <button
-                className="px-8 py-3 bg-white border-2 border-rose-400 text-rose-500 rounded-full font-bold text-lg shadow hover:bg-rose-50 transition flex items-center gap-2"
+                className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2"
                 onClick={() => addToCart(product)}
                 disabled={product.stock === 0}
               >
@@ -303,17 +312,17 @@ export default function ProductDetailPage() {
             </div>
             {/* Trả góp */}
             <div className="flex gap-4 mt-4">
-              <div className="flex-1 bg-gray-100 rounded-lg p-3 text-center">
-                <div className="font-semibold">Trả góp 3 tháng</div>
-                <div className="text-sm text-gray-500">(Chỉ từ {(product.price/3).toLocaleString()}₫/tháng)</div>
+              <div className="flex-1 bg-gray-100 dark:bg-[#23272f] rounded-lg p-3 text-center">
+                <div className="font-semibold text-gray-900 dark:text-gray-100">Trả góp 3 tháng</div>
+                <div className="text-sm text-gray-500 dark:text-gray-300">(Chỉ từ {(product.price/3).toLocaleString()}₫/tháng)</div>
               </div>
-              <div className="flex-1 bg-gray-100 rounded-lg p-3 text-center">
-                <div className="font-semibold">Trả góp 6 tháng</div>
-                <div className="text-sm text-gray-500">(Chỉ từ {(product.price/6).toLocaleString()}₫/tháng)</div>
+              <div className="flex-1 bg-gray-100 dark:bg-[#23272f] rounded-lg p-3 text-center">
+                <div className="font-semibold text-gray-900 dark:text-gray-100">Trả góp 6 tháng</div>
+                <div className="text-sm text-gray-500 dark:text-gray-300">(Chỉ từ {(product.price/6).toLocaleString()}₫/tháng)</div>
               </div>
             </div>
             {/* Tiện ích */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-center text-sm text-gray-600">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-center text-sm text-gray-600 dark:text-gray-300">
               <div className="flex flex-col items-center gap-1"><FaSyncAlt className="text-2xl" /> Đổi miễn phí trong 72 giờ</div>
               <div className="flex flex-col items-center gap-1"><FaTruck className="text-2xl" /> Miễn phí giao hàng toàn quốc</div>
               <div className="flex flex-col items-center gap-1"><FaShieldAlt className="text-2xl" /> Bảo hành trọn đời</div>
@@ -322,8 +331,8 @@ export default function ProductDetailPage() {
           </div>
         </div>
         {/* Bình luận */}
-        <div className="mt-12 bg-white rounded-xl shadow p-6">
-          <h2 className="text-2xl font-bold mb-4">Bình luận</h2>
+        <div className="mt-12 bg-white dark:bg-[#18181b] rounded-xl shadow p-6">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Bình luận</h2>
           <CommentForm onSubmit={handleCommentSubmit} />
           <CommentList comments={comments} />
         </div>
