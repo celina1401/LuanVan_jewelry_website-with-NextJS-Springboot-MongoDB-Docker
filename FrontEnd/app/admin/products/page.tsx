@@ -1,17 +1,17 @@
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Product Management | Admin Dashboard",
-  description: "Manage product catalog and details",
+  title: "Quản lý sản phẩm | Quản trị viên",
+  description: "Quản lý danh mục và chi tiết sản phẩm",
 }
 
 export default function ProductsPage() {
   return (
     <div className="container py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Product Management</h1>
+        <h1 className="text-3xl font-bold">Quản lý sản phẩm</h1>
         <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
-          Add New Product
+          Thêm sản phẩm mới
         </button>
       </div>
 
@@ -20,20 +20,20 @@ export default function ProductsPage() {
         <div className="flex gap-4 p-4 border rounded-lg">
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Tìm kiếm sản phẩm..."
             className="flex-1 px-3 py-2 border rounded-md"
           />
           <select className="px-3 py-2 border rounded-md">
-            <option value="">All Categories</option>
-            <option value="rings">Rings</option>
-            <option value="necklaces">Necklaces</option>
-            <option value="earrings">Earrings</option>
+            <option value="">Tất cả loại</option>
+            <option value="rings">Nhẫn</option>
+            <option value="necklaces">Dây chuyền</option>
+            <option value="earrings">Bông tai</option>
           </select>
           <select className="px-3 py-2 border rounded-md">
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang bán</option>
+            <option value="draft">Nháp</option>
+            <option value="archived">Lưu trữ</option>
           </select>
         </div>
 
@@ -42,15 +42,15 @@ export default function ProductsPage() {
           <div className="p-4">
             <div className="grid grid-cols-6 gap-4 font-medium border-b pb-2">
               <div>Product</div>
-              <div>Price</div>
-              <div>Category</div>
-              <div>Stock</div>
-              <div>Status</div>
-              <div>Actions</div>
+              <div>Giá</div>
+              <div>Loại</div>
+              <div>Tồn kho</div>
+              <div>Trạng thái</div>
+              <div>Thao tác</div>
             </div>
             
             <div className="text-center py-8 text-muted-foreground">
-              Products will be displayed here
+              Sản phẩm sẽ được hiển thị tại đây
             </div>
           </div>
         </div>

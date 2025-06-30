@@ -27,24 +27,24 @@ export function UserRoleDisplay() {
     }, [api]);
 
     if (loading) {
-        return <div>Loading user information...</div>;
+        return <div>Đang tải thông tin người dùng...</div>;
     }
 
     if (error) {
-        return <div className="text-red-500">Error: {error}</div>;
+        return <div className="text-red-500">Lỗi: {error}</div>;
     }
 
     if (!userInfo?.authenticated) {
-        return <div>Not authenticated</div>;
+        return <div>Chưa xác thực</div>;
     }
 
     return (
         <div className="p-4 bg-white rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">User Information</h2>
+            <h2 className="text-xl font-semibold mb-4">Thông tin người dùng</h2>
             <div className="space-y-2">
-                <p><span className="font-medium">Username:</span> {userInfo.username}</p>
+                <p><span className="font-medium">Tên đăng nhập:</span> {userInfo.username}</p>
                 <div>
-                    <span className="font-medium">Roles:</span>
+                    <span className="font-medium">Vai trò:</span>
                     <ul className="list-disc list-inside ml-4">
                         {userInfo.roles?.map((role: string, index: number) => (
                             <li key={index} className="text-blue-600">{role}</li>

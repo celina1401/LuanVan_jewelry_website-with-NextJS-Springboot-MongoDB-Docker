@@ -10,11 +10,11 @@ export default function AdminNavbar() {
   const router = useRouter();
 
   const navLinks = [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/reports", label: "Reports" },
-    { href: "/admin/inventory", label: "Inventory" },
-    { href: "/admin/products", label: "Manage Products" },
-    { href: "/admin/users", label: "User Management" },
+    { href: "/admin", label: "Bảng điều khiển" },
+    { href: "/admin/reports", label: "Báo cáo" },
+    { href: "/admin/inventory", label: "Kho hàng" },
+    { href: "/admin/products", label: "Quản lý sản phẩm" },
+    { href: "/admin/users", label: "Quản lý người dùng" },
   ];
 
   return (
@@ -22,7 +22,7 @@ export default function AdminNavbar() {
       <div className="container flex h-16 items-center justify-between">
         {/* Brand */}
         <Link href="/admin" className="font-bold text-2xl tracking-tight text-primary">
-          Admin Dashboard
+          Quản trị viên
         </Link>
         {/* Nav links */}
         <nav className="hidden md:flex gap-6">

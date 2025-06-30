@@ -237,7 +237,7 @@ export function GoldPriceChart() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Gold Price Chart</CardTitle>
+            <CardTitle>Biểu đồ giá vàng</CardTitle>
             <div className="flex items-center gap-2">
               <Select value={timeRange} onValueChange={setTimeRange}>
                 <SelectTrigger className="w-[150px]">
@@ -337,11 +337,11 @@ export function GoldPriceChart() {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">24h High</p>
+              <p className="text-sm text-muted-foreground">Cao nhất 24h</p>
               <p className="text-lg font-semibold">${currentPrice + 20}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">24h Low</p>
+              <p className="text-sm text-muted-foreground">Thấp nhất 24h</p>
               <p className="text-lg font-semibold">${currentPrice - 20}</p>
             </div>
           </div>
@@ -351,10 +351,10 @@ export function GoldPriceChart() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Gold Price Table</CardTitle>
+            <CardTitle>Bảng giá vàng</CardTitle>
             <div className="flex items-center gap-2">
               <Input
-                placeholder="Search by type..."
+                placeholder="Tìm theo loại..."
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 className="w-[200px]"
@@ -370,9 +370,9 @@ export function GoldPriceChart() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Buy</TableHead>
-                  <TableHead className="text-right">Sell</TableHead>
+                  <TableHead>Loại</TableHead>
+                  <TableHead className="text-right">Mua vào</TableHead>
+                  <TableHead className="text-right">Bán ra</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -387,8 +387,8 @@ export function GoldPriceChart() {
             </Table>
           </div>
           <div className="mt-4 text-sm text-muted-foreground">
-            <p>Last updated: {lastUpdated}</p>
-            <p className="mt-1">Prices are in USD per ounce</p>
+            <p>Cập nhật lần cuối: {lastUpdated}</p>
+            <p className="mt-1">Giá tính theo USD/ounce</p>
           </div>
         </CardContent>
       </Card>

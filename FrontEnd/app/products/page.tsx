@@ -7,28 +7,28 @@ import { ProductFilters } from "../../components/ui/product-filters"
 import { ProductSort } from "../../components/ui/product-sort"
 
 const categories = [
-  "All",
-  "Rings",
-  "Necklaces",
-  "Earrings",
-  "Bracelets",
-  "Watches"
+  "Tất cả",
+  "Nhẫn",
+  "Dây chuyền",
+  "Bông tai",
+  "Vòng tay",
+  "Đồng hồ"
 ]
 
 const priceRanges = [
-  { label: "All Prices", value: "all" },
-  { label: "Under $1,000", value: "0-1000" },
-  { label: "$1,000 - $2,000", value: "1000-2000" },
-  { label: "$2,000 - $5,000", value: "2000-5000" },
-  { label: "Over $5,000", value: "5000+" }
+  { label: "Tất cả mức giá", value: "all" },
+  { label: "Dưới 1.000.000₫", value: "0-1000" },
+  { label: "1.000.000₫ - 2.000.000₫", value: "1000-2000" },
+  { label: "2.000.000₫ - 5.000.000₫", value: "2000-5000" },
+  { label: "Trên 5.000.000₫", value: "5000+" }
 ]
 
 const sortOptions = [
-  { label: "Most Popular", value: "popular" },
-  { label: "Newest", value: "newest" },
-  { label: "Price: Low to High", value: "price-asc" },
-  { label: "Price: High to Low", value: "price-desc" },
-  { label: "Favorite", value: "favorite" },
+  { label: "Phổ biến nhất", value: "popular" },
+  { label: "Mới nhất", value: "newest" },
+  { label: "Giá: Thấp đến Cao", value: "price-asc" },
+  { label: "Giá: Cao đến Thấp", value: "price-desc" },
+  { label: "Yêu thích", value: "favorite" },
 ]
 
 export default function ProductsPage() {
@@ -36,6 +36,7 @@ export default function ProductsPage() {
   const [selectedPriceRange, setSelectedPriceRange] = React.useState("all")
   const [sortBy, setSortBy] = React.useState("popular")
   const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+  const [gender, setGender] = React.useState("all")
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -43,13 +44,13 @@ export default function ProductsPage() {
       <main className="flex-1">
         <div className="container px-4 md:px-6 py-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h1 className="text-3xl font-bold">Our Collection</h1>
+            <h1 className="text-3xl font-bold">Bộ sưu tập của chúng tôi</h1>
             <div className="flex items-center gap-4">
               <button
                 className="md:hidden inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
               >
-                Filters
+                Bộ lọc
               </button>
               <ProductSort
                 options={sortOptions}
@@ -68,6 +69,8 @@ export default function ProductsPage() {
                 selectedPriceRange={selectedPriceRange}
                 onCategoryChange={setSelectedCategory}
                 onPriceRangeChange={setSelectedPriceRange}
+                gender={gender}
+                onGenderChange={setGender}
               />
             </div>
             <div className="md:col-span-3">
@@ -75,6 +78,7 @@ export default function ProductsPage() {
                 category={selectedCategory}
                 priceRange={selectedPriceRange}
                 sortBy={sortBy}
+                gender={gender}
               />
             </div>
           </div>

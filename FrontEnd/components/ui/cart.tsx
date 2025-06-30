@@ -15,10 +15,10 @@ export function Cart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Your Cart</CardTitle>
+          <CardTitle>Giỏ hàng của bạn</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-muted-foreground">Your cart is empty</p>
+          <p className="text-center text-muted-foreground">Giỏ hàng của bạn đang trống</p>
         </CardContent>
       </Card>
     )
@@ -27,7 +27,7 @@ export function Cart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Cart</CardTitle>
+        <CardTitle>Giỏ hàng của bạn</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="max-h-[400px] overflow-y-auto pr-2">
@@ -85,7 +85,7 @@ export function Cart() {
                   size="sm"
                   onClick={() => removeItem(item.id, item.metadata)}
                 >
-                  Remove
+                  Xóa
                 </Button>
               </div>
             ))}
@@ -94,10 +94,10 @@ export function Cart() {
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
         <div className="flex justify-between w-full text-lg font-medium">
-          <span>Total:</span>
+          <span>Tổng cộng:</span>
           <span>${total.toLocaleString()}</span>
         </div>
-        <Button className="w-full" onClick={() => router.push("/order")}>Checkout</Button>
+        <Button className="w-full" onClick={() => router.push("/order")}>Thanh toán</Button>
       </CardFooter>
     </Card>
   )

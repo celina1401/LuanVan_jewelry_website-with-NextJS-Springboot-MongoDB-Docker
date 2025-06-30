@@ -17,7 +17,7 @@ export default function BusinessMap() {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   });
 
-  if (!isLoaded) return <div>Loading map...</div>;
+  if (!isLoaded) return <div>Đang tải bản đồ...</div>;
 
   return (
     <GoogleMap

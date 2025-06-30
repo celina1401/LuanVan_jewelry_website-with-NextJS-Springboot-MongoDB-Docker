@@ -13,52 +13,52 @@ import { Calendar } from "@/components/ui/calendar";
 
 const statCards = [
   {
-    label: "Sales",
+    label: "Doanh số",
     value: "2.382",
     icon: <ShoppingCart className="text-blue-500 bg-blue-100 rounded-full p-1" size={28} />,
     change: "-3.65%",
     changeType: "down",
-    description: "Since last week",
+    description: "So với tuần trước",
   },
   {
-    label: "Earnings",
+    label: "Doanh thu",
     value: "$21.300",
     icon: <DollarSign className="text-indigo-500 bg-indigo-100 rounded-full p-1" size={28} />,
     change: "+6.65%",
     changeType: "up",
-    description: "Since last week",
+    description: "So với tuần trước",
   },
   {
-    label: "Visitors",
+    label: "Khách truy cập",
     value: "14.212",
     icon: <Users className="text-green-500 bg-green-100 rounded-full p-1" size={28} />,
     change: "+5.25%",
     changeType: "up",
-    description: "Since last week",
+    description: "So với tuần trước",
   },
   {
-    label: "Orders",
+    label: "Đơn hàng",
     value: "64",
     icon: <Package className="text-cyan-500 bg-cyan-100 rounded-full p-1" size={28} />,
     change: "-2.25%",
     changeType: "down",
-    description: "Since last week",
+    description: "So với tuần trước",
   },
 ];
 
 const lineData = [
-  { name: "Jan", value: 2000 },
-  { name: "Feb", value: 1500 },
-  { name: "Mar", value: 1600 },
-  { name: "Apr", value: 1700 },
-  { name: "May", value: 1800 },
-  { name: "Jun", value: 1900 },
-  { name: "Jul", value: 2100 },
-  { name: "Aug", value: 2500 },
-  { name: "Sep", value: 3000 },
-  { name: "Oct", value: 3500 },
-  { name: "Nov", value: 3200 },
-  { name: "Dec", value: 3700 },
+  { name: "Th1", value: 2000 },
+  { name: "Th2", value: 1500 },
+  { name: "Th3", value: 1600 },
+  { name: "Th4", value: 1700 },
+  { name: "Th5", value: 1800 },
+  { name: "Th6", value: 1900 },
+  { name: "Th7", value: 2100 },
+  { name: "Th8", value: 2500 },
+  { name: "Th9", value: 3000 },
+  { name: "Th10", value: 3500 },
+  { name: "Th11", value: 3200 },
+  { name: "Th12", value: 3700 },
 ];
 
 const pieData = [
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       <main className="flex-1 p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
           <h2 className="text-3xl font-extrabold text-primary tracking-tight flex items-center gap-2">
-            <span>Dashboard</span>
+            <span>Bảng điều khiển</span>
           </h2>
           {/* <div className="flex gap-2">
             <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">Download Free Version</button>
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
           {/* Line chart */}
           <Card className="shadow border-0">
             <CardHeader>
-              <CardTitle>Recent Movement</CardTitle>
+              <CardTitle>Biến động gần đây</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
           {/* Pie chart */}
           <Card className="shadow border-0">
             <CardHeader>
-              <CardTitle>Browser Usage</CardTitle>
+              <CardTitle>Trình duyệt sử dụng</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center">
               <ResponsiveContainer width="100%" height={260}>
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
           <Card className="shadow border-0">
             <CardHeader className="flex flex-row items-center gap-2">
               <CalendarIcon className="text-indigo-500" />
-              <CardTitle>Calendar</CardTitle>
+              <CardTitle>Lịch</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="w-full flex items-center justify-center">
@@ -157,12 +157,11 @@ export default function AdminDashboard() {
           {/* Real-time map */}
           <Card className="shadow border-0">
             <CardHeader>
-              <CardTitle>Real-Time</CardTitle>
+              <CardTitle>Thời gian thực</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="w-full h-64 flex items-center justify-center text-muted-foreground">
-                {/* Placeholder for real-time map */}
-                <span>Real-time map will be here</span>
+                <span>Bản đồ thời gian thực sẽ hiển thị ở đây</span>
               </div>
             </CardContent>
           </Card>

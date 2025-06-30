@@ -19,7 +19,7 @@ export function ProductSort({ options, value, onValueChange }: ProductSortProps)
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Sort by" />
+        <SelectValue placeholder="Sắp xếp theo" />
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (

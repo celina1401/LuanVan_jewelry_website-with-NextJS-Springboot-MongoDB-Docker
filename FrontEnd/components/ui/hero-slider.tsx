@@ -11,23 +11,23 @@ import Image from "next/image"
 const slides = [
   {
     id: 1,
-    title: "Discover Exquisite Jewellery",
-    subtitle: "Crafted with passion and precision",
+    title: "Khám phá trang sức tinh xảo",
+    subtitle: "Chế tác với đam mê và sự tinh xảo",
     image: "/images/slider/slide1.jpg",
     link: "/slider",
   },
   {
     id: 2,
-    title: "Timeless Elegance",
-    subtitle: "Find your perfect piece",
+    title: "Vẻ đẹp vượt thời gian",
+    subtitle: "Tìm kiếm món trang sức hoàn hảo cho bạn",
     image: "/images/slider/slide2.jpg",
     link: "/slider",
 
   },
   {
     id: 3,
-    title: "Unforgettable Gifts",
-    subtitle: "Browse our curated collections",
+    title: "Món quà khó quên",
+    subtitle: "Khám phá các bộ sưu tập được tuyển chọn",
     image: "/images/slider/slide3.jpg",
     link: "/slider",
 
@@ -131,12 +131,12 @@ export function HeroSlider() {
                   {isLoaded ? (
                     <Link href={userId ? "/products" : "/login"}>
                       <Button size="lg" variant="secondary">
-                        Shop Now
+                        Mua ngay
                       </Button>
                     </Link>
                   ) : (
                     <Button size="lg" variant="secondary" disabled>
-                      Loading...
+                      Đang tải...
                     </Button>
                   )}
                 </div>
@@ -149,7 +149,7 @@ export function HeroSlider() {
           className="absolute top-1/2 left-4 -translate-y-1/2 bg-white/50 rounded-full p-2 z-10 disabled:opacity-50"
           onClick={scrollPrev}
           disabled={!canScrollPrev}
-          aria-label="Previous slide"
+          aria-label="Trang trước"
         >
           <ChevronLeft className="w-6 h-6 text-gray-800" />
         </button>
@@ -157,7 +157,7 @@ export function HeroSlider() {
           className="absolute top-1/2 right-4 -translate-y-1/2 bg-white/50 rounded-full p-2 z-10 disabled:opacity-50"
           onClick={scrollNext}
           disabled={!canScrollNext}
-          aria-label="Next slide"
+          aria-label="Trang sau"
         >
           <ChevronRight className="w-6 h-6 text-gray-800" />
         </button>
@@ -169,7 +169,7 @@ export function HeroSlider() {
               key={index}
               className={`w-3 h-3 rounded-full ${selectedIndex === index ? "bg-white" : "bg-gray-400"}`}
               onClick={() => emblaApi?.scrollTo(index)}
-              aria-label={`Go to slide ${index + 1}`}
+              aria-label={`Đến trang ${index + 1}`}
             />
           ))}
         </div>

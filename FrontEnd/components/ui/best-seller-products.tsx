@@ -15,41 +15,41 @@ import { useAuth } from "@clerk/nextjs"
 const bestSellerProducts = [
   {
     id: 1,
-    name: "Diamond Engagement Ring",
-    description: "Classic solitaire diamond ring with 1 carat center stone",
+    name: "Nhẫn đính hôn kim cương",
+    description: "Nhẫn kim cương solitaire cổ điển với viên chủ 1 carat",
     price: 4999,
     image: "/images/products/ring1.jpg",
-    category: "Rings",
+    category: "Nhẫn",
     rating: 4.9,
     reviews: 128
   },
   {
     id: 2,
-    name: "Gold Tennis Bracelet",
-    description: "Elegant 14k gold bracelet with round cut diamonds",
+    name: "Vòng tay vàng",
+    description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
     price: 2999,
     image: "/images/products/bracelet1.jpg",
-    category: "Bracelets",
+    category: "Vòng tay",
     rating: 4.8,
     reviews: 95
   },
   {
     id: 3,
-    name: "Pearl Necklace",
-    description: "Luxurious freshwater pearl necklace with gold clasp",
+    name: "Dây chuyền ngọc trai",
+    description: "Dây chuyền ngọc trai nước ngọt cao cấp với khóa vàng",
     price: 1999,
     image: "/images/products/necklace1.jpg",
-    category: "Necklaces",
+    category: "Dây chuyền",
     rating: 4.7,
     reviews: 76
   },
   {
     id: 4,
-    name: "Diamond Stud Earrings",
-    description: "Classic diamond studs with 1 carat total weight",
+    name: "Bông tai kim cương",
+    description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
     price: 3499,
     image: "/images/products/earrings1.jpg",
-    category: "Earrings",
+    category: "Bông tai",
     rating: 4.9,
     reviews: 112
   }
@@ -107,10 +107,10 @@ export function BestSellerProducts() {
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              Best Sellers
+              Sản phẩm bán chạy
             </h2>
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-              Discover our most popular and highly-rated jewelry pieces
+              Khám phá những mẫu trang sức được yêu thích và đánh giá cao nhất
             </p>
           </div>
         </div>
@@ -190,7 +190,7 @@ export function BestSellerProducts() {
                         className="w-full"
                         onClick={() => handleAddToCart(product)}
                       >
-                        Add to Cart
+                        Thêm vào giỏ hàng
                       </Button>
                     </CardFooter>
                   </Card>
@@ -203,7 +203,7 @@ export function BestSellerProducts() {
         <div className="flex justify-center mt-8">
           <Link href="/products">
             <Button variant="outline" size="lg">
-              View All Products
+              Xem tất cả sản phẩm
             </Button>
           </Link>
         </div>

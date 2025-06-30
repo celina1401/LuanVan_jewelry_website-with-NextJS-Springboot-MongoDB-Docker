@@ -13,47 +13,76 @@ import { useToast } from "@/hooks/use-toast"
 const products = [
   {
     id: 1,
-    name: "Diamond Engagement Ring",
-    description: "Classic solitaire diamond ring with 1 carat center stone",
+    name: "Nhẫn đính hôn kim cương",
+    description: "Nhẫn kim cương solitaire cổ điển với viên chủ 1 carat",
     price: 4999,
     image: "/images/products/ring1.jpg",
-    category: "Rings",
+    category: "Nhẫn",
     rating: 4.9,
     reviews: 128,
-    isNew: true
+    isNew: true,
+    gender: "female"
   },
   {
     id: 2,
-    name: "Gold Tennis Bracelet",
-    description: "Elegant 14k gold bracelet with round cut diamonds",
+    name: "Vòng tay vàng",
+    description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
     price: 2999,
     image: "/images/products/bracelet1.jpg",
-    category: "Bracelets",
+    category: "Vòng tay",
     rating: 4.8,
     reviews: 95,
-    isNew: false
+    isNew: false,
+    gender: "female"
   },
   {
     id: 3,
-    name: "Pearl Necklace",
-    description: "Luxurious freshwater pearl necklace with gold clasp",
+    name: "Dây chuyền ngọc trai",
+    description: "Dây chuyền ngọc trai nước ngọt cao cấp với khóa vàng",
     price: 1999,
     image: "/images/products/necklace1.jpg",
-    category: "Necklaces",
+    category: "Dây chuyền",
     rating: 4.7,
     reviews: 76,
-    isNew: true
+    isNew: true,
+    gender: "female"
   },
   {
     id: 4,
-    name: "Diamond Stud Earrings",
-    description: "Classic diamond studs with 1 carat total weight",
+    name: "Bông tai kim cương",
+    description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
     price: 3499,
     image: "/images/products/earrings1.jpg",
-    category: "Earrings",
+    category: "Bông tai",
     rating: 4.9,
     reviews: 112,
-    isNew: false
+    isNew: false,
+    gender: "female"
+  },
+  // Thêm ví dụ sản phẩm cho nam
+  {
+    id: 5,
+    name: "Đồng hồ vàng nam",
+    description: "Đồng hồ vàng sang trọng cho nam",
+    price: 5999,
+    image: "/images/products/watch1.jpg",
+    category: "Đồng hồ",
+    rating: 4.6,
+    reviews: 60,
+    isNew: true,
+    gender: "male"
+  },
+  {
+    id: 6,
+    name: "Vòng tay bạc nam",
+    description: "Vòng tay bạc thời trang cho nam",
+    price: 1599,
+    image: "/images/products/bracelet1.jpg",
+    category: "Vòng tay",
+    rating: 4.5,
+    reviews: 40,
+    isNew: false,
+    gender: "male"
   },
   // Add more products as needed
 ]
@@ -62,6 +91,7 @@ interface ProductGridProps {
   category: string
   priceRange: string
   sortBy: string
+  gender: string
 }
 
 // Hook quản lý danh sách sản phẩm yêu thích trong localStorage
@@ -88,7 +118,7 @@ function useFavorites() {
   return { favorites, toggleFavorite, isFavorite };
 }
 
-export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) {
+export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGridProps) {
   const { addItem } = useCart()
   const router = useRouter();
   const { toast } = useToast();
@@ -97,11 +127,14 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
   const filteredProducts = React.useMemo(() => {
     let filtered = products
       .filter((product) => {
+        // Filter by gender
+        if (gender !== "all" && product.gender !== gender) {
+          return false;
+        }
         // Filter by category
         if (category !== "All" && product.category !== category) {
           return false
         }
-
         // Filter by price range
         if (priceRange !== "all") {
           const [min, max] = priceRange.split("-").map(Number)
@@ -116,7 +149,6 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
             }
           }
         }
-
         return true
       })
       .sort((a, b) => {
@@ -137,14 +169,14 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
       filtered = filtered.filter(product => favorites.includes(product.id));
     }
     return filtered;
-  }, [category, priceRange, sortBy, favorites])
+  }, [category, priceRange, sortBy, favorites, gender])
 
   if (filteredProducts.length === 0) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-semibold">No products found</h3>
+        <h3 className="text-lg font-semibold">Không tìm thấy sản phẩm</h3>
         <p className="text-muted-foreground mt-2">
-          Try adjusting your filters to find what you're looking for.
+          Vui lòng điều chỉnh bộ lọc để tìm sản phẩm phù hợp.
         </p>
       </div>
     )
@@ -171,7 +203,7 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
               </Badge>
               {product.isNew && (
                 <Badge variant="secondary" className="absolute top-2 left-2">
-                  New
+                  Mới
                 </Badge>
               )}
               {/* Icon tim yêu thích */}
@@ -233,7 +265,7 @@ export function ProductGrid({ category, priceRange, sortBy }: ProductGridProps) 
                 });
               }}
             >
-              Add to Cart
+              Thêm vào giỏ hàng
             </Button>
           </CardFooter>
         </Card>

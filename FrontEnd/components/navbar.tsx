@@ -47,36 +47,36 @@ export function Navbar() {
             /* Admin navigation */
             <>
               <Link href="/admin/reports" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/reports") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                Reports
+                Báo cáo
               </Link>
               <Link href="/admin/inventory" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/inventory") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                Inventory
+                Kho hàng
               </Link>
               <Link href="/admin/products" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/products") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                Manage Products
+                Quản lý sản phẩm
               </Link>
               <Link href="/admin/users" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/admin/users") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                User Management
+                Quản lý người dùng
               </Link>
             </>
           ) : (
             /* Customer navigation */
             <>
               <Link href="/products" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/products") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                Products
+                Sản phẩm
               </Link>
               <Link href="/about" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/about") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                About
+                Giới thiệu
               </Link>
               <Link href="/contact" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/contact") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                Contact
+                Liên hệ
               </Link>
               <SignedIn>
                 <Link
                   href="/dashboard"
                   className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/dashboard") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                 >
-                  Dashboard
+                  Trang cá nhân
                 </Link>
               </SignedIn>
             </>
@@ -103,7 +103,7 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle>Your Cart</SheetTitle>
+                <SheetTitle>Giỏ hàng của bạn</SheetTitle>
               </SheetHeader>
               <div className="mt-4">
                 <Cart />

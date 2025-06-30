@@ -13,6 +13,8 @@ interface ProductFiltersProps {
   selectedPriceRange: string
   onCategoryChange: (value: string) => void
   onPriceRangeChange: (value: string) => void
+  gender: string
+  onGenderChange: (value: string) => void
 }
 
 export function ProductFilters({
@@ -22,12 +24,14 @@ export function ProductFilters({
   selectedPriceRange,
   onCategoryChange,
   onPriceRangeChange,
+  gender,
+  onGenderChange,
 }: ProductFiltersProps) {
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Categories</CardTitle>
+          <CardTitle>Loại sản phẩm</CardTitle>
         </CardHeader>
         <CardContent>
           <RadioGroup
@@ -47,7 +51,7 @@ export function ProductFilters({
 
       <Card>
         <CardHeader>
-          <CardTitle>Price Range</CardTitle>
+          <CardTitle>Mức giá</CardTitle>
         </CardHeader>
         <CardContent>
           <RadioGroup
@@ -65,15 +69,41 @@ export function ProductFilters({
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Giới tính</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={gender}
+            onValueChange={onGenderChange}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="all" id="gender-all" />
+              <Label htmlFor="gender-all">Tất cả</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="female" id="gender-female" />
+              <Label htmlFor="gender-female">Nữ</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="male" id="gender-male" />
+              <Label htmlFor="gender-male">Nam</Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
       <Button
         variant="outline"
         className="w-full"
         onClick={() => {
-          onCategoryChange("All")
+          onCategoryChange("Tất cả")
           onPriceRangeChange("all")
         }}
       >
-        Clear Filters
+        Xóa bộ lọc
       </Button>
     </div>
   )

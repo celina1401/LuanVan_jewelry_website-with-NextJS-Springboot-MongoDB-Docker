@@ -37,7 +37,7 @@ type Comment = {
 const mockProducts: Product[] = [
   {
     id: 1,
-    name: "Diamond Engagement Ring",
+    name: "Nhẫn đính hôn kim cương",
     images: [
       "/images/products/ring1.jpg",
       "/images/products/ring1-2.jpg",
@@ -47,35 +47,35 @@ const mockProducts: Product[] = [
     price: 5971000,
     rating: 4.9,
     reviews: 128,
-    category: "Rings",
+    category: "Nhẫn",
     code: "NDINO284",
     colors: ["#cccccc", "#ffe066"],
     stock: 10,
   },
   {
     id: 2,
-    name: "Gold Tennis Bracelet",
+    name: "Vòng tay vàng",
     images: [
       "/images/products/bracelet1.jpg",
       "/images/products/bracelet1-2.jpg"
     ],
-    description: "Elegant 14k gold bracelet with round cut diamonds",
-    price: 2999,
+    description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
+    price: 2999000,
     rating: 4.8,
     reviews: 95,
-    category: "Bracelets",
+    category: "Vòng tay",
   },
   {
     id: 4,
-    name: "Diamond Stud Earrings",
+    name: "Bông tai kim cương",
     images: [
       "/images/products/earrings1.jpg"
     ],
-    description: "Classic diamond studs with 1 carat total weight",
-    price: 3499,
+    description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
+    price: 3499000,
     rating: 4.9,
     reviews: 112,
-    category: "Earrings",
+    category: "Bông tai",
   },
 ];
 
@@ -291,7 +291,7 @@ export default function ProductDetailPage() {
                 disabled={product.stock === 0}
                 onClick={() => alert("Đặt hàng thành công!")}
               >
-                ĐẶT MỚI
+                Đặt hàng
               </button>
               <button
                 className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2"

@@ -22,21 +22,21 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:gap-12">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Exquisite Collections</h3>
+                <h3 className="text-xl font-bold">Bộ sưu tập tinh xảo</h3>
                 <p className="text-muted-foreground">
-                  Discover our carefully curated collection of fine jewellery, crafted with precision and passion.
+                  Khám phá bộ sưu tập trang sức được tuyển chọn kỹ lưỡng, chế tác với sự đam mê và tinh xảo.
                 </p>
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Timeless Elegance</h3>
+                <h3 className="text-xl font-bold">Vẻ đẹp vượt thời gian</h3>
                 <p className="text-muted-foreground">
-                  Experience the perfect blend of traditional craftsmanship and modern design in every piece.
+                  Trải nghiệm sự kết hợp hoàn hảo giữa thủ công truyền thống và thiết kế hiện đại trong từng sản phẩm.
                 </p>
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">Premium Quality</h3>
+                <h3 className="text-xl font-bold">Chất lượng cao cấp</h3>
                 <p className="text-muted-foreground">
-                  Each piece is crafted with the finest materials and attention to detail.
+                  Mỗi sản phẩm đều được chế tác từ chất liệu cao cấp với sự tỉ mỉ đến từng chi tiết.
                 </p>
               </div>
             </div>
@@ -47,7 +47,7 @@ export default function Home() {
       <footer className="border-t py-6 md:py-8">
         <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6">
           <p className="text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Luxury Jewellery. All rights reserved.
+            © {new Date().getFullYear()} T&C Jewelry. Đã đăng ký bản quyền.
           </p>
         </div>
       </footer>

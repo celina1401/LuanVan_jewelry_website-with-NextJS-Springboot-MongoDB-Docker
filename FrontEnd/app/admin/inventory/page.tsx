@@ -69,22 +69,22 @@ export default function InventoryPage() {
   return (
     <div className="w-full max-w-6xl mx-auto py-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight text-primary">Inventory Management</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight text-primary">Quản lý kho hàng</h1>
         <Dialog>
           <DialogTrigger asChild>
             <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold shadow hover:bg-primary/90 transition-colors">
-              Add New Item
+              Thêm mới
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-screen">
             <DialogModalHeader>
-              <DialogModalTitle className="text-2xl font-bold mb-2">Add New Product</DialogModalTitle>
+              <DialogModalTitle className="text-2xl font-bold mb-2">Thêm sản phẩm mới</DialogModalTitle>
             </DialogModalHeader>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left column */}
               <div className="flex flex-col gap-6">
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">Product Name</label>
+                  <label className="font-semibold text-base">Tên sản phẩm</label>
                   <Input
                     name="name"
                     value={form.name}
@@ -96,7 +96,7 @@ export default function InventoryPage() {
 
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1 space-y-2">
-                    <label className="font-semibold text-base">Weight (g)</label>
+                    <label className="font-semibold text-base">Khối lượng (g)</label>
                     <Input
                       name="weight"
                       type="number"
@@ -108,7 +108,7 @@ export default function InventoryPage() {
                     />
                   </div>
                   <div className="flex-1 space-y-2">
-                    <label className="font-semibold text-base">Gold Age</label>
+                    <label className="font-semibold text-base">Tuổi vàng</label>
                     <Input
                       name="goldAge"
                       value={form.goldAge}
@@ -120,7 +120,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">Origin</label>
+                  <label className="font-semibold text-base">Xuất xứ</label>
                   <Input
                     name="origin"
                     value={form.origin}
@@ -131,7 +131,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">Brand</label>
+                  <label className="font-semibold text-base">Thương hiệu</label>
                   <Input
                     name="brand"
                     value={form.brand}
@@ -142,25 +142,25 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">Category</label>
+                  <label className="font-semibold text-base">Loại sản phẩm</label>
                   <Select
                     value={form.category}
                     onValueChange={(v) => handleSelect("category", v)}
                   >
                     <SelectTrigger className="rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-primary">
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ring">Ring</SelectItem>
-                      <SelectItem value="necklace">Necklace</SelectItem>
-                      <SelectItem value="earring">Earring</SelectItem>
-                      <SelectItem value="bracelet">Bracelet</SelectItem>
+                      <SelectItem value="ring">Nhẫn</SelectItem>
+                      <SelectItem value="necklace">Dây chuyền</SelectItem>
+                      <SelectItem value="earring">Bông tai</SelectItem>
+                      <SelectItem value="bracelet">Vòng tay</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">SKU (auto)</label>
+                  <label className="font-semibold text-base">Mã SKU (tự động)</label>
                   <Input
                     name="sku"
                     value={form.sku}
@@ -170,9 +170,9 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">Tags</label>
+                  <label className="font-semibold text-base">Nhãn</label>
                   <div className="flex gap-4 flex-wrap">
-                    {["Newest", "Most Popular", "Best Seller", "Sale"].map(tag => (
+                    {["Mới nhất", "Phổ biến nhất", "Bán chạy", "Khuyến mãi"].map(tag => (
                       <label key={tag} className="flex items-center gap-1">
                         <input
                           type="checkbox"
@@ -190,7 +190,7 @@ export default function InventoryPage() {
               {/* Right column: Upload image + barcode */}
               <div className="flex flex-col gap-4 items-center justify-center">
                 <div className="space-y-2 w-full text-center">
-                  <label className="font-semibold text-base">Product Image</label>
+                  <label className="font-semibold text-base">Ảnh sản phẩm</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -223,7 +223,7 @@ export default function InventoryPage() {
                   type="submit"
                   className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-xl text-lg font-bold hover:bg-primary/90 transition-colors mt-2"
                 >
-                  Add Product
+                  Thêm sản phẩm
                 </button>
               </DialogFooter>
             </form>
@@ -233,20 +233,20 @@ export default function InventoryPage() {
       </div>
       <Card className="shadow-lg border-0">
         <CardHeader className="bg-muted/50 rounded-t-lg">
-          <CardTitle className="text-lg font-bold">Product Inventory</CardTitle>
+          <CardTitle className="text-lg font-bold">Danh sách sản phẩm trong kho</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <div className="grid grid-cols-6 gap-4 font-semibold border-b px-6 py-3 bg-background">
               <div>Product</div>
-              <div>SKU</div>
-              <div>Category</div>
-              <div>Stock</div>
-              <div>Status</div>
-              <div>Actions</div>
+              <div>Mã SKU</div>
+              <div>Loại</div>
+              <div>Tồn kho</div>
+              <div>Trạng thái</div>
+              <div>Thao tác</div>
             </div>
             <div className="text-center py-12 text-muted-foreground text-lg">
-              Inventory items will be displayed here
+              Sản phẩm sẽ được hiển thị tại đây
             </div>
           </div>
         </CardContent>

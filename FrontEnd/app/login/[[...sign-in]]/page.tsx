@@ -12,9 +12,9 @@ export default function Page() {
       <main className="flex-1 flex items-center justify-center p-4 md:p-8">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
+            <CardTitle className="text-2xl">Đăng nhập</CardTitle>
             <CardDescription>
-              Enter your credentials to access your account
+              Nhập thông tin để truy cập tài khoản của bạn
             </CardDescription>
           </CardHeader>
           <CardContent>

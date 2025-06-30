@@ -10,15 +10,15 @@ import { TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui
 import { usePathname } from "next/navigation";
 
 const navLinks = [
-  { href: "/admin", label: "Dashboard", icon: <Home size={18} /> },
-  { href: "/admin/inventory", label: "Inventory", icon: <Box size={18} /> },
-  { href: "/admin/products", label: "Products", icon: <BarChart2 size={18} /> },
-  { href: "/admin/reports", label: "Reports", icon: <FileText size={18} /> },
-  { href: "/admin/users", label: "User Management", icon: <Users size={18} /> },
-  { href: "/admin/profile", label: "Profile", icon: <User size={18} /> },
-  { href: "/admin/tasks", label: "Tasks", icon: <ListChecks size={18} /> },
-  { href: "/admin/calendar", label: "Calendar", icon: <Calendar size={18} /> },
-  { href: "/admin/auth", label: "Auth", icon: <Lock size={18} /> },
+  { href: "/admin", label: "Bảng điều khiển", icon: <Home size={18} /> },
+  { href: "/admin/inventory", label: "Kho hàng", icon: <Box size={18} /> },
+  { href: "/admin/products", label: "Sản phẩm", icon: <BarChart2 size={18} /> },
+  { href: "/admin/reports", label: "Báo cáo", icon: <FileText size={18} /> },
+  { href: "/admin/users", label: "Quản lý người dùng", icon: <Users size={18} /> },
+  { href: "/admin/profile", label: "Hồ sơ", icon: <User size={18} /> },
+  { href: "/admin/tasks", label: "Công việc", icon: <ListChecks size={18} /> },
+  { href: "/admin/calendar", label: "Lịch", icon: <Calendar size={18} /> },
+  { href: "/admin/auth", label: "Xác thực", icon: <Lock size={18} /> },
 ];
 
 export default function AdminSidebar() {
@@ -70,13 +70,13 @@ export default function AdminSidebar() {
                 <LogOut size={28} />
               </button>
             </TooltipTrigger>
-            <TooltipContent>Sign Out</TooltipContent>
+            <TooltipContent>Đăng xuất</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
       {/* Copyright */}
       <div className="mt-auto flex flex-col items-center gap-2 w-full">
-        <div className="text-xs text-muted-foreground text-center">&copy; {new Date().getFullYear()} Admin Panel</div>
+        <div className="text-xs text-muted-foreground text-center">&copy; {new Date().getFullYear()} Quản trị viên</div>
       </div>
     </aside>
   );

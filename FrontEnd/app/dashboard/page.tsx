@@ -90,14 +90,14 @@ export default function DashboardPage() {
       try {
         // Fetch user content
         const userData = await api.get("/users/me");
-        setUserContent(userData.message || "Welcome to your dashboard!");
+        setUserContent(userData.message || "Chào mừng bạn đến với trang cá nhân!");
 
       } catch (error: any) {
         console.error("Error fetching dashboard data:", error);
-        setUserContent("Welcome to your dashboard!");
+        setUserContent("Chào mừng bạn đến với trang cá nhân!");
         toast({
-          title: "Info",
-          description: "Dashboard loaded successfully",
+          title: "Thông báo",
+          description: "Tải trang cá nhân thành công",
         });
       } finally {
         setIsLoading(false);
@@ -119,20 +119,20 @@ export default function DashboardPage() {
           <>
             <SignedIn>
               <div className="w-full max-w-4xl space-y-6">
-                <h1 className="text-3xl font-bold">Dashboard</h1>
+                <h1 className="text-3xl font-bold">Trang cá nhân</h1>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>User Information</CardTitle>
-                    <CardDescription>Details about the authenticated user</CardDescription>
+                    <CardTitle>Thông tin người dùng</CardTitle>
+                    <CardDescription>Chi tiết về người dùng đã xác thực</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {user ? (
                       <div>
-                        <p><b>User ID:</b> {user.id}</p>
-                        <p><b>Username:</b> {user.username}</p>
+                        <p><b>Mã người dùng:</b> {user.id}</p>
+                        <p><b>Tên đăng nhập:</b> {user.username}</p>
                         <p><b>Email:</b> {user.emailAddresses[0]?.emailAddress}</p>
-                        <p><b>Role:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : (user.publicMetadata?.role ? JSON.stringify(user.publicMetadata.role) : "user")}</p>
+                        <p><b>Vai trò:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : (user.publicMetadata?.role ? JSON.stringify(user.publicMetadata.role) : "user")}</p>
                         {user.imageUrl && (
                           <img
                             src={user.imageUrl}
@@ -142,20 +142,20 @@ export default function DashboardPage() {
                         )}
                       </div>
                     ) : (
-                      <p>Loading user data...</p>
+                      <p>Đang tải dữ liệu người dùng...</p>
                     )}
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>User Content</CardTitle>
-                    <CardDescription>Content for authenticated users</CardDescription>
+                    <CardTitle>Nội dung người dùng</CardTitle>
+                    <CardDescription>Nội dung dành cho người dùng đã xác thực</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {isLoading ? (
                       <div className="h-20 flex items-center justify-center">
-                        <p className="text-muted-foreground">Loading...</p>
+                        <p className="text-muted-foreground">Đang tải...</p>
                       </div>
                     ) : (
                       <p>{userContent}</p>
@@ -166,7 +166,7 @@ export default function DashboardPage() {
               </div>
             </SignedIn>
             <SignedOut>
-              <div>Redirecting to login...</div>
+              <div>Chuyển hướng đến trang đăng nhập...</div>
             </SignedOut>
           </>
         )}
