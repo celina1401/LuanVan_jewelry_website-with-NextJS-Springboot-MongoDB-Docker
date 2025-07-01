@@ -1,176 +1,36 @@
-"use client"
-
-import { useEffect, useState } from "react";
-import { Navbar } from "@/components/navbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useApi } from "../api/apiClient";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import { useUser, useAuth, SignedIn, SignedOut } from "@clerk/nextjs";
-import { useUserSync } from '@/hooks/use-user-sync';
-import UserSyncClient from '../components/UserSyncClient';
+'use client';
+import { useUser } from "@clerk/nextjs";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 export default function DashboardPage() {
-  const { isLoaded, userId, sessionId, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
-  const router = useRouter();
-  const api = useApi();
-  const { toast } = useToast();
-  const [userContent, setUserContent] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useUserSync();
-
-  useEffect(() => {
-    if (!isLoaded || !userId || !user) {
-      return;
-    }
-
-    // Lấy role từ public_metadata
-    const userRole = user.publicMetadata?.role;
-    console.log("User Role:", userRole);
-    
-    // Chuyển hướng dựa trên role
-    if (userRole === "admin") {
-      router.push("/admin");
-      return;
-    }
-    
-    // Đồng bộ role với backend
-    const syncRole = async () => {
-      try {
-        const token = await getToken();
-        if (!token) return;
-
-        const userData = {
-          userId: user.id,
-          email: user.primaryEmailAddress?.emailAddress || '',
-          username: user.username || user.primaryEmailAddress?.emailAddress || '',
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          imageUrl: user.imageUrl || '',
-          provider: user.externalAccounts?.[0]?.provider || 'clerk',
-          role: userRole || "user"
-        };
-
-        const response = await fetch('http://localhost:8080/api/users/sync-role', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(userData),
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          console.log("✅ User synced with backend");
-        } else {
-          console.error("❌ Failed to sync user with backend");
-        }
-      } catch (error) {
-        console.error("❌ Error syncing user with backend", error);
-      }
-    }; 
-
-    syncRole();
-  }, [isLoaded, userId, user, getToken, router]);
-
-  useEffect(() => {
-    if (!isLoaded || !userId || !isSignedIn) {
-      // Optionally redirect to login if user is not authenticated and isLoaded is true
-      if (isLoaded) {
-        router.push("/login");
-      }
-      return;
-    }
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch user content
-        const userData = await api.get("/users/me");
-        setUserContent(userData.message || "Chào mừng bạn đến với trang cá nhân!");
-
-      } catch (error: any) {
-        console.error("Error fetching dashboard data:", error);
-        setUserContent("Chào mừng bạn đến với trang cá nhân!");
-        toast({
-          title: "Thông báo",
-          description: "Tải trang cá nhân thành công",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [isLoaded, userId, isSignedIn, router, api, toast]);
-
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <UserSyncClient />
-      
-      <main className="flex-1 flex items-center justify-center p-4 md:p-8">
-        {!isLoaded ? (
-          <div>Loading...</div>
-        ) : (
-          <>
-            <SignedIn>
-              <div className="w-full max-w-4xl space-y-6">
-                <h1 className="text-3xl font-bold">Trang cá nhân</h1>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Thông tin người dùng</CardTitle>
-                    <CardDescription>Chi tiết về người dùng đã xác thực</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {user ? (
-                      <div>
-                        <p><b>Mã người dùng:</b> {user.id}</p>
-                        <p><b>Tên đăng nhập:</b> {user.username}</p>
-                        <p><b>Email:</b> {user.emailAddresses[0]?.emailAddress}</p>
-                        <p><b>Vai trò:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : (user.publicMetadata?.role ? JSON.stringify(user.publicMetadata.role) : "user")}</p>
-                        {user.imageUrl && (
-                          <img
-                            src={user.imageUrl}
-                            alt="User Avatar"
-                            className="w-16 h-16 rounded-full mt-2"
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      <p>Đang tải dữ liệu người dùng...</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Nội dung người dùng</CardTitle>
-                    <CardDescription>Nội dung dành cho người dùng đã xác thực</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoading ? (
-                      <div className="h-20 flex items-center justify-center">
-                        <p className="text-muted-foreground">Đang tải...</p>
-                      </div>
-                    ) : (
-                      <p>{userContent}</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-              </div>
-            </SignedIn>
-            <SignedOut>
-              <div>Chuyển hướng đến trang đăng nhập...</div>
-            </SignedOut>
-          </>
-        )}
-      </main>
+    <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-xl p-8 border border-rose-300 shadow-xl bg-background">
+        <CardHeader className="text-center mb-6">
+          <CardTitle className="text-xl font-bold mb-2">Thông tin người dùng</CardTitle>
+          <CardDescription className="text-sm">Chi tiết về người dùng đã xác thực</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center w-full">
+          {user ? (
+            <div className="space-y-4 text-base text-center w-full">
+              <p className="break-words whitespace-pre-line"><b>Mã người dùng:</b> {user.id}</p>
+              <p><b>Tên đăng nhập:</b> {user.username}</p>
+              <p><b>Email:</b> {user.emailAddresses[0]?.emailAddress}</p>
+              <p><b>Vai trò:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : (user.publicMetadata?.role ? JSON.stringify(user.publicMetadata.role) : "user")}</p>
+              {user.imageUrl && (
+                <img
+                  src={user.imageUrl}
+                  alt="User Avatar"
+                  className="w-28 h-28 rounded-full mt-6 border-2 border-rose-300 mx-auto shadow object-cover"
+                />
+              )}
+            </div>
+          ) : (
+            <p>Đang tải dữ liệu người dùng...</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
