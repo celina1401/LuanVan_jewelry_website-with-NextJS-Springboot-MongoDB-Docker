@@ -123,6 +123,8 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
   const router = useRouter();
   const { toast } = useToast();
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => { setMounted(true); }, []);
 
   const filteredProducts = React.useMemo(() => {
     let filtered = products
@@ -208,7 +210,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
               )}
               {/* Icon tim yêu thích */}
               <button
-                className={`absolute bottom-2 right-2 text-xl z-10 transition-colors ${isFavorite(product.id) ? "text-rose-500" : "text-gray-300 hover:text-rose-400"}`}
+                className={`absolute bottom-2 right-2 text-xl z-10 transition-colors ${mounted && isFavorite(product.id) ? "text-rose-500" : "text-gray-300 hover:text-rose-400"}`}
                 onClick={e => { e.stopPropagation(); toggleFavorite(product.id); }}
                 title={isFavorite(product.id) ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
               >

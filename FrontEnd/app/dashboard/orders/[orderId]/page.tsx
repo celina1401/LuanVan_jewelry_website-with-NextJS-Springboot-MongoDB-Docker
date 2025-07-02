@@ -2,7 +2,10 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Clock, XCircle, Truck } from "lucide-react";
 
 // Dữ liệu mẫu đơn hàng
 const mockOrders = [
@@ -36,6 +39,22 @@ const mockOrders = [
   },
 ];
 
+// Hàm helper cho trạng thái
+function getStatusInfo(status: string) {
+  switch (status) {
+    case "Đang xử lý":
+      return { color: "secondary", icon: <Clock className="w-4 h-4 mr-1 text-yellow-500" />, label: "Đang xử lý" };
+    case "Đã giao":
+      return { color: "success", icon: <CheckCircle className="w-4 h-4 mr-1 text-white" />, label: "Đã giao" };
+    case "Đã hủy":
+      return { color: "destructive", icon: <XCircle className="w-4 h-4 mr-1 text-red-500" />, label: "Đã hủy" };
+    case "Đang vận chuyển":
+      return { color: "outline", icon: <Truck className="w-4 h-4 mr-1 text-blue-500" />, label: "Đang vận chuyển" };
+    default:
+      return { color: "outline", icon: <Clock className="w-4 h-4 mr-1" />, label: status };
+  }
+}
+
 export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params?.orderId as string;
@@ -54,30 +73,52 @@ export default function OrderDetailPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-      <Card className="max-w-xl w-full p-8">
-        <h1 className="text-2xl font-bold mb-4">Chi tiết đơn hàng {order.id}</h1>
-        <div className="mb-4 space-y-1">
-          <div><b>Ngày đặt:</b> {order.date}</div>
-          <div><b>Tổng tiền:</b> {order.total.toLocaleString()}₫</div>
-          <div><b>Trạng thái:</b> {order.status}</div>
-        </div>
-        <div className="rounded-lg border bg-white dark:bg-[#18181b] mb-4">
-          <div className="grid grid-cols-3 gap-4 font-medium border-b p-4">
-            <div>Sản phẩm</div>
-            <div>Số lượng</div>
-            <div>Giá</div>
+      <Card className="max-w-2xl w-full shadow-xl border-2 border-primary/30">
+        <CardHeader className="flex flex-col items-center gap-2 pb-2">
+          <CardTitle className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            Chi tiết đơn hàng
+            <span className="ml-2 px-3 py-1 rounded-lg bg-primary/10 text-primary font-mono text-lg border border-primary/20">{order.id}</span>
+          </CardTitle>
+          <div className="flex items-center gap-3 mt-2">
+            <span className="text-muted-foreground text-sm">Ngày đặt: {order.date}</span>
+            <Badge 
+              variant={getStatusInfo(order.status).color as any}
+              className="flex items-center gap-1 text-base px-3 py-1"
+            >
+              {getStatusInfo(order.status).icon}
+              {getStatusInfo(order.status).label}
+            </Badge>
           </div>
-          {order.items.map((item, idx) => (
-            <div key={idx} className="grid grid-cols-3 gap-4 items-center border-b p-4">
-              <div>{item.name}</div>
-              <div>{item.qty}</div>
-              <div>{item.price.toLocaleString()}₫</div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-2">
+            <div className="text-lg font-semibold flex items-center gap-2">
+              Tổng tiền:
+              <span className="text-2xl text-green-600 font-bold font-mono">{order.total.toLocaleString()}₫</span>
             </div>
-          ))}
-        </div>
-        <div className="mt-6">
-          <Link href="/dashboard/orders" className="text-blue-600 hover:underline">← Quay lại danh sách đơn hàng</Link>
-        </div>
+          </div>
+          <div className="rounded-lg border bg-white dark:bg-[#18181b] mb-4 overflow-hidden">
+            <div className="grid grid-cols-3 gap-4 font-semibold border-b p-4 bg-muted justify-between text-center">
+              <div className="text-left w-full flex justify-start">Sản phẩm</div>
+              <div className="w-full flex justify-center">Số lượng</div>
+              <div className="text-right w-full flex justify-end">Giá</div>
+            </div>
+            {order.items.map((item, idx) => (
+              <div key={idx} className="grid grid-cols-3 gap-4 items-center border-b p-4 hover:bg-accent/30 transition-all">
+                <div className="truncate text-left w-full flex justify-start">{item.name}</div>
+                <div className="text-center w-full flex justify-center">{item.qty}</div>
+                <div className="text-right text-base font-medium w-full flex justify-end">{item.price.toLocaleString()}₫</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between items-center pt-4 border-t">
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link href="/dashboard/orders">
+              ← Quay lại danh sách đơn hàng
+            </Link>
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );

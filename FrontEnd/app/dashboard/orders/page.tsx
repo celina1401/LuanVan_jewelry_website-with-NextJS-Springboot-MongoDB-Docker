@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, Clock, XCircle } from "lucide-react";
 
 // Dữ liệu mẫu đơn hàng
 const mockOrders = [
@@ -24,6 +26,20 @@ const mockOrders = [
     status: "Đã hủy",
   },
 ];
+
+// Hàm helper cho trạng thái
+function getStatusInfo(status: string) {
+  switch (status) {
+    case "Đang xử lý":
+      return { color: "secondary", icon: <Clock className="w-4 h-4 mr-1 text-yellow-500" />, label: "Đang xử lý" };
+    case "Đã giao":
+      return { color: "success", icon: <CheckCircle className="w-4 h-4 mr-1 text-white" />, label: "Đã giao" };
+    case "Đã hủy":
+      return { color: "destructive", icon: <XCircle className="w-4 h-4 mr-1 text-white stroke-2" />, label: "Đã hủy" };
+    default:
+      return { color: "outline", icon: <Clock className="w-4 h-4 mr-1" />, label: status };
+  }
+}
 
 export default function OrdersPage() {
   const [orders] = useState(mockOrders);
@@ -49,7 +65,12 @@ export default function OrdersPage() {
                 <div>{order.id}</div>
                 <div>{order.date}</div>
                 <div>{order.total.toLocaleString()}₫</div>
-                <div>{order.status}</div>
+                <div>
+                  <Badge variant={getStatusInfo(order.status).color as any} className="flex items-center gap-1 px-2 py-1 text-sm">
+                    {getStatusInfo(order.status).icon}
+                    {getStatusInfo(order.status).label}
+                  </Badge>
+                </div>
                 <div>
                   <Link href={`/dashboard/orders/${order.id}`} className="text-blue-600 hover:underline">
                     Xem chi tiết

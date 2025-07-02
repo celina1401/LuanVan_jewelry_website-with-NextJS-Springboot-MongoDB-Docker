@@ -1,7 +1,7 @@
 "use client"
 
 import { notFound, useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/navbar";
 import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
@@ -9,10 +9,13 @@ import { FaRegHeart, FaTruck, FaSyncAlt, FaShieldAlt, FaComments } from "react-i
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { useFavorites } from "@/hooks/use-favorites";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type Product = {
   id: number;
   name: string;
+  tags: string[];
   images: string[];
   description: string;
   price: number;
@@ -38,6 +41,7 @@ const mockProducts: Product[] = [
   {
     id: 1,
     name: "Nhẫn đính hôn kim cương",
+    tags: ["Nhẫn", "Mới"],
     images: [
       "/images/products/ring1.jpg",
       "/images/products/ring1-2.jpg",
@@ -55,6 +59,7 @@ const mockProducts: Product[] = [
   {
     id: 2,
     name: "Vòng tay vàng",
+    tags: ["Vòng tay"],
     images: [
       "/images/products/bracelet1.jpg",
       "/images/products/bracelet1-2.jpg"
@@ -66,8 +71,22 @@ const mockProducts: Product[] = [
     category: "Vòng tay",
   },
   {
+    id: 3,
+    name: "Nhẫn vàng 18K",
+    tags: ["Nhẫn"],
+    images: [
+      "/images/products/ring1.jpg"
+    ],
+    description: "Nhẫn vàng 18K sang trọng",
+    price: 4500000,
+    rating: 4.7,
+    reviews: 80,
+    category: "Nhẫn",
+  },
+  {
     id: 4,
     name: "Bông tai kim cương",
+    tags: ["Bông tai"],
     images: [
       "/images/products/earrings1.jpg"
     ],
@@ -76,6 +95,32 @@ const mockProducts: Product[] = [
     rating: 4.9,
     reviews: 112,
     category: "Bông tai",
+  },
+  {
+    id: 5,
+    name: "Bông tai ngọc trai",
+    tags: ["Bông tai", "Mới"],
+    images: [
+      "/images/products/earrings1.jpg"
+    ],
+    description: "Bông tai ngọc trai tự nhiên",
+    price: 2990000,
+    rating: 4.8,
+    reviews: 90,
+    category: "Bông tai",
+  },
+  {
+    id: 6,
+    name: "Vòng tay bạc",
+    tags: ["Vòng tay"],
+    images: [
+      "/images/products/bracelet1.jpg"
+    ],
+    description: "Vòng tay bạc thời trang",
+    price: 1990000,
+    rating: 4.6,
+    reviews: 60,
+    category: "Vòng tay",
   },
 ];
 
@@ -171,6 +216,9 @@ export default function ProductDetailPage() {
   const { addItem } = useCart();
   const { toast } = useToast();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   if (!product) return notFound();
 
@@ -209,6 +257,15 @@ export default function ProductDetailPage() {
     setComments([newComment, ...comments]);
   };
 
+  // Gợi ý sản phẩm liên quan theo tag
+  const relatedProducts = mockProducts.filter(
+    (p) =>
+      p.id !== product.id &&
+      p.tags &&
+      product.tags &&
+      p.tags.some(tag => product.tags!.includes(tag))
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       <Navbar />
@@ -242,7 +299,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">{product.name}</h1>
               <button
-                className={`text-2xl transition-colors ${isFavorite(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                className={`text-2xl transition-colors ${mounted && isFavorite(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
                 onClick={() => toggleFavorite(product.id)}
               >
                 <FaRegHeart />
@@ -336,6 +393,67 @@ export default function ProductDetailPage() {
           <CommentForm onSubmit={handleCommentSubmit} />
           <CommentList comments={comments} />
         </div>
+        {/* Sản phẩm liên quan */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Sản phẩm cùng tag</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {relatedProducts.map((item) => (
+                <Card
+                  key={item.id}
+                  className="overflow-hidden group cursor-pointer hover:shadow-lg transition"
+                  onClick={() => router.push(`/products/${item.id}`)}
+                >
+                  <CardHeader className="p-0">
+                    <div className="relative aspect-square">
+                      <img
+                        src={item.images[0]}
+                        alt={item.name}
+                        className="object-cover w-full h-full"
+                      />
+                      <Badge className="absolute top-2 right-2">{item.category}</Badge>
+                      {item.tags?.includes("Mới") && (
+                        <Badge variant="secondary" className="absolute top-2 left-2">Mới</Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg">{item.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                    <div className="flex items-center mt-2">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <svg
+                            key={i}
+                            className={`w-4 h-4 ${i < 4 ? "text-yellow-400" : "text-gray-300"}`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        ({item.reviews || 0})
+                      </span>
+                    </div>
+                    <p className="text-lg font-semibold mt-2 text-rose-500">
+                      {item.price.toLocaleString()}₫
+                    </p>
+                  </CardContent>
+                  <CardFooter className="p-4 pt-0">
+                    <a
+                      href={`/products/${item.id}`}
+                      className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-center font-semibold block"
+                    >
+                      Xem chi tiết
+                    </a>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
