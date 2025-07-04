@@ -25,7 +25,7 @@ export const useUserSync = () => {
           role: user.publicMetadata?.role || 'user',
         };
 
-        const response = await fetch('http://localhost:8080/api/users/sync-role', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9001"}/api/users/sync-role`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

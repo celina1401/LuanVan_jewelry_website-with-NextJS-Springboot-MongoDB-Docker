@@ -57,6 +57,17 @@ services:
       - "9001:9001"
     depends_on:
       - discoveryserver
+      - mongodb
+    networks:
+      - microservice-networks
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/db:/data/db
     networks:
       - microservice-networks
 

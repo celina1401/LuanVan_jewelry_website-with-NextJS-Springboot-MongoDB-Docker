@@ -8,6 +8,7 @@ import { Providers } from './providers';
 import { ClerkProvider } from '@clerk/nextjs';
 import { RedirectAdmin } from './components/RedirectAdmin';
 import UserSyncClient from './components/UserSyncClient';
+import ClientChatBoxWrapper from "@/app/ClientChatBoxWrapper";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               disableTransitionOnChange
             >
               {children}
+              <ClientChatBoxWrapper />
             </ThemeProvider>
             <Toaster />
           </Providers>

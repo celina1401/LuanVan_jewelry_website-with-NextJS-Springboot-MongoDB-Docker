@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: apigateway
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: userservice
+          uri: lb://userservice
+          predicates:
+            - Path=/api/users/**
+        - id: orderservice
+          uri: lb://orderservice
+          predicates:
+            - Path=/api/v1/orders/**
+        - id: productservice
+          uri: lb://productservice
+          predicates:
+            - Path=/api/v1/products/**
+        - id: notificationservice
+          uri: lb://notificationservice
+          predicates:
+            - Path=/api/v1/notifications/**
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
