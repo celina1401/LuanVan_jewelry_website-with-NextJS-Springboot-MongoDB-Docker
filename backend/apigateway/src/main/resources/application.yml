@@ -12,7 +12,7 @@ spring:
           enabled: true
       routes:
         - id: userservice
-          uri: lb://userservice
+          uri: lb://USERSERVICE
           predicates:
             - Path=/api/users/**
         - id: orderservice
@@ -27,10 +27,24 @@ spring:
           uri: lb://notificationservice
           predicates:
             - Path=/api/v1/notifications/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+            allowedMethods:
+              - "GET"
+              - "POST"
+              - "PUT"
+              - "DELETE"
+              - "OPTIONS"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
 
 eureka:
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: http://discoveryserver:8761/eureka

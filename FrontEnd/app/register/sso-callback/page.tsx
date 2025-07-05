@@ -64,7 +64,7 @@ export default function SSOCallback() {
 
         console.log('SYNC_REGISTER: Sending data to backend:', userData);
 
-        const response = await fetch('http://localhost:8080/api/users/sync-role', {
+        const response = await fetch('http://localhost:9001/api/users/sync-role', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

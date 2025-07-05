@@ -1,18 +1,21 @@
-"use client"
+"use client";
 import { useEffect } from 'react';
 import { useAuth, useUser } from '@clerk/nextjs';
 
 export const useUserSync = () => {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded: authLoaded, isSignedIn, getToken } = useAuth();
   const { user, isLoaded: userLoaded } = useUser();
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user || !userLoaded) return;
+    if (!authLoaded || !userLoaded || !isSignedIn || !user) return;
 
     const syncUser = async () => {
       try {
         const token = await getToken();
-        if (!token) return;
+        if (!token) {
+          console.warn('⚠️ No token found, skipping user sync');
+          return;
+        }
 
         const userData = {
           userId: user.id,
@@ -25,7 +28,8 @@ export const useUserSync = () => {
           role: user.publicMetadata?.role || 'user',
         };
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9001"}/api/users/sync-role`, {
+        const API_URL = 'http://localhost:9001';
+        const response = await fetch(`${API_URL}/api/users/sync-role`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -40,15 +44,15 @@ export const useUserSync = () => {
           console.log('✅ User synced to backend:', syncedUser);
         } else {
           const errorText = await response.text();
-          console.error(`❌ Failed to sync user data. Status: ${response.status}. Message: ${errorText}`);
+          console.error(`❌ Failed to sync user. Status: ${response.status}. Message: ${errorText}`);
         }
-      } catch (error) {
-        console.error('❌ Error syncing user data:', error);
+      } catch (error: any) {
+        console.error('❌ Error syncing user:', error?.message || error);
       }
     };
 
     syncUser();
-  }, [isLoaded, isSignedIn, user, userLoaded, getToken]);
+  }, [authLoaded, userLoaded, isSignedIn, user, getToken]);
 
-  return { isLoaded, isSignedIn, user };
+  return { isLoaded: authLoaded && userLoaded, isSignedIn, user };
 };

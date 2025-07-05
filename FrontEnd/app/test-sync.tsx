@@ -34,7 +34,7 @@ export default function TestSync() {
         role: 'user'
       };
 
-      const response = await fetch('http://localhost:8080/api/users/sync-role', {
+      const response = await fetch('http://localhost:9001/api/users/sync-role', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export default function TestSync() {
   const testMongoDB = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/users/test');
+      const response = await fetch('http://localhost:9001/api/users/test');
       let data = await response.json();
       if (data && Array.isArray(data.users)) {
         data.users = data.users.map((user: any) => {

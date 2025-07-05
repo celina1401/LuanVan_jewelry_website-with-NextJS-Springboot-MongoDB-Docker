@@ -37,3 +37,27 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+*.local
+Dockerfile*
+.dockerignore
+
+# Mac/Linux
+*.swp
+*~
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs
+*.log
+
+# Build output
+/dist

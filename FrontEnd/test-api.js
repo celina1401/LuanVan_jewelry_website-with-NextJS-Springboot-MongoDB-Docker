@@ -5,7 +5,7 @@ const testAPI = async () => {
   try {
     // Test MongoDB connection
     console.log('🔍 Testing MongoDB connection...');
-    const mongoResponse = await fetch('http://localhost:8080/api/users/test');
+    const mongoResponse = await fetch('http://localhost:9001/api/users/test');
     const mongoData = await mongoResponse.json();
     console.log('MongoDB Test Result:', mongoData);
 
@@ -22,7 +22,7 @@ const testAPI = async () => {
       role: 'user'
     };
 
-    const syncResponse = await fetch('http://localhost:8080/api/users/sync-role', {
+    const syncResponse = await fetch('http://localhost:9001/api/users/sync-role', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
