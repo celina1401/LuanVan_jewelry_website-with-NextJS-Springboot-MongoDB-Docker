@@ -1,0 +1,16 @@
+# Luôn dùng LF cho tất cả file text
+* text=auto eol=lf
+
+# Đảm bảo file .sh, .js, .ts, .java, .properties dùng LF
+*.sh text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.java text eol=lf
+*.properties text eol=lf
+
+# Bỏ qua file nhị phân, log, db
+*.log binary
+*.wt binary
+*.lock binary
+*.bson binary
+*.db binary 

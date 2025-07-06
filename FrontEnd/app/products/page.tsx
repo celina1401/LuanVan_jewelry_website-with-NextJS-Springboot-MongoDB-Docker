@@ -32,7 +32,7 @@ const sortOptions = [
 ]
 
 export default function ProductsPage() {
-  const [selectedCategory, setSelectedCategory] = React.useState("All")
+  const [selectedCategory, setSelectedCategory] = React.useState("Tất cả")
   const [selectedPriceRange, setSelectedPriceRange] = React.useState("all")
   const [sortBy, setSortBy] = React.useState("popular")
   const [isFilterOpen, setIsFilterOpen] = React.useState(false)

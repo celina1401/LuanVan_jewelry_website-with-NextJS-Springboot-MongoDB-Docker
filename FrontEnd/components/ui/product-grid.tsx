@@ -129,29 +129,19 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
   const filteredProducts = React.useMemo(() => {
     let filtered = products
       .filter((product) => {
-        // Filter by gender
-        if (gender !== "all" && product.gender !== gender) {
-          return false;
-        }
-        // Filter by category
-        if (category !== "All" && product.category !== category) {
-          return false
-        }
-        // Filter by price range
+        // Không lọc nếu filter là 'Tất cả' hoặc 'all'
+        const matchGender = gender === "all" || product.gender === gender;
+        const matchCategory = category === "Tất cả" || category === "All" || product.category === category;
+        let matchPrice = true;
         if (priceRange !== "all") {
-          const [min, max] = priceRange.split("-").map(Number)
+          const [min, max] = priceRange.split("-").map(Number);
           if (max) {
-            if (product.price < min || product.price > max) {
-              return false
-            }
+            matchPrice = product.price >= min && product.price <= max;
           } else {
-            // Handle "5000+" case
-            if (product.price < min) {
-              return false
-            }
+            matchPrice = product.price >= min;
           }
         }
-        return true
+        return matchGender && matchCategory && matchPrice;
       })
       .sort((a, b) => {
         // Sort products

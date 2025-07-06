@@ -1,0 +1,5 @@
+db.users.find().pretty()
+db.users.pretty()
+mongosh --version
+version()
+version

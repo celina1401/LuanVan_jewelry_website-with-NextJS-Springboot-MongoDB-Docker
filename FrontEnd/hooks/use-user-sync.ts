@@ -42,6 +42,7 @@ export const useUserSync = () => {
         if (response.ok) {
           const syncedUser = await response.json();
           console.log('✅ User synced to backend:', syncedUser);
+          console.log(userData);
         } else {
           const errorText = await response.text();
           console.error(`❌ Failed to sync user. Status: ${response.status}. Message: ${errorText}`);

@@ -27,6 +27,7 @@ services:
       - "9002:9002"
     depends_on:
       - discoveryserver
+      - mongodb
     networks:
       - microservice-networks
 
@@ -37,6 +38,7 @@ services:
       - "9003:9003"
     depends_on:
       - discoveryserver
+      - mongodb
     networks:
       - microservice-networks
 
@@ -47,6 +49,7 @@ services:
       - "9004:9004"
     depends_on:
       - discoveryserver
+      - mongodb
     networks:
       - microservice-networks
 
@@ -66,10 +69,14 @@ services:
     container_name: mongodb
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: jewelry_db
     volumes:
       - ./data/db:/data/db
+      - ./data/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
     networks:
       - microservice-networks
+    restart: unless-stopped
 
 networks:
   microservice-networks:

@@ -54,6 +54,7 @@ public class AuthController {
 
             // Save to MongoDB
             UserEntity saved = userRepository.save(user);
+            System.out.println("✅ Saved user to MongoDB: " + saved.getId() + " - " + saved.getEmail());
             return ResponseEntity.ok(new UserResponse(saved.getUserId(), saved.getEmail()));
 
         } catch (DuplicateKeyException dupEx) {
@@ -65,7 +66,8 @@ public class AuthController {
                 return ResponseEntity.ok(new UserResponse(saved.getUserId(), saved.getEmail()));
             } catch (Exception ex) {
                 ex.printStackTrace();
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Duplicate save failed: " + ex.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Duplicate save failed: " + ex.getMessage());
             }
 
         } catch (Exception e) {
@@ -82,7 +84,7 @@ public class AuthController {
             List<UserEntity> users = userRepository.findAll();
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "MongoDB connection successful");
+            response.put("message", "MongoDB  connection successful");
             response.put("totalUsers", count);
             response.put("users", users.stream().map(user -> {
                 Map<String, Object> map = new HashMap<>();
