@@ -1,9 +1,0 @@
-# MongoDB data & mongosh history
-db/
-*.log
-*.wt
-*.lock
-*.bson
-*.db
-.mongosh_repl_history
-.mongodb/ 

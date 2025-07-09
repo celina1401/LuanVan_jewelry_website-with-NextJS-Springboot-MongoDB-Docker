@@ -1,3 +1,71 @@
+// package com.b2110941.UserService.configuration.security;
+
+// import com.b2110941.UserService.entity.UserEntity;
+// import com.fasterxml.jackson.annotation.JsonIgnore;
+// import lombok.AllArgsConstructor;
+// import lombok.Builder;
+// import lombok.Data;
+// import lombok.NoArgsConstructor;
+// import org.springframework.security.core.GrantedAuthority;
+// import org.springframework.security.core.authority.SimpleGrantedAuthority;
+// import org.springframework.security.core.userdetails.UserDetails;
+
+// import java.util.Collection;
+// import java.util.List;
+
+// @Data
+// @NoArgsConstructor
+// @AllArgsConstructor
+// @Builder
+// public class UserDetailsImpl implements UserDetails {
+//     private static final long serialVersionUID = 1L;
+
+//     private String id;
+//     private String username;
+//     private String email;
+
+//     @JsonIgnore
+//     private String password;
+
+//     private Collection<? extends GrantedAuthority> authorities;
+
+//     public static UserDetailsImpl build(UserEntity user) {
+//         // ✅ Dùng role đơn lẻ dưới dạng String
+//         String role = user.getRole();
+//         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+
+//         return UserDetailsImpl.builder()
+//                 // .id(user.getId())
+//                 .username(user.getUsername())
+//                 .email(user.getEmail())
+//                 .password(user.getPassword())
+//                 .authorities(authorities)
+//                 .build();
+//     }
+
+    
+
+//     @Override
+//     public boolean isAccountNonExpired() {
+//         return true;
+//     }
+
+//     @Override
+//     public boolean isAccountNonLocked() {
+//         return true;
+//     }
+
+//     @Override
+//     public boolean isCredentialsNonExpired() {
+//         return true;
+//     }
+
+//     @Override
+//     public boolean isEnabled() {
+//         return true;
+//     }
+// }
+
 package com.b2110941.UserService.configuration.security;
 
 import com.b2110941.UserService.entity.UserEntity;
@@ -20,7 +88,7 @@ import java.util.List;
 public class UserDetailsImpl implements UserDetails {
     private static final long serialVersionUID = 1L;
 
-    private String id;
+    private String userId;   // ✅ Dùng userId làm định danh
     private String username;
     private String email;
 
@@ -30,19 +98,20 @@ public class UserDetailsImpl implements UserDetails {
     private Collection<? extends GrantedAuthority> authorities;
 
     public static UserDetailsImpl build(UserEntity user) {
-        // ✅ Dùng role đơn lẻ dưới dạng String
+        // Dùng role đơn lẻ
         String role = user.getRole();
-        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
 
         return UserDetailsImpl.builder()
-                .id(user.getId())
+                .userId(user.getUserId())          // ✅ Đảm bảo dùng userId
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .password(user.getPassword())
+                .password(user.getPassword() != null ? user.getPassword() : "") // tránh null
                 .authorities(authorities)
                 .build();
     }
 
+    // Mặc định là true hết
     @Override
     public boolean isAccountNonExpired() {
         return true;

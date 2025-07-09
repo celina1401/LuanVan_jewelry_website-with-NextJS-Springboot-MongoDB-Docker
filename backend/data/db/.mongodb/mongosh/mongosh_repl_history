@@ -1,5 +1,4 @@
 db.users.find().pretty()
-db.users.pretty()
-mongosh --version
-version()
-version
+show collections
+db.users.find().pretty()
+db.db.users.find().pretty()

@@ -52,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
                                     throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (path.equals("/api/users/sync-role") || path.equals("/api/users/test")) {
+        if (path.startsWith("/api/users/")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -85,17 +85,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = tokenProvider.extractRole(claims);
 
                 // Persist or update UserEntity in DB
-                Optional<UserEntity> opt = userRepository.findById(clerkUserId);
-                UserEntity currentUser = opt.orElse(null);
-                // Build Authentication and set in context nếu user đã tồn tại
-                if (currentUser != null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getId());
-                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
+                // Optional<UserEntity> opt = userRepository.findById(clerkUserId);
+                Optional<UserEntity> opt = userRepository.findByUserId(clerkUserId);
+
+            //     UserEntity currentUser = opt.orElse(null);
+            //     // Build Authentication and set in context nếu user đã tồn tại
+            //     if (currentUser != null) {
+            //         UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getId());
+            //         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+            //                 userDetails, null, userDetails.getAuthorities());
+            //         auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            //         SecurityContextHolder.getContext().setAuthentication(auth);
+            //     }
+            // }
+UserEntity currentUser = opt.orElse(null);
+if (currentUser != null) {
+    UserDetails userDetails = userDetailsService.loadUserByUsername(currentUser.getUserId());
+    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+            userDetails, null, userDetails.getAuthorities());
+    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+    SecurityContextHolder.getContext().setAuthentication(auth);
+}
             }
+
         } catch (Exception ex) {
             log.error("Cannot set user authentication: {}", ex.getMessage());
         }

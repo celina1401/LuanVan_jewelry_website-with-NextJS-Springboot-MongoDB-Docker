@@ -64,6 +64,17 @@ services:
     networks:
       - microservice-networks
 
+  # chatservice:
+  #   build:
+  #     context: ./chatservice
+  #   ports:
+  #     - "9005:9005"
+  #   depends_on:
+  #     - discoveryserver
+  #     - mongodb
+  #   networks:
+  #     - microservice-networks
+
   mongodb:
     image: mongo:latest
     container_name: mongodb
