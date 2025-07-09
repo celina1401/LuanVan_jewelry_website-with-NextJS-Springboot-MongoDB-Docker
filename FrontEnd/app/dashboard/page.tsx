@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(false);
 
   // ✅ Đồng bộ và load user từ backend sau khi đăng nhập
   useEffect(() => {
@@ -54,6 +55,12 @@ export default function DashboardPage() {
           setUsername(data.username || "");
           setPhone(data.phone || "");
           setAddress(data.address || "");
+          if (!data.phone || !data.address) {
+            setShowModal(true);
+            setForceUpdate(true);
+          } else {
+            setForceUpdate(false);
+          }
         } else {
           console.warn("Không lấy được thông tin người dùng từ backend.");
         }
@@ -89,6 +96,7 @@ export default function DashboardPage() {
         setAddress(data.address || "");
         setMessage("✅ Cập nhật thành công!");
         setShowModal(false);
+        if (data.phone && data.address) setForceUpdate(false);
       } else {
         const data = await res.json();
         setMessage(data.message || "❌ Cập nhật thất bại!");
@@ -134,7 +142,7 @@ export default function DashboardPage() {
               )}
 
               {/* Modal cập nhật */}
-              <Dialog open={showModal} onOpenChange={setShowModal}>
+              <Dialog open={showModal} onOpenChange={forceUpdate ? () => {} : setShowModal}>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Cập nhật hồ sơ</DialogTitle>
@@ -165,14 +173,16 @@ export default function DashboardPage() {
                     </div>
                     {message && <div className="text-sm text-rose-600 text-center">{message}</div>}
                     <DialogFooter>
-                      <button
-                        type="button"
-                        className="bg-gray-200 px-4 py-2 rounded mr-2"
-                        onClick={() => setShowModal(false)}
-                        disabled={loading}
-                      >
-                        Hủy
-                      </button>
+                      {!forceUpdate && (
+                        <button
+                          type="button"
+                          className="bg-gray-200 px-4 py-2 rounded mr-2"
+                          onClick={() => setShowModal(false)}
+                          disabled={loading}
+                        >
+                          Hủy
+                        </button>
+                      )}
                       <button
                         type="submit"
                         className="bg-rose-500 text-white px-4 py-2 rounded hover:bg-rose-600 disabled:opacity-60"

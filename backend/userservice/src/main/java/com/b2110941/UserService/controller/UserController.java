@@ -59,8 +59,9 @@ public class UserController {
     public ResponseEntity<?> getUserProfile(@PathVariable String userId) {
         Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
         if (userOpt.isPresent()) {
-            System.out.println("User found: " + userOpt.get());
-            return ResponseEntity.ok(userOpt.get());
+            UserEntity user = userOpt.get();
+            // Đảm bảo trả về phone và address đúng (null nếu chưa có)
+            return ResponseEntity.ok(user);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
