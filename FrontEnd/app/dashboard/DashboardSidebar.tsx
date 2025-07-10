@@ -1,7 +1,7 @@
 'use client';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Package } from "lucide-react";
+import { User, Package, Clock } from "lucide-react";
 
 const links = [
   {
@@ -15,6 +15,12 @@ const links = [
     label: "Đơn hàng của tôi",
     icon: <Package className="w-4 h-4 mr-2" />,
     match: (pathname: string) => pathname.startsWith("/dashboard/orders"),
+  },
+  {
+    href: "/dashboard/history",
+    label: "Lịch sử giao dịch",
+    icon: <Clock className="w-4 h-4 mr-2" />,
+    match: (pathname: string) => pathname.startsWith("/dashboard/history"),
   },
 ];
 

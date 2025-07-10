@@ -22,7 +22,7 @@ export default function AdminLayout({
     <AdminGuard>
       <div className="flex min-h-screen">
         <AdminSidebar />
-        <main className="flex-1 bg-[#f5f6fa] dark:bg-background p-6 overflow-y-auto" style={{ paddingLeft: '16rem' }}>
+        <main className="flex-1 bg-[#f5f6fa] dark:bg-background p-6 overflow-y-auto" style={{ paddingLeft: '20rem' }}>
           {children}
         </main>
       </div>

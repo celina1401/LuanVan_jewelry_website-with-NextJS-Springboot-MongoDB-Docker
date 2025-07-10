@@ -1,9 +1,11 @@
 package com.b2110941.UserService.controller;
 
+import com.b2110941.UserService.entity.ClerkProperties;
 import com.b2110941.UserService.entity.UserEntity;
 import com.b2110941.UserService.payload.request.UserSyncRequest;
 import com.b2110941.UserService.payload.response.UserResponse;
 import com.b2110941.UserService.repository.UserRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DuplicateKeyException;
@@ -23,36 +25,6 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private Environment env;
-
-    // 🔄 Đồng bộ user từ frontend (nếu chưa có thì thêm vào DB)
-    // @PostMapping("/users/sync_user")
-    // public ResponseEntity<?> syncUser(@AuthenticationPrincipal Jwt principal, @RequestBody(required = false) Map<String, String> payload) {
-    //     String userId = null, username = null, email = null;
-    //     if (principal != null) {
-    //         userId = principal.getSubject();
-    //         username = principal.getClaimAsString("username");
-    //         email = principal.getClaimAsString("email");
-    //     }
-    //     if ((userId == null || username == null || email == null) && payload != null) {
-    //         if (userId == null) userId = payload.get("userId");
-    //         if (username == null) username = payload.get("username");
-    //         if (email == null) email = payload.get("email");
-    //     }
-    //     if (userId == null || username == null || email == null) {
-    //         return ResponseEntity.badRequest().body("Thiếu thông tin người dùng");
-    //     }
-    //     if (!userRepository.existsByUserId(userId)) {
-    //         UserEntity user = new UserEntity();
-    //         user.setUserId(userId);
-    //         user.setUsername(username);
-    //         user.setEmail(email);
-    //         userRepository.save(user);
-    //     }
-    //     return ResponseEntity.ok("User đã đồng bộ");
-    // }
 
     // ✅ Lấy thông tin người dùng theo userId
     @GetMapping("/users/{userId}")
@@ -89,38 +61,18 @@ public class UserController {
         }
     }
 
-    // ✅ Xóa người dùng cả từ Clerk và MongoDB
     @DeleteMapping("/del_user/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable String userId) {
-        try {
-            // Gửi request xoá từ Clerk
-            String clerkApiKey = env.getProperty("clerk.api.key");
-            String clerkUrl = "https://api.clerk.com/v1/users/" + userId;
-
-            RestTemplate restTemplate = new RestTemplate();
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + clerkApiKey);
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> clerkResponse = restTemplate.exchange(clerkUrl, HttpMethod.DELETE, entity, String.class);
-
-            if (!clerkResponse.getStatusCode().is2xxSuccessful()) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Failed to delete user on Clerk: " + clerkResponse.getBody());
-            }
-
-            // Xoá trong MongoDB
-            return userRepository.findByUserId(userId).map(user -> {
-                userRepository.delete(user);
-                return ResponseEntity.ok("User deleted from Clerk and MongoDB");
-            }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found in MongoDB"));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting user: " + e.getMessage());
+        Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
+        if (userOpt.isPresent()) {
+            userRepository.delete(userOpt.get());
+            return ResponseEntity.ok("User deleted from MongoDB.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("User not found in MongoDB.");
         }
     }
+
 
     // ✅ Kiểm tra kết nối MongoDB và list user
     @GetMapping("/test")
@@ -146,7 +98,10 @@ public class UserController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("MongoDB test failed");
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "MongoDB test failed");
+            error.put("details", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -180,4 +135,46 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error syncing user role: " + e.getMessage());
         }
     }
+
+    // ✅ Lấy toàn bộ danh sách người dùng
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllUsers() {
+        try {
+            List<UserEntity> users = userRepository.findAll();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không thể lấy danh sách người dùng: " + e.getMessage());
+        }
+    }
+
+    // ✅ Thêm người dùng mới
+    @PostMapping("/add")
+    public ResponseEntity<?> addUser(@RequestBody Map<String, String> payload) {
+        try {
+            String email = payload.get("email");
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.badRequest().body("Email là bắt buộc");
+            }
+            if (userRepository.findByEmail(email).isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email đã tồn tại");
+            }
+            UserEntity user = new UserEntity();
+            user.setUserId(java.util.UUID.randomUUID().toString());
+            user.setFirstName(payload.getOrDefault("firstName", ""));
+            user.setLastName(payload.getOrDefault("lastName", ""));
+            user.setEmail(email);
+            user.setRole(payload.getOrDefault("role", "user"));
+            user.setPhone(payload.getOrDefault("phone", ""));
+            user.setAddress(payload.getOrDefault("address", ""));
+            user.setCreatedAt(java.time.LocalDateTime.now());
+            user.setUpdatedAt(java.time.LocalDateTime.now());
+            UserEntity saved = userRepository.save(user);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không thể thêm người dùng: " + e.getMessage());
+        }
+    }
+    
 }

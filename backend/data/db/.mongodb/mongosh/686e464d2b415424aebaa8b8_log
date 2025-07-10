@@ -21,3 +21,25 @@
 {"t":{"$date":"2025-07-09T10:37:03.456Z"},"s":"I","c":"MONGOSH-SNIPPETS","id":1000000027,"ctx":"snippets","msg":"Fetching snippet index done"}
 {"t":{"$date":"2025-07-09T10:37:03.922Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"db.users.find().pretty()"}}
 {"t":{"$date":"2025-07-09T10:37:03.977Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"find","class":"Collection","db":"jewelry_db","coll":"users","arguments":{"options":{}}}}
+{"t":{"$date":"2025-07-09T11:15:30.430Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db } catch {}"}}
+{"t":{"$date":"2025-07-09T11:15:31.733Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db.drop } catch {}"}}
+{"t":{"$date":"2025-07-09T11:15:31.741Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:15:31.742Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:15:31.742Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:15:31.743Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:15:36.872Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db.drop } catch {}"}}
+{"t":{"$date":"2025-07-09T11:15:36.877Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:15:36.879Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:15:36.879Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:15:36.880Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"getCollection","class":"Database","db":"jewelry_db","arguments":{"coll":"drop.then"}}}
+{"t":{"$date":"2025-07-09T11:16:10.185Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db } catch {}"}}
+{"t":{"$date":"2025-07-09T11:16:16.242Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db } catch {}"}}
+{"t":{"$date":"2025-07-09T11:16:16.599Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db } catch {}"}}
+{"t":{"$date":"2025-07-09T11:16:16.779Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db } catch {}"}}
+{"t":{"$date":"2025-07-09T11:16:16.959Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db } catch {}"}}
+{"t":{"$date":"2025-07-09T11:16:22.474Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"db.collection.drop()"}}
+{"t":{"$date":"2025-07-09T11:16:22.477Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"drop","class":"Collection","db":"jewelry_db","coll":"collection","arguments":{}}}
+{"t":{"$date":"2025-07-09T11:16:26.789Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"db.users.find().pretty()"}}
+{"t":{"$date":"2025-07-09T11:16:26.793Z"},"s":"I","c":"MONGOSH","id":1000000011,"ctx":"shell-api","msg":"Performed API call","attr":{"method":"find","class":"Collection","db":"jewelry_db","coll":"users","arguments":{"options":{}}}}
+{"t":{"$date":"2025-07-09T11:16:43.510Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"try { db } catch {}"}}
+{"t":{"$date":"2025-07-09T11:16:46.856Z"},"s":"I","c":"MONGOSH","id":1000000007,"ctx":"repl","msg":"Evaluating input","attr":{"input":"db.dropDatabase()"}}

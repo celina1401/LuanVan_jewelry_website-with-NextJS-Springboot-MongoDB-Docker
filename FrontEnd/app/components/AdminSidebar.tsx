@@ -26,7 +26,7 @@ export default function AdminSidebar() {
   const { signOut } = useClerk();
   const pathname = usePathname();
   return (
-    <aside className="w-64 bg-white dark:bg-muted border-r flex flex-col h-screen min-h-screen p-6 gap-8 shadow-lg fixed top-0 left-0 z-30">
+    <aside className="w-128 bg-white dark:bg-muted border-r flex flex-col h-screen min-h-screen p-6 gap-8 shadow-lg fixed top-0 left-0 z-30">
       {/* User info */}
       <div className="flex items-center gap-3 mb-8">
         <Avatar>

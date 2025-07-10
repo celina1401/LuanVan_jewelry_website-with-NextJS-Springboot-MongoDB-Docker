@@ -1,3 +1,10 @@
+db.dropDatabase()
+db.users.find().pretty()
+db.dropDatabase()
+db.users.find().pretty()
+db.dropDatabase()
+db.users.find().pretty()
+db.collection.drop()
 db.users.find().pretty()
 show collections
 db.users.find().pretty()

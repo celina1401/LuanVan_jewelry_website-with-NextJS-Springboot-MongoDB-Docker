@@ -1,7 +1,9 @@
 package com.b2110941.UserService.entity;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 @ConfigurationProperties(prefix = "clerk")
 public class ClerkProperties {
     private String apiUrl;
@@ -11,6 +13,7 @@ public class ClerkProperties {
     private String algorithm;
     private String tokenHeader;
     private String tokenPrefix;
+    private String apiKey;
     // getters & setters
     public String getApiUrl() {
         return apiUrl;
@@ -63,5 +66,13 @@ public class ClerkProperties {
 
     public void setTokenPrefix(String tokenPrefix) {
         this.tokenPrefix = tokenPrefix;
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 }

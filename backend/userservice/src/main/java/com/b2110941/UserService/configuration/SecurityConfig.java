@@ -163,7 +163,7 @@ import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties(ClerkProperties.class)
+// @EnableConfigurationProperties(ClerkProperties.class)
 public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
