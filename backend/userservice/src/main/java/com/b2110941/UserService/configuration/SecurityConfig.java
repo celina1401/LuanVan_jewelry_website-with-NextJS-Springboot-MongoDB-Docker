@@ -204,9 +204,8 @@ public class SecurityConfig {
                 .accessDeniedHandler(customAccessDeniedHandler))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/users/**"
-                ).permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/users/*/avatar").permitAll()
+                .requestMatchers("/api/users/**").permitAll()
                 .anyRequest().authenticated());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

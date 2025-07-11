@@ -160,6 +160,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import com.b2110941.UserService.entity.Address;
 
 @Document(collection = "users")
 public class UserEntity {
@@ -179,7 +181,9 @@ public class UserEntity {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String phone;
-    private String address;
+    private List<Address> addresses;
+    private String avatarUrl;
+    private byte[] avatarImage;
 
     // Getters & Setters
 
@@ -287,11 +291,25 @@ public class UserEntity {
         this.phone = phone;
     }
 
-    public String getAddress() {
-        return address;
+    public List<Address> getAddresses() {
+        return addresses;
+    }
+    public void setAddresses(List<Address> addresses) {
+        this.addresses = addresses;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public byte[] getAvatarImage() {
+        return avatarImage;
+    }
+    public void setAvatarImage(byte[] avatarImage) {
+        this.avatarImage = avatarImage;
     }
 }

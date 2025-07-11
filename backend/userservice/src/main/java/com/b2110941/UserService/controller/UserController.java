@@ -14,9 +14,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
+import java.nio.file.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.b2110941.UserService.entity.Address;
+import java.util.List;
+import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/api/users")
@@ -41,25 +50,56 @@ public class UserController {
 
     // ✅ Cập nhật thông tin người dùng
     @PostMapping("/update_user/{userId}")
-    public ResponseEntity<?> updateUserProfile(@PathVariable String userId, @RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> updateUserProfile(@PathVariable String userId, @RequestBody Map<String, Object> payload) {
         try {
             Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
             }
-
+    
             UserEntity user = userOpt.get();
-            if (payload.containsKey("username")) user.setUsername(payload.get("username"));
-            if (payload.containsKey("phone")) user.setPhone(payload.get("phone"));
-            if (payload.containsKey("address")) user.setAddress(payload.get("address"));
-
-            userRepository.save(user);
-            return ResponseEntity.ok(user);
+    
+            if (payload.containsKey("username")) {
+                user.setUsername((String) payload.get("username"));
+            }
+    
+            if (payload.containsKey("phone")) {
+                user.setPhone((String) payload.get("phone"));
+            }
+    
+            if (payload.containsKey("addresses")) {
+                ObjectMapper mapper = new ObjectMapper();
+                List<Address> addresses = mapper.convertValue(payload.get("addresses"), new TypeReference<List<Address>>() {});
+                
+                // ✅ Logic đảm bảo chỉ có 1 địa chỉ mặc định
+                boolean hasDefault = addresses.stream().anyMatch(Address::isDefault);
+                if (hasDefault) {
+                    for (Address addr : addresses) {
+                        addr.setDefault(addr.isDefault()); // giữ nguyên
+                    }
+                } else if (!addresses.isEmpty()) {
+                    // nếu không có mặc định, đặt địa chỉ đầu tiên là mặc định
+                    addresses.get(0).setDefault(true);
+                }
+    
+                user.setAddresses(addresses);
+            }
+    
+            user.setUpdatedAt(LocalDateTime.now());
+    
+            UserEntity savedUser = userRepository.save(user);
+            System.out.println("[UserController] ✅ Đã cập nhật user: " + savedUser.getUserId());
+    
+            return ResponseEntity.ok(savedUser);
+    
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Cập nhật thất bại: " + e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Cập nhật thất bại: " + e.getMessage());
         }
     }
+    
 
     @DeleteMapping("/del_user/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable String userId) {
@@ -73,6 +113,37 @@ public class UserController {
         }
     }
 
+    @PutMapping("/{userId}/avatar")
+    public ResponseEntity<?> uploadAvatar(@PathVariable String userId, @RequestParam("file") MultipartFile file) {
+        try {
+            Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            }
+            UserEntity user = userOpt.get();
+            user.setAvatarImage(file.getBytes());
+            userRepository.save(user);
+            return ResponseEntity.ok().body("Avatar uploaded to DB");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Upload failed: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/{userId}/avatar")
+    public ResponseEntity<byte[]> getAvatar(@PathVariable String userId) {
+        Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
+        if (userOpt.isPresent() && userOpt.get().getAvatarImage() != null) {
+            byte[] image = userOpt.get().getAvatarImage();
+            // Nhận diện định dạng ảnh (JPEG hoặc PNG)
+            String contentType = "image/jpeg";
+            if (image.length > 8 && image[0] == (byte)0x89 && image[1] == 0x50 && image[2] == 0x4E && image[3] == 0x47) {
+                contentType = "image/png";
+            }
+            return ResponseEntity.ok().header("Content-Type", contentType).body(image);
+        }
+        return ResponseEntity.notFound().build();
+    }
 
     // ✅ Kiểm tra kết nối MongoDB và list user
     @GetMapping("/test")
@@ -166,10 +237,20 @@ public class UserController {
             user.setEmail(email);
             user.setRole(payload.getOrDefault("role", "user"));
             user.setPhone(payload.getOrDefault("phone", ""));
-            user.setAddress(payload.getOrDefault("address", ""));
+            if (payload.containsKey("addresses")) {
+                ObjectMapper mapper = new ObjectMapper();
+                List<Address> addresses = mapper.convertValue(
+                    payload.get("addresses"),
+                    new TypeReference<List<Address>>() {}
+                );
+                user.setAddresses(addresses);
+            } else {
+                user.setAddresses(new java.util.ArrayList<>());
+            }
             user.setCreatedAt(java.time.LocalDateTime.now());
             user.setUpdatedAt(java.time.LocalDateTime.now());
             UserEntity saved = userRepository.save(user);
+            System.out.println("[UserController] Đã thêm user vào MongoDB: " + saved.getUserId());
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             e.printStackTrace();

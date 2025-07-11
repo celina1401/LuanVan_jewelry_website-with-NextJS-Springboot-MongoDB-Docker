@@ -80,3 +80,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+.card-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+.card-scrollbar::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 8px;
+  border: 2px solid #222;
+}
+.card-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+.card-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}

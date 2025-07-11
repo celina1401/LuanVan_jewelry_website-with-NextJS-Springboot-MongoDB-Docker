@@ -9,6 +9,181 @@ import {
 } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import VietMapAddressPicker from "@/components/VietMapAddressPicker";
+import React, { useRef } from "react";
+
+// Định nghĩa kiểu Address
+export type Address = {
+  receiverName: string;
+  street: string;
+  ward: string;
+  district: string;
+  province: string;
+  isDefault?: boolean;
+};
+
+// Thêm form nhập địa chỉ mới
+function AddAddressForm({ onAdd, onCancel, showCancel }: { onAdd: (addr: Address) => void, onCancel?: () => void, showCancel?: boolean }) {
+  const [receiverName, setReceiverName] = useState("");
+  const [street, setStreet] = useState("");
+  const [ward, setWard] = useState("");
+  const [district, setDistrict] = useState("");
+  const [province, setProvince] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+
+  const handleAdd = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!receiverName || !street || !ward || !district || !province) return;
+    onAdd({ receiverName, street, ward, district, province, isDefault });
+    setReceiverName(""); setStreet(""); setWard(""); setDistrict(""); setProvince(""); setIsDefault(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-4 p-4 rounded-xl bg-zinc-900 border border-zinc-700 shadow-lg">
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-zinc-200">Tên người nhận</label>
+        <input
+          className="border border-zinc-700 rounded-lg px-3 py-2 bg-zinc-800 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+          value={receiverName}
+          onChange={e => setReceiverName(e.target.value)}
+          placeholder="Nhập tên người nhận"
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-zinc-200">Địa chỉ (số nhà, đường)</label>
+        <input
+          className="border border-zinc-700 rounded-lg px-3 py-2 bg-zinc-800 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+          value={street}
+          onChange={e => setStreet(e.target.value)}
+          placeholder="Nhập địa chỉ (số nhà, đường)"
+          required
+        />
+      </div>
+      <VietMapAddressPicker
+        onChange={({ province, ward }) => {
+          setProvince(province?.name_with_type || "");
+          setDistrict(ward?.path?.split(", ")[1] || "");
+          setWard(ward?.name_with_type || "");
+        }}
+      />
+      <label className="flex items-center gap-2 text-zinc-200 mt-2">
+        <input
+          type="checkbox"
+          checked={isDefault}
+          onChange={e => setIsDefault(e.target.checked)}
+          className="accent-rose-500"
+        />
+        Địa chỉ mặc định
+      </label>
+      <div className="flex gap-3 mt-2">
+        {showCancel && (
+          <button
+            type="button"
+            className="px-6 py-2 rounded-lg border border-gray-400 bg-transparent text-gray-300 font-semibold hover:bg-zinc-800 transition"
+            onClick={onCancel}
+          >
+            Hủy
+          </button>
+        )}
+        <button
+          type="button"
+          className="flex-1 px-6 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow transition"
+          onClick={handleAdd}
+        >
+          Thêm địa chỉ
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getAvatarSrc(userId?: string, avatarUrl?: string, clerkImageUrl?: string) {
+  if (userId) {
+    return `http://localhost:9001/api/users/${userId}/avatar`;
+  }
+  if (avatarUrl) {
+    if (avatarUrl.startsWith("/uploads/")) {
+      return `http://localhost:9001${avatarUrl}`;
+    }
+    return avatarUrl;
+  }
+  return clerkImageUrl || "/default-avatar.png";
+}
+
+function AvatarUpload({ userId, avatarUrl, clerkImageUrl, onUploaded }: { userId: string, avatarUrl?: string, clerkImageUrl?: string, onUploaded?: (url: string) => void }) {
+  const [preview, setPreview] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { getToken } = useAuth();
+
+  // Reset preview khi userId hoặc avatarUrl thay đổi
+  useEffect(() => {
+    setPreview(undefined);
+  }, [userId, avatarUrl]);
+
+  const getAvatarSrc = () => {
+    if (preview) return preview;
+    if (userId) return `http://localhost:9001/api/users/${userId}/avatar`;
+    if (avatarUrl) return avatarUrl;
+    return clerkImageUrl || "/default-avatar.png";
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = await getToken();
+    const res = await fetch(`http://localhost:9001/api/users/${userId}/avatar`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    if (res.ok) {
+      setPreview(`http://localhost:9001/api/users/${userId}/avatar?t=${Date.now()}`);
+      if (onUploaded) onUploaded(avatarUrl || "");
+    } else {
+      alert("Upload thất bại!");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex flex-col items-center mb-6">
+      <div className="relative group">
+        <img
+          src={getAvatarSrc()}
+          alt="avatar"
+          className="w-32 h-32 rounded-full object-cover border border-zinc-700 shadow"
+        />
+        <button
+          type="button"
+          className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow group-hover:opacity-100 opacity-80 border border-gray-300 hover:bg-rose-100 transition"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={loading}
+          title="Chỉnh sửa ảnh đại diện"
+        >
+          {/* Icon bút chì Heroicons */}
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-rose-500">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.5 18.79l-4 1 1-4 12.362-12.303z" />
+          </svg>
+        </button>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+        />
+      </div>
+      {loading && <span className="text-sm text-gray-500 mt-2">Đang tải lên...</span>}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -17,7 +192,7 @@ export default function DashboardPage() {
 
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [addresses, setAddresses] = useState<Address[]>([]); // Danh sách địa chỉ
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -27,6 +202,8 @@ export default function DashboardPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteClerkConfirm, setShowDeleteClerkConfirm] = useState(false);
   const [deleteClerkLoading, setDeleteClerkLoading] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(addresses.length === 0);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   // ✅ Đồng bộ và load user từ backend sau khi đăng nhập
   useEffect(() => {
@@ -61,8 +238,9 @@ export default function DashboardPage() {
           const data = await res.json();
           setUsername(data.username || "");
           setPhone(data.phone || "");
-          setAddress(data.address || "");
-          if (!data.phone || !data.address) {
+          setAddresses(data.addresses || []);
+          setAvatarUrl(data.avatarUrl || data.imageUrl || undefined);
+          if (!data.phone || !data.addresses || data.addresses.length === 0) {
             setShowModal(true);
             setForceUpdate(true);
           } else {
@@ -79,6 +257,11 @@ export default function DashboardPage() {
     fetchUserData();
   }, [user, getToken]);
 
+  useEffect(() => {
+    if (addresses.length === 0) setShowAddForm(true);
+    else setShowAddForm(false);
+  }, [addresses]);
+
   // ✅ Gửi yêu cầu cập nhật số điện thoại / địa chỉ
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,16 +277,16 @@ export default function DashboardPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ phone, address }),
+        body: JSON.stringify({ phone, addresses }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setPhone(data.phone || "");
-        setAddress(data.address || "");
+        setAddresses(data.addresses || []);
         setMessage("✅ Cập nhật thành công!");
         setShowModal(false);
-        if (data.phone && data.address) setForceUpdate(false);
+        if (data.phone && data.addresses && data.addresses.length > 0) setForceUpdate(false);
       } else {
         const data = await res.json();
         setMessage(data.message || "❌ Cập nhật thất bại!");
@@ -161,6 +344,14 @@ export default function DashboardPage() {
     }
   };
 
+  const handleAddAddress = (newAddress: Address) => {
+    let updatedAddresses = addresses;
+    if (newAddress.isDefault) {
+      updatedAddresses = addresses.map(addr => ({ ...addr, isDefault: false }));
+    }
+    setAddresses([...updatedAddresses, newAddress]);
+  };
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-xl p-8 border border-rose-300 shadow-xl bg-background">
@@ -172,19 +363,26 @@ export default function DashboardPage() {
         <CardContent className="flex flex-col items-center justify-center w-full">
           {user ? (
             <div className="space-y-4 text-base w-full text-left">
-              {user.imageUrl && (
-                <img
-                  src={user.imageUrl}
-                  alt="User Avatar"
-                  className="w-28 h-28 rounded-full mb-6 border-2 border-rose-300 mx-auto shadow object-cover"
-                />
-              )}
+              {/* Avatar và nút sửa avatar */}
+              <AvatarUpload userId={user?.id} avatarUrl={avatarUrl} clerkImageUrl={user?.imageUrl} onUploaded={setAvatarUrl} />
               <p><b>Mã người dùng:</b> {user.id}</p>
               <p><b>Tên đăng nhập:</b> {username || user.username}</p>
               <p><b>Email:</b> {user.emailAddresses[0]?.emailAddress}</p>
               <p><b>Vai trò:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : "user"}</p>
               <p><b>Số điện thoại:</b> {phone || "Chưa cập nhật"}</p>
-              <p><b>Địa chỉ:</b> {address || "Chưa cập nhật"}</p>
+              <p><b>Địa chỉ:</b></p>
+              {addresses.length === 0 ? (
+                <span>Chưa cập nhật</span>
+              ) : (
+                <ul className="list-disc ml-6">
+                  {addresses.map((addr, idx) => (
+                    <li key={idx}>
+                      {addr.receiverName} - {addr.street}, {addr.ward}, {addr.district}, {addr.province}
+                      {addr.isDefault && <span className="ml-2 text-green-600 font-semibold">(Mặc định)</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
 
               {/* Hai nút nằm cùng một hàng */}
               <div className="flex flex-row gap-4 w-full justify-center mt-4">
@@ -204,58 +402,78 @@ export default function DashboardPage() {
               </div>
 
               {/* Modal cập nhật */}
-              <Dialog open={showModal} onOpenChange={forceUpdate ? () => {} : setShowModal}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Cập nhật hồ sơ</DialogTitle>
-                    <DialogDescription>Thay đổi số điện thoại và địa chỉ của bạn.</DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleUpdate} className="space-y-4 text-left">
-                    <div>
-                      <label className="block font-medium mb-1">Số điện thoại</label>
-                      <input
-                        type="text"
-                        className="w-full border rounded px-3 py-2"
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        placeholder="Nhập số điện thoại"
-                        required
-                      />
+              {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                  <div className="w-full max-w-xl mx-auto bg-background p-8 rounded-xl shadow-2xl border border-rose-300 max-h-[90vh] overflow-y-auto card-scrollbar">
+                    <div className="mb-6">
+                      <h2 className="text-xl font-bold mb-2">Cập nhật hồ sơ</h2>
+                      <p className="text-sm text-zinc-400">Thay đổi số điện thoại và địa chỉ của bạn.</p>
                     </div>
-                    <div>
-                      <label className="block font-medium mb-1">Địa chỉ</label>
-                      <input
-                        type="text"
-                        className="w-full border rounded px-3 py-2"
-                        value={address}
-                        onChange={e => setAddress(e.target.value)}
-                        placeholder="Nhập địa chỉ"
-                        required
-                      />
-                    </div>
-                    {message && <div className="text-sm text-rose-600 text-center">{message}</div>}
-                    <DialogFooter>
-                      {!forceUpdate && (
+                    <form onSubmit={handleUpdate} className="space-y-4 text-left">
+                      <div>
+                        <label className="block font-medium mb-1">Số điện thoại</label>
+                        <input
+                          type="text"
+                          className="w-full border rounded px-3 py-2"
+                          value={phone}
+                          onChange={e => setPhone(e.target.value)}
+                          placeholder="Nhập số điện thoại"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium mb-1">Danh sách địa chỉ</label>
+                        {addresses.length === 0 && <div className="text-gray-500">Chưa có địa chỉ nào</div>}
+                        <ul className="mb-2">
+                          {addresses.map((addr, idx) => (
+                            <li key={idx} className="mb-1 flex items-center gap-2">
+                              <span>{addr.receiverName} - {addr.street}, {addr.ward}, {addr.district}, {addr.province}</span>
+                              {addr.isDefault && <span className="ml-2 text-green-600 font-semibold">(Mặc định)</span>}
+                              <button type="button" className="ml-2 text-red-500 hover:underline" onClick={() => setAddresses(addresses.filter((_, i) => i !== idx))}>Xóa</button>
+                            </li>
+                          ))}
+                        </ul>
+                        {addresses.length > 0 && !showAddForm && (
+                          <button
+                            type="button"
+                            className="flex items-center gap-2 text-rose-500 hover:text-rose-600 font-semibold mb-2"
+                            onClick={() => setShowAddForm(true)}
+                          >
+                            <span className="text-2xl">+</span> Thêm địa chỉ
+                          </button>
+                        )}
+                        {showAddForm && (
+                          <AddAddressForm
+                            onAdd={addr => { handleAddAddress(addr); setShowAddForm(false); }}
+                            onCancel={() => setShowAddForm(false)}
+                            showCancel={addresses.length > 0}
+                          />
+                        )}
+                      </div>
+                      {message && <div className="text-sm text-rose-600 text-center">{message}</div>}
+                      <div className="flex justify-end gap-2 mt-4">
+                        {!forceUpdate && (
+                          <button
+                            type="button"
+                            className="bg-white text-gray-500 font-semibold px-4 py-2 rounded border border-gray-200 hover:bg-gray-100"
+                            onClick={() => setShowModal(false)}
+                            disabled={loading}
+                          >
+                            Hủy
+                          </button>
+                        )}
                         <button
-                          type="button"
-                          className="bg-white text-gray-500 font-semibold px-4 py-2 rounded border border-gray-200 hover:bg-gray-100 mr-2"
-                          onClick={() => setShowModal(false)}
+                          type="submit"
+                          className="bg-rose-500 text-white px-4 py-2 rounded hover:bg-rose-600 disabled:opacity-60"
                           disabled={loading}
                         >
-                          Hủy
+                          {loading ? "Đang cập nhật..." : "Cập nhật"}
                         </button>
-                      )}
-                      <button
-                        type="submit"
-                        className="bg-rose-500 text-white px-4 py-2 rounded hover:bg-rose-600 disabled:opacity-60"
-                        disabled={loading}
-                      >
-                        {loading ? "Đang cập nhật..." : "Cập nhật"}
-                      </button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
 
               {/* Modal xác nhận xóa tài khoản */}
               <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
