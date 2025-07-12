@@ -98,17 +98,13 @@ function AddAddressForm({ onAdd, onCancel, showCancel }: { onAdd: (addr: Address
   );
 }
 
-function getAvatarSrc(userId?: string, avatarUrl?: string, clerkImageUrl?: string) {
-  if (userId) {
-    return `http://localhost:9001/api/users/${userId}/avatar`;
+function getAvatarSrc(avatarUrl?: string, clerkImageUrl?: string) {
+  if (clerkImageUrl) return clerkImageUrl;
+  if (avatarUrl && avatarUrl.startsWith("/uploads/")) {
+    return `http://localhost:9001${avatarUrl}`;
   }
-  if (avatarUrl) {
-    if (avatarUrl.startsWith("/uploads/")) {
-      return `http://localhost:9001${avatarUrl}`;
-    }
-    return avatarUrl;
-  }
-  return clerkImageUrl || "/default-avatar.png";
+  if (avatarUrl) return avatarUrl;
+  return "/default-avatar.png";
 }
 
 function AvatarUpload({ userId, avatarUrl, clerkImageUrl, onUploaded }: { userId: string, avatarUrl?: string, clerkImageUrl?: string, onUploaded?: (url: string) => void }) {
@@ -116,38 +112,43 @@ function AvatarUpload({ userId, avatarUrl, clerkImageUrl, onUploaded }: { userId
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { getToken } = useAuth();
+  const { user } = useUser();
 
-  // Reset preview khi userId hoặc avatarUrl thay đổi
   useEffect(() => {
     setPreview(undefined);
   }, [userId, avatarUrl]);
-
-  const getAvatarSrc = () => {
-    if (preview) return preview;
-    if (userId) return `http://localhost:9001/api/users/${userId}/avatar`;
-    if (avatarUrl) return avatarUrl;
-    return clerkImageUrl || "/default-avatar.png";
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    const token = await getToken();
-    const res = await fetch(`http://localhost:9001/api/users/${userId}/avatar`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-    if (res.ok) {
-      setPreview(`http://localhost:9001/api/users/${userId}/avatar?t=${Date.now()}`);
-      if (onUploaded) onUploaded(avatarUrl || "");
-    } else {
-      alert("Upload thất bại!");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = await getToken();
+      const res = await fetch(`http://localhost:9001/api/users/${userId}/avatar`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPreview(data.avatarUrl ? `http://localhost:9001${data.avatarUrl}` : undefined);
+        if (onUploaded) onUploaded(data.avatarUrl || "");
+        // Upload trực tiếp lên Clerk profile
+        if (user) {
+          await user.setProfileImage({ file });
+          await user.reload(); // Đồng bộ avatar Clerk ngay lập tức
+        }
+        alert("Cập nhật ảnh đại diện thành công!");
+      } else {
+        const err = await res.text();
+        alert("Upload thất bại! " + err);
+      }
+    } catch (err) {
+      alert("Có lỗi xảy ra khi upload avatar!");
     }
     setLoading(false);
   };
@@ -156,7 +157,7 @@ function AvatarUpload({ userId, avatarUrl, clerkImageUrl, onUploaded }: { userId
     <div className="flex flex-col items-center mb-6">
       <div className="relative group">
         <img
-          src={getAvatarSrc()}
+          src={preview || getAvatarSrc(avatarUrl, clerkImageUrl)}
           alt="avatar"
           className="w-32 h-32 rounded-full object-cover border border-zinc-700 shadow"
         />
@@ -167,7 +168,6 @@ function AvatarUpload({ userId, avatarUrl, clerkImageUrl, onUploaded }: { userId
           disabled={loading}
           title="Chỉnh sửa ảnh đại diện"
         >
-          {/* Icon bút chì Heroicons */}
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-rose-500">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.5 18.79l-4 1 1-4 12.362-12.303z" />
           </svg>
@@ -541,3 +541,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

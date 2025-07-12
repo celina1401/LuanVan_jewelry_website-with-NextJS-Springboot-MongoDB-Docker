@@ -1,21 +1,18 @@
 package com.b2110941.UserService.controller;
 
-import com.b2110941.UserService.entity.ClerkProperties;
 import com.b2110941.UserService.entity.UserEntity;
 import com.b2110941.UserService.payload.request.UserSyncRequest;
 import com.b2110941.UserService.payload.response.UserResponse;
 import com.b2110941.UserService.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
+
+import java.io.IOException;
 import java.nio.file.*;
 
 import java.time.LocalDateTime;
@@ -26,6 +23,47 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.b2110941.UserService.entity.Address;
 import java.util.List;
 import org.springframework.http.MediaType;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+
+// --- Hỗ trợ tạo multipart body cho HttpClient ---
+class MultipartBodyPublisher {
+    private static final String LINE_FEED = "\r\n";
+    private final String boundary;
+    private final List<byte[]> parts = new ArrayList<>();
+
+    public MultipartBodyPublisher(String boundary) {
+        this.boundary = boundary;
+    }
+
+    public MultipartBodyPublisher addFilePart(String name, String filename, String contentType, byte[] fileContent) {
+        StringBuilder partHeader = new StringBuilder();
+        partHeader.append("--").append(boundary).append(LINE_FEED);
+        partHeader.append("Content-Disposition: form-data; name=\"").append(name).append("\"; filename=\"")
+                .append(filename).append("\"").append(LINE_FEED);
+        partHeader.append("Content-Type: ").append(contentType).append(LINE_FEED).append(LINE_FEED);
+
+        parts.add(partHeader.toString().getBytes(StandardCharsets.UTF_8));
+        parts.add(fileContent); // ảnh nhị phân
+        parts.add(LINE_FEED.getBytes(StandardCharsets.UTF_8));
+        return this;
+    }
+
+    public HttpRequest.BodyPublisher build() {
+        StringBuilder closing = new StringBuilder();
+        closing.append("--").append(boundary).append("--").append(LINE_FEED);
+        parts.add(closing.toString().getBytes(StandardCharsets.UTF_8));
+
+        return HttpRequest.BodyPublishers.ofByteArrays(parts);
+    }
+
+    public String getBoundary() {
+        return boundary;
+    }
+}
 
 @RestController
 @RequestMapping("/api/users")
@@ -41,8 +79,22 @@ public class UserController {
         Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
         if (userOpt.isPresent()) {
             UserEntity user = userOpt.get();
-            // Đảm bảo trả về phone và address đúng (null nếu chưa có)
-            return ResponseEntity.ok(user);
+            // Trả về cả avatarUrl (custom) và imageUrl (Clerk)
+            Map<String, Object> result = new HashMap<>();
+            result.put("userId", user.getUserId());
+            result.put("email", user.getEmail());
+            result.put("username", user.getUsername());
+            result.put("firstName", user.getFirstName());
+            result.put("lastName", user.getLastName());
+            result.put("phone", user.getPhone());
+            result.put("addresses", user.getAddresses());
+            result.put("role", user.getRole());
+            result.put("provider", user.getProvider());
+            result.put("avatarUrl", user.getAvatarUrl()); // custom
+            result.put("imageUrl", user.getImageUrl()); // từ Clerk
+            result.put("createdAt", user.getCreatedAt());
+            result.put("updatedAt", user.getUpdatedAt());
+            return ResponseEntity.ok(result);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
@@ -56,21 +108,23 @@ public class UserController {
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
             }
-    
+
             UserEntity user = userOpt.get();
-    
+
             if (payload.containsKey("username")) {
                 user.setUsername((String) payload.get("username"));
             }
-    
+
             if (payload.containsKey("phone")) {
                 user.setPhone((String) payload.get("phone"));
             }
-    
+
             if (payload.containsKey("addresses")) {
                 ObjectMapper mapper = new ObjectMapper();
-                List<Address> addresses = mapper.convertValue(payload.get("addresses"), new TypeReference<List<Address>>() {});
-                
+                List<Address> addresses = mapper.convertValue(payload.get("addresses"),
+                        new TypeReference<List<Address>>() {
+                        });
+
                 // ✅ Logic đảm bảo chỉ có 1 địa chỉ mặc định
                 boolean hasDefault = addresses.stream().anyMatch(Address::isDefault);
                 if (hasDefault) {
@@ -81,17 +135,17 @@ public class UserController {
                     // nếu không có mặc định, đặt địa chỉ đầu tiên là mặc định
                     addresses.get(0).setDefault(true);
                 }
-    
+
                 user.setAddresses(addresses);
             }
-    
+
             user.setUpdatedAt(LocalDateTime.now());
-    
+
             UserEntity savedUser = userRepository.save(user);
             System.out.println("[UserController] ✅ Đã cập nhật user: " + savedUser.getUserId());
-    
+
             return ResponseEntity.ok(savedUser);
-    
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity
@@ -99,7 +153,6 @@ public class UserController {
                     .body("Cập nhật thất bại: " + e.getMessage());
         }
     }
-    
 
     @DeleteMapping("/del_user/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable String userId) {
@@ -109,40 +162,120 @@ public class UserController {
             return ResponseEntity.ok("User deleted from MongoDB.");
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("User not found in MongoDB.");
+                    .body("User not found in MongoDB.");
         }
     }
 
     @PutMapping("/{userId}/avatar")
     public ResponseEntity<?> uploadAvatar(@PathVariable String userId, @RequestParam("file") MultipartFile file) {
         try {
+            String filename = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+            Path uploadPath = Paths.get("uploads/avatars");
+            Files.createDirectories(uploadPath);
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
             Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
             }
+
             UserEntity user = userOpt.get();
-            user.setAvatarImage(file.getBytes());
+            String avatarUrl = "/uploads/avatars/" + filename;
+            user.setAvatarUrl(avatarUrl);
             userRepository.save(user);
-            return ResponseEntity.ok().body("Avatar uploaded to DB");
+
+            // --- Upload file lên Clerk để cập nhật profile image ---
+            try {
+                String clerkSecretKey = System.getenv("CLERK_SECRET_KEY");
+                if (clerkSecretKey != null && !clerkSecretKey.isEmpty()) {
+                    String clerkApiUrl = "https://api.clerk.dev/v1/users/" + userId + "/profile_image";
+                    byte[] fileBytes = Files.readAllBytes(filePath);
+                    String boundary = "----ClerkBoundary" + System.currentTimeMillis();
+
+                    // 👉 Get MIME type của ảnh từ filePath
+                    String contentType = Files.probeContentType(filePath);
+                    if (contentType == null) {
+                        contentType = file.getContentType();
+                    }
+                    if (contentType == null) {
+                        contentType = "image/png";
+                    }
+                    List<String> allowedTypes = List.of("image/png", "image/x-png", "image/jpeg", "image/jpg", "image/webp");
+                    if (!allowedTypes.contains(contentType)) {
+                        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                                .body("Chỉ hỗ trợ ảnh PNG, JPEG, JPG, hoặc WebP");
+                    }
+
+                    MultipartBodyPublisher multipart = new MultipartBodyPublisher(boundary);
+                    multipart.addFilePart("file", filename, contentType, fileBytes);
+
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(clerkApiUrl))
+                            .header("Authorization", "Bearer " + clerkSecretKey)
+                            .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                            .POST(multipart.build())
+                            .build();
+
+                    HttpClient.newHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                            .thenAccept(response -> {
+                                System.out.println("[Clerk] Avatar upload response: " + response.statusCode());
+                                System.out.println(response.body());
+                            });
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            // --- END upload Clerk ---
+
+            return ResponseEntity.ok(Map.of("avatarUrl", avatarUrl));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(500).body("Upload failed: " + e.getMessage());
         }
     }
 
-    @GetMapping(value = "/{userId}/avatar")
-    public ResponseEntity<byte[]> getAvatar(@PathVariable String userId) {
+    @GetMapping("/{userId}/avatar")
+    public ResponseEntity<?> getAvatar(@PathVariable String userId) {
         Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
-        if (userOpt.isPresent() && userOpt.get().getAvatarImage() != null) {
-            byte[] image = userOpt.get().getAvatarImage();
-            // Nhận diện định dạng ảnh (JPEG hoặc PNG)
-            String contentType = "image/jpeg";
-            if (image.length > 8 && image[0] == (byte)0x89 && image[1] == 0x50 && image[2] == 0x4E && image[3] == 0x47) {
-                contentType = "image/png";
-            }
-            return ResponseEntity.ok().header("Content-Type", contentType).body(image);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
-        return ResponseEntity.notFound().build();
+
+        UserEntity user = userOpt.get();
+        String avatarUrl = user.getAvatarUrl();
+        if (avatarUrl == null || avatarUrl.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No avatar");
+        }
+
+        Path filePath = Paths.get(avatarUrl.startsWith("/") ? avatarUrl.substring(1) : avatarUrl); // bỏ / đầu
+        if (!Files.exists(filePath)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
+        }
+
+        try {
+            byte[] fileContent = Files.readAllBytes(filePath);
+            String contentType = Files.probeContentType(filePath);
+            // Nếu không xác định được, kiểm tra phần mở rộng file
+            if (contentType == null) {
+                String lower = filePath.getFileName().toString().toLowerCase();
+                if (lower.endsWith(".png")) {
+                    contentType = "image/png";
+                } else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+                    contentType = "image/jpeg";
+                } else if (lower.endsWith(".webp")) {
+                    contentType = "image/webp";
+                } else {
+                    contentType = "application/octet-stream";
+                }
+            }
+            return ResponseEntity
+                    .ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(fileContent);
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body("Error reading file: " + e.getMessage());
+        }
     }
 
     // ✅ Kiểm tra kết nối MongoDB và list user
@@ -163,8 +296,7 @@ public class UserController {
                     "lastName", user.getLastName(),
                     "imageUrl", user.getImageUrl(),
                     "provider", user.getProvider(),
-                    "role", user.getRole()
-            )).collect(Collectors.toList()));
+                    "role", user.getRole())).collect(Collectors.toList()));
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -203,7 +335,8 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Duplicate email");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error syncing user role: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error syncing user role: " + e.getMessage());
         }
     }
 
@@ -215,7 +348,8 @@ public class UserController {
             return ResponseEntity.ok(users);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không thể lấy danh sách người dùng: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Không thể lấy danh sách người dùng: " + e.getMessage());
         }
     }
 
@@ -240,9 +374,9 @@ public class UserController {
             if (payload.containsKey("addresses")) {
                 ObjectMapper mapper = new ObjectMapper();
                 List<Address> addresses = mapper.convertValue(
-                    payload.get("addresses"),
-                    new TypeReference<List<Address>>() {}
-                );
+                        payload.get("addresses"),
+                        new TypeReference<List<Address>>() {
+                        });
                 user.setAddresses(addresses);
             } else {
                 user.setAddresses(new java.util.ArrayList<>());
@@ -254,8 +388,9 @@ public class UserController {
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không thể thêm người dùng: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Không thể thêm người dùng: " + e.getMessage());
         }
     }
-    
+
 }

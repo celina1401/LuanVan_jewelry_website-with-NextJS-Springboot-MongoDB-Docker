@@ -204,6 +204,7 @@ public class SecurityConfig {
                 .accessDeniedHandler(customAccessDeniedHandler))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/uploads/**").permitAll() // Cho phép truy cập công khai file ảnh
                 .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/users/*/avatar").permitAll()
                 .requestMatchers("/api/users/**").permitAll()
                 .anyRequest().authenticated());

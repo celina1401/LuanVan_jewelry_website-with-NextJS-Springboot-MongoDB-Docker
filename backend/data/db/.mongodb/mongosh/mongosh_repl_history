@@ -1,5 +1,13 @@
 db.users.find().pretty()
 clear
+db.users.find().pretty()
+db.dropDatabase()
+db.users.find().pretty()
+db.dropDatabase()
+db.users.find().pretty()
+db.dropDatabase()
+db.users.find().pretty()
+clear
 db.dropDatabase()
 db.users.find().pretty()
 db.dropDatabase()
