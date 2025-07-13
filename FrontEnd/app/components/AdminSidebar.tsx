@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 
 const navLinks = [
   { href: "/admin", label: "Bảng điều khiển", icon: <Home size={18} /> },
-  { href: "/admin/inventory", label: "Kho hàng", icon: <Box size={18} /> },
+  // { href: "/admin/inventory", label: "Kho hàng", icon: <Box size={18} /> },
   { href: "/admin/products", label: "Sản phẩm", icon: <BarChart2 size={18} /> },
   { href: "/admin/reports", label: "Báo cáo", icon: <FileText size={18} /> },
   { href: "/admin/users", label: "Quản lý người dùng", icon: <Users size={18} /> },

@@ -1,3 +1,4 @@
+db.products.find().pretty()
 db.users.find().pretty()
 clear
 db.users.find().pretty()
