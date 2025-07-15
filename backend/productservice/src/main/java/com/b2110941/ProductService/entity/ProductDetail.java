@@ -21,6 +21,7 @@ public class ProductDetail {
     private String imageUrl;
     private String certificationNumber; // optional
     private String note;
+    private String status;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -48,4 +49,7 @@ public class ProductDetail {
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

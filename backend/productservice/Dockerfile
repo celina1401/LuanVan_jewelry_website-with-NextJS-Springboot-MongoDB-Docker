@@ -2,13 +2,13 @@
 FROM maven:3.9.4-eclipse-temurin-17-alpine AS build
 
 WORKDIR /app
-COPY . .                      
+COPY . .
 RUN mvn clean package -DskipTests
 
 # Stage 2: Run with JDK
 FROM openjdk:17-jdk-slim
 
 WORKDIR /app
-COPY --from=build /app/target/*.jar discoveryserver.jar
+COPY --from=build /app/target/ProductService-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 9004
-ENTRYPOINT ["java", "-jar", "discoveryserver.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

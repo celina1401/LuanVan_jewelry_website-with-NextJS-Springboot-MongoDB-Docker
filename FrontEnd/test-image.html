@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Image Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .image-test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .image-test img {
+            max-width: 200px;
+            max-height: 200px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Image Display from Backend</h1>
+        
+        <div>
+            <button onclick="testImage()">Test Image Load</button>
+            <button onclick="listUploads()">List Uploads</button>
+            <button onclick="testDirectImage()">Test Direct Image URL</button>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="image-test">
+            <h3>Test Image Display:</h3>
+            <img id="testImage" src="http://localhost:9004/uploads/1752540093604_LOGO CICT-02.png" 
+                 alt="Test Image" 
+                 onload="imageLoaded()" 
+                 onerror="imageError()">
+            <div id="imageStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        function testImage() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing image access...</p>';
+            
+            fetch('http://localhost:9004/api/products/test-image/1752540093604_LOGO CICT-02.png')
+                .then(response => response.text())
+                .then(data => {
+                    resultsDiv.innerHTML += `<p class="success">${data}</p>`;
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML += `<p class="error">Error: ${error}</p>`;
+                });
+        }
+
+        function listUploads() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Listing uploads...</p>';
+            
+            fetch('http://localhost:9004/api/products/list-uploads')
+                .then(response => response.json())
+                .then(data => {
+                    resultsDiv.innerHTML += `<p class="success">Files in uploads: ${JSON.stringify(data)}</p>`;
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML += `<p class="error">Error: ${error}</p>`;
+                });
+        }
+
+        function testDirectImage() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing direct image URL...</p>';
+            
+            const img = new Image();
+            img.onload = function() {
+                resultsDiv.innerHTML += `<p class="success">Direct image URL works!</p>`;
+            };
+            img.onerror = function() {
+                resultsDiv.innerHTML += `<p class="error">Direct image URL failed!</p>`;
+            };
+            img.src = 'http://localhost:9004/uploads/1752540093604_LOGO CICT-02.png';
+        }
+
+        function imageLoaded() {
+            document.getElementById('imageStatus').innerHTML = '<p class="success">Image loaded successfully!</p>';
+        }
+
+        function imageError() {
+            document.getElementById('imageStatus').innerHTML = '<p class="error">Failed to load image!</p>';
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            listUploads();
+        };
+    </script>
+</body>
+</html> 

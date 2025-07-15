@@ -23,6 +23,7 @@ export default function ProductPage() {
     wage: "", // Thêm trường tiền công
     quantity: "", // Thêm trường số lượng
     productCode: "", // Thêm trường mã sản phẩm
+    price: "", // Thêm trường giá bán
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -30,36 +31,73 @@ export default function ProductPage() {
   const [detailProduct, setDetailProduct] = useState<any | null>(null);
   const [showDetail, setShowDetail] = useState(false);
 
+  // Hàm lấy thông tin chi tiết sản phẩm với hình ảnh
+  const fetchProductDetail = async (productId: string) => {
+    try {
+      const res = await fetch(`http://localhost:9004/api/products/profile/${productId}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      } else {
+        console.error('Error fetching product detail:', res.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching product detail:', error);
+      return null;
+    }
+  };
+
   // State cho popup sửa sản phẩm
   const [editProduct, setEditProduct] = useState<any | null>(null);
   const [showEdit, setShowEdit] = useState(false);
 
-  // State cho danh sách sản phẩm mẫu (có thể thay bằng fetch API sau)
-  const [products, setProducts] = useState([
-    {
-      product_id: "SP001",
-      name: "Nhẫn vàng 18K",
-      category: "Nhẫn",
-      material: "Vàng 18K",
-      karat: "18K",
-      price: 5000000,
-      thumbnail_url: "/images/products/ring1.jpg",
-      status: "Còn hàng",
-      created_at: "2024-05-01",
-      updated_at: "2024-06-01",
-      // Thông tin chi tiết
-      detail_id: "D001",
-      weight: 3.5,
-      design: "Hoa văn cổ điển",
-      origin: "Việt Nam",
-      stock_quantity: 12,
-      image_url: "/images/products/ring1.jpg",
-      certification_number: "CERT-123456",
-      note: "Sản phẩm nhập khẩu, bảo hành 12 tháng."
+  // State cho danh sách sản phẩm (bỏ mẫu hardcode)
+  const [products, setProducts] = useState<any[]>([]);
+
+  // Fetch danh sách sản phẩm từ backend khi load trang
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        // Sử dụng endpoint mới để lấy sản phẩm với hình ảnh
+        const res = await fetch('http://localhost:9004/api/products/all-with-images');
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Products with images:', data);
+          setProducts(data);
+
+          // Debug: kiểm tra files trong uploads
+          try {
+            const uploadsRes = await fetch('http://localhost:9004/api/products/list-uploads');
+            if (uploadsRes.ok) {
+              const uploadsData = await uploadsRes.json();
+              console.log('Files in uploads directory:', uploadsData);
+            }
+          } catch (uploadsError) {
+            console.error('Error checking uploads:', uploadsError);
+          }
+        } else {
+          // Fallback về endpoint cũ nếu endpoint mới chưa hoạt động
+          const fallbackRes = await fetch('http://localhost:9004/api/products');
+          const fallbackData = await fallbackRes.json();
+          setProducts(fallbackData);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        // Fallback về endpoint cũ
+        try {
+          const fallbackRes = await fetch('http://localhost:9004/api/products');
+          const fallbackData = await fallbackRes.json();
+          setProducts(fallbackData);
+        } catch (fallbackError) {
+          console.error('Error with fallback:', fallbackError);
+        }
+      }
     }
-  ]);
+    fetchProducts();
+  }, []);
   // State xác nhận xóa
-  const [deleteConfirm, setDeleteConfirm] = useState<{open: boolean, product: any | null}>({open: false, product: null});
+  const [deleteConfirm, setDeleteConfirm] = useState<any>({ open: false, product: null });
 
   // Hàm chuyển tiếng Việt có dấu sang không dấu (không dùng \p{Diacritic})
   function removeVietnameseTones(str: string) {
@@ -135,24 +173,27 @@ export default function ProductPage() {
       setForm({ ...form, image: "" });
     }
   }
-  // Sửa lại hàm handleSubmit để gọi API backend khi thêm sản phẩm
+  // Sửa lại hàm handleSubmit để gửi FormData (multipart/form-data) khi thêm sản phẩm mới, phù hợp với backend nhận @RequestPart product (JSON) và @RequestPart image (file).
   async function handleSubmit(e: any) {
     e.preventDefault();
-    // Chuẩn bị payload, map trường nếu cần
-    const payload = {
-      ...form,
-      // Nếu backend dùng 'id' thay vì 'product_id', có thể map lại ở đây
-      // id: form.product_id,
-    };
+    // Tạo object sản phẩm (bỏ trường image nếu là file)
+    const { image, ...productData } = form;
+    const formData = new FormData();
+    formData.append('product', JSON.stringify(productData));
+    if (form.image && typeof form.image !== "string") {
+      formData.append('image', form.image); // form.image là file
+    }
     try {
       const res = await fetch('http://localhost:9004/api/products/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formData,
+        // KHÔNG set Content-Type, browser sẽ tự động
       });
       if (res.ok) {
-        const newProduct = await res.json();
-        setProducts(prev => [...prev, newProduct]);
+        // Fetch lại danh sách sản phẩm từ backend để đảm bảo đồng bộ
+        const listRes = await fetch('http://localhost:9004/api/products');
+        const list = await listRes.json();
+        setProducts(list);
         // Reset form
         setForm({
           name: "",
@@ -167,10 +208,9 @@ export default function ProductPage() {
           wage: "",
           quantity: "",
           productCode: "",
+          price: "",
         });
         setImagePreview(null);
-        // Đóng dialog thêm mới nếu dùng DialogTrigger
-        // setShowAdd(false);
       } else {
         alert('Thêm sản phẩm thất bại!');
       }
@@ -209,8 +249,12 @@ export default function ProductPage() {
       });
       if (res.ok) {
         const updated = await res.json();
-        setProducts(prev =>
-          prev.map(p => p.product_id === updated.id ? { ...p, ...updated } : p)
+        setProducts((prev: any[]) =>
+          prev.map((p: any) =>
+            (p.id || p.product_id) === (updated.id || updated.product_id)
+              ? { ...p, ...updated }
+              : p
+          )
         );
         setShowEdit(false);
       } else {
@@ -221,18 +265,75 @@ export default function ProductPage() {
     }
   }
 
+  // Hàm cập nhật hình ảnh sản phẩm
+  const updateProductImage = async (productId: string, imageFile: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const res = await fetch(`http://localhost:9004/api/products/${productId}/image`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        // Cập nhật danh sách sản phẩm
+        setProducts((prev: any[]) =>
+          prev.map((p: any) =>
+            (p.id || p.product_id) === productId
+              ? { ...p, thumbnailUrl: result.thumbnailUrl }
+              : p
+          )
+        );
+        return result;
+      } else {
+        throw new Error('Failed to update image');
+      }
+    } catch (error) {
+      console.error('Error updating product image:', error);
+      throw error;
+    }
+  };
+
+  // Hàm xóa hình ảnh sản phẩm
+  const deleteProductImage = async (productId: string) => {
+    try {
+      const res = await fetch(`http://localhost:9004/api/products/${productId}/image`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        // Cập nhật danh sách sản phẩm
+        setProducts((prev: any[]) =>
+          prev.map((p: any) =>
+            (p.id || p.product_id) === productId
+              ? { ...p, thumbnailUrl: null }
+              : p
+          )
+        );
+        return true;
+      } else {
+        throw new Error('Failed to delete image');
+      }
+    } catch (error) {
+      console.error('Error deleting product image:', error);
+      throw error;
+    }
+  };
+
   function handleDelete(product: any) {
-    setDeleteConfirm({open: true, product});
+    setDeleteConfirm({ open: true, product });
   }
   // Sửa lại hàm xác nhận xóa để gọi API backend
   async function confirmDelete() {
-    if (!deleteConfirm.product?.product_id) return;
+    if (!deleteConfirm.product?.id && !deleteConfirm.product?.product_id) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/products/${deleteConfirm.product.product_id}`, {
+      const res = await fetch(`http://localhost:9004/api/products/${deleteConfirm.product.id || deleteConfirm.product.product_id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
-        setProducts(prev => prev.filter(p => p.product_id !== deleteConfirm.product.product_id));
+        setProducts((prev: any[]) => prev.filter((p: any) => (p.id || p.product_id) !== (deleteConfirm.product.id || deleteConfirm.product.product_id)));
         setDeleteConfirm({ open: false, product: null });
       } else {
         alert('Xóa sản phẩm thất bại!');
@@ -245,6 +346,27 @@ export default function ProductPage() {
     <div className="w-full max-w-6xl mx-auto py-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <h1 className="text-4xl font-extrabold tracking-tight text-primary">Quản lý sản phẩm</h1>
+        <div className="flex gap-2">
+          {/* Nút debug để test ảnh */}
+          {/* <button
+            onClick={async () => {
+              try {
+                const res = await fetch('http://localhost:9004/api/products/list-uploads');
+                if (res.ok) {
+                  const files = await res.json();
+                  console.log('Uploads files:', files);
+                  alert('Files in uploads: ' + JSON.stringify(files));
+                }
+              } catch (error) {
+                console.error('Debug error:', error);
+                alert('Debug error: ' + error);
+              }
+            }}
+            className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm"
+          >
+            Debug Uploads
+          </button> */}
+        </div>
         <Dialog>
           <DialogTrigger asChild>
             <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold shadow hover:bg-primary/90 transition-colors">
@@ -309,7 +431,7 @@ export default function ProductPage() {
                 </div>
               </div>
               {/* Hàng 3: Khối lượng - Tuổi vàng - Tiền công */}
-              <div className="grid grid-cols-3 gap-6 mb-2">
+              <div className="grid grid-cols-4 gap-6 mb-2">
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Khối lượng (g)</label>
                   <Input
@@ -352,6 +474,18 @@ export default function ProductPage() {
                     value={form.wage}
                     onChange={handleChange}
                     onBlur={handleWageBlur}
+                    required
+                    className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="font-semibold text-base">Giá bán (VNĐ)</label>
+                  <Input
+                    name="price"
+                    type="number"
+                    min={0}
+                    value={form.price}
+                    onChange={handleChange}
                     required
                     className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
                   />
@@ -470,35 +604,87 @@ export default function ProductPage() {
               <div>Thao tác</div>
             </div>
             {/* Hiển thị danh sách sản phẩm */}
-            {products.map((product: any) => (
-              <div key={product.product_id} className="grid grid-cols-12 gap-4 border-b px-6 py-3 items-center text-center hover:bg-rose-50/60 dark:hover:bg-[#23232b] transition-colors group">
-                <div className="font-mono">{product.product_id}</div>
-                <div className="font-medium">{product.name}</div>
-                <div>{product.category}</div>
-                <div>{product.material}</div>
-                <div>{product.karat}</div>
-                <div className="text-rose-600 font-bold">{product.price?.toLocaleString()}</div>
-                <div className="flex justify-center"><img src={product.thumbnail_url} alt="thumb" className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform" /></div>
-                <div><span className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">{product.status}</span></div>
-                <div className="text-xs text-muted-foreground">{product.created_at}</div>
-                <div className="text-xs text-muted-foreground">{product.updated_at}</div>
-                <div>
-                  <button onClick={() => { setDetailProduct(product); setShowDetail(true); }}
-                    className="text-blue-600 underline font-semibold hover:text-blue-800 transition-colors"
-                  >Xem chi tiết</button>
+            {products.map((product: any) => {
+              console.log("Product row:", product);
+              return (
+                <div key={product.id || product.product_id} className="grid grid-cols-12 gap-4 border-b px-6 py-3 items-center text-center hover:bg-rose-50/60 dark:hover:bg-[#23232b] transition-colors group">
+                  <div className="font-mono">{product.productCode}</div>
+                  <div className="font-medium">{product.name}</div>
+                  <div>{(() => {
+                    switch (product.category) {
+                      case 'necklace': return 'Dây chuyền';
+                      case 'bracelet': return 'Vòng tay';
+                      case 'ring': return 'Nhẫn';
+                      case 'earring': return 'Bông tai';
+                      default: return product.category;
+                    }
+                  })()}</div>
+                  <div>{product.material}</div>
+                  <div>{product.karat}</div>
+                  <div className="text-rose-600 font-bold">{product.price?.toLocaleString()}</div>
+                  <div className="flex justify-center">
+                    {product.thumbnailUrl ? (
+                      <img
+                        src={`http://localhost:9004${product.thumbnailUrl}`}
+                        alt="thumb"
+                        className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
+                        onError={(e) => {
+                          console.log('Image load error for:', product.thumbnailUrl);
+                          // Fallback nếu ảnh không load được
+                          e.currentTarget.src = product.thumbnail_url || '/default-avatar.png';
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', product.thumbnailUrl);
+                        }}
+                      />
+                    ) : product.thumbnail_url ? (
+                      <img
+                        src={product.thumbnail_url}
+                        alt="thumb"
+                        className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
+                        onError={(e) => {
+                          console.log('Fallback image load error for:', product.thumbnail_url);
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-xs">
+                        No img
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    {product.quantity > 0 ? (
+                      <span className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">Còn hàng</span>
+                    ) : (
+                      <span className="inline-block px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">Hết hàng</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{product.created_at}</div>
+                  <div className="text-xs text-muted-foreground">{product.updated_at}</div>
+                  <div>
+                    <button onClick={async () => {
+                      const detail = await fetchProductDetail(product.id || product.product_id);
+                      setDetailProduct(detail || product);
+                      setShowDetail(true);
+                    }}
+                      className="text-blue-600 underline font-semibold hover:text-blue-800 transition-colors"
+                    >Xem chi tiết</button>
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      className="text-yellow-600 font-semibold hover:underline hover:text-yellow-700 transition-colors"
+                      onClick={() => handleEdit(product)}
+                    >Sửa</button>
+                    <button
+                      className="text-red-500 font-semibold hover:underline hover:text-red-700 transition-colors"
+                      onClick={() => handleDelete(product)}
+                    >Xóa</button>
+                  </div>
                 </div>
-                <div className="flex gap-2 justify-center">
-                  <button
-                    className="text-yellow-600 font-semibold hover:underline hover:text-yellow-700 transition-colors"
-                    onClick={() => handleEdit(product)}
-                  >Sửa</button>
-                  <button
-                    className="text-red-500 font-semibold hover:underline hover:text-red-700 transition-colors"
-                    onClick={() => handleDelete(product)}
-                  >Xóa</button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
             {products.length === 0 && (
               <div className="text-center py-12 text-muted-foreground text-lg">
                 Sản phẩm sẽ được hiển thị tại đây
@@ -517,7 +703,20 @@ export default function ProductPage() {
             <div className="flex flex-col md:flex-row gap-8 px-8 pb-8">
               {/* Ảnh sản phẩm */}
               <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
-                <img src={detailProduct.image_url || detailProduct.thumbnail_url} alt={detailProduct.name} className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-200" />
+                {detailProduct.thumbnailUrl ? (
+                  <img
+                    src={`http://localhost:9004${detailProduct.thumbnailUrl}`}
+                    alt={detailProduct.name}
+                    className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-200"
+                    onError={(e) => {
+                      e.currentTarget.src = detailProduct.image_url || detailProduct.thumbnail_url || '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <div className="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
+                    Không có ảnh
+                  </div>
+                )}
                 {/* Gallery nhỏ nếu có nhiều ảnh, hiện tại chỉ 1 ảnh */}
                 {/* <div className="flex gap-2 mt-2">
                   <img src={detailProduct.image_url} alt="Ảnh chi tiết" className="w-14 h-14 object-cover rounded border" />
@@ -563,8 +762,67 @@ export default function ProductPage() {
           {editProduct && (
             <form className="flex flex-col md:flex-row gap-8 px-8 pb-8" onSubmit={handleEditSave}>
               <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
-                <img src={editProduct.image_url || editProduct.thumbnail_url} alt={editProduct.name} className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-400" />
-                {/* Có thể thêm upload ảnh ở đây */}
+                {editProduct.thumbnailUrl ? (
+                  <img
+                    src={`http://localhost:9004${editProduct.thumbnailUrl}`}
+                    alt={editProduct.name}
+                    className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-400"
+                    onError={(e) => {
+                      e.currentTarget.src = editProduct.image_url || editProduct.thumbnail_url || '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <div className="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
+                    Không có ảnh
+                  </div>
+                )}
+                {/* Upload ảnh mới */}
+                <div className="space-y-2 w-full max-w-xs text-center">
+                  <label className="font-semibold text-base">Cập nhật ảnh</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file && editProduct) {
+                        try {
+                          await updateProductImage(editProduct.id || editProduct.product_id, file);
+                          // Cập nhật editProduct với ảnh mới
+                          const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
+                          if (updatedProduct) {
+                            setEditProduct(updatedProduct);
+                          }
+                        } catch (error) {
+                          alert('Lỗi khi cập nhật ảnh!');
+                        }
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600"
+                  />
+                </div>
+                {/* Nút xóa ảnh */}
+                {editProduct.thumbnailUrl && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (editProduct) {
+                        try {
+                          await deleteProductImage(editProduct.id || editProduct.product_id);
+                          // Cập nhật editProduct sau khi xóa ảnh
+                          const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
+                          if (updatedProduct) {
+                            setEditProduct(updatedProduct);
+                          }
+                        } catch (error) {
+                          alert('Lỗi khi xóa ảnh!');
+                        }
+                      }
+                    }}
+                    className="text-red-500 text-sm hover:text-red-700 underline"
+                  >
+                    Xóa ảnh
+                  </button>
+                )}
               </div>
               <div className="flex-1 grid grid-cols-1 gap-y-3 text-base">
                 <label className="flex flex-col gap-1">
@@ -627,7 +885,7 @@ export default function ProductPage() {
         </DetailDialogContent>
       </DetailDialog>
       {/* Popup xác nhận xóa */}
-      <Dialog open={deleteConfirm.open} onOpenChange={open => setDeleteConfirm(d => ({...d, open}))}>
+      <Dialog open={deleteConfirm.open} onOpenChange={open => setDeleteConfirm({ ...deleteConfirm, open })}>
         <DialogContent>
           <DialogModalHeader>
             <DialogModalTitle>Bạn có chắc muốn xóa sản phẩm này?</DialogModalTitle>
@@ -644,7 +902,7 @@ export default function ProductPage() {
             </button>
             <button
               className="px-4 py-2 rounded-lg border"
-              onClick={() => setDeleteConfirm({open: false, product: null})}
+              onClick={() => setDeleteConfirm({ open: false, product: null })}
             >
               Hủy
             </button>

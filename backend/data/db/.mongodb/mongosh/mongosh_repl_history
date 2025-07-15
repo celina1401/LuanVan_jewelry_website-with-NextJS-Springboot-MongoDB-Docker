@@ -1,4 +1,9 @@
 db.products.find().pretty()
+db.products.drop()
+db.products.dropDatabase()
+db.products.find().pretty()
+db.users.find().pretty()
+db.products.find().pretty()
 db.users.find().pretty()
 clear
 db.users.find().pretty()
