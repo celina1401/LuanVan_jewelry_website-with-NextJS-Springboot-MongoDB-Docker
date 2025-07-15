@@ -33,6 +33,7 @@ public class Product {
     private String design;
     private int stockQuantity;
     private Double wage;
+    private String description;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -80,6 +81,8 @@ public class Product {
     public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
     public Double getWage() { return wage; }
     public void setWage(Double wage) { this.wage = wage; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

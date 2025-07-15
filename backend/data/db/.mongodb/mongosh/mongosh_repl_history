@@ -1,3 +1,4 @@
+db.users.find().pretty()
 db.products.find().pretty()
 db.products.drop()
 db.products.dropDatabase()

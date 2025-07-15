@@ -54,10 +54,11 @@ public class ProductController {
      */
     @GetMapping("/profile/{productId}")
     public ResponseEntity<?> getProductProfile(@PathVariable String productId) {
+        // Lấy sản phẩm mới nhất từ CSDL (MongoDB)
         Optional<Product> productOpt = productRepository.findById(productId);
         if (productOpt.isPresent()) {
             Product product = productOpt.get();
-            // Trả về thông tin sản phẩm với hình ảnh
+            // Build map trả về từ dữ liệu DB
             Map<String, Object> result = new HashMap<>();
             result.put("id", product.getId());
             result.put("name", product.getName());
@@ -67,7 +68,7 @@ public class ProductController {
             result.put("category", product.getCategory());
             result.put("sku", product.getSku());
             result.put("productCode", product.getProductCode());
-            result.put("thumbnailUrl", product.getThumbnailUrl()); // URL hình ảnh chính
+            result.put("thumbnailUrl", product.getThumbnailUrl());
             result.put("tags", product.getTags());
             result.put("weight", product.getWeight());
             result.put("quantity", product.getQuantity());
@@ -82,13 +83,12 @@ public class ProductController {
             result.put("wage", product.getWage());
             result.put("createdAt", product.getCreatedAt());
             result.put("updatedAt", product.getUpdatedAt());
-            
-            // Lấy thêm thông tin chi tiết sản phẩm nếu có
+            result.put("description", product.getDescription());
+            // Lấy thêm thông tin chi tiết nếu có
             List<ProductDetail> details = productDetailRepository.findByProductId(productId);
             if (!details.isEmpty()) {
                 result.put("productDetails", details);
             }
-            
             return ResponseEntity.ok(result);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
@@ -147,16 +147,44 @@ public class ProductController {
                 return ResponseEntity.badRequest().body("Tên sản phẩm hoặc giá không hợp lệ.");
             }
 
+            // Sinh mã sản phẩm tự động, không trùng
+            String prefix = "";
+            switch (product.getCategory()) {
+                case "necklace": prefix = "D"; break;
+                case "ring": prefix = "N"; break;
+                case "earring": prefix = "E"; break;
+                case "bracelet": prefix = "B"; break;
+                default: prefix = "X"; // fallback
+            }
+            // Tìm mã lớn nhất hiện có cho loại này
+            List<Product> sameTypeProducts = productRepository.findByCategory(product.getCategory());
+            int maxCode = 0;
+            for (Product p : sameTypeProducts) {
+                String code = p.getProductCode();
+                if (code != null && code.startsWith(prefix)) {
+                    try {
+                        int num = Integer.parseInt(code.substring(1));
+                        if (num > maxCode) maxCode = num;
+                    } catch (Exception ignore) {}
+                }
+            }
+            String newCode = prefix + String.format("%03d", maxCode + 1);
+            product.setProductCode(newCode);
+
             // Xử lý ảnh nếu có
             if (image != null && !image.isEmpty()) {
                 String filename = System.currentTimeMillis() + "_" + Paths.get(image.getOriginalFilename()).getFileName().toString();
-                Path uploadPath = Paths.get("uploads/products");
+                Path uploadPath = Paths.get("/uploads/products");
+                System.out.println("[UPLOAD] Tạo thư mục: " + uploadPath.toAbsolutePath());
                 Files.createDirectories(uploadPath); // Tạo thư mục nếu chưa có
                 Path filePath = uploadPath.resolve(filename);
+                System.out.println("[UPLOAD] Đường dẫn file sẽ lưu: " + filePath.toAbsolutePath());
                 Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("[UPLOAD] Đã lưu file ảnh: " + filePath.toAbsolutePath());
 
                 // Lưu đường dẫn vào DB
                 product.setThumbnailUrl("/uploads/products/" + filename);
+                System.out.println("[UPLOAD] thumbnailUrl lưu vào DB: /uploads/products/" + filename);
             }
 
             // Set ngày tạo và ngày cập nhật là thời điểm hiện tại
@@ -178,6 +206,7 @@ public class ProductController {
             detail.setCertificationNumber(saved.getCertificationNumber());
             detail.setNote(saved.getNote());
             detail.setStatus(saved.getStatus());
+            detail.setDescription(saved.getDescription());
             productDetailRepository.save(detail);
             System.out.println("==> [POST /add] Lưu ProductDetail thành công");
 
@@ -221,7 +250,7 @@ public class ProductController {
         
         try {
             // Xử lý upload ảnh mới
-            String uploadsDir = "uploads/";
+            String uploadsDir = "/uploads/products";
             Path uploadsPath = Paths.get(uploadsDir);
             if (!Files.exists(uploadsPath)) {
                 Files.createDirectories(uploadsPath);
@@ -233,7 +262,7 @@ public class ProductController {
             Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // Cập nhật URL hình ảnh
-            product.setThumbnailUrl("/" + uploadsDir + fileName);
+            product.setThumbnailUrl("/uploads/products/" + fileName);
             product.setUpdatedAt(LocalDateTime.now());
 
             // Lưu vào DB
@@ -375,33 +404,18 @@ public class ProductController {
         if (productOpt.isPresent()) {
             Product product = productOpt.get();
             String thumbnailUrl = product.getThumbnailUrl();
-            
             if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
                 try {
-                    // Loại bỏ dấu "/" ở đầu nếu có
-                    if (thumbnailUrl.startsWith("/")) {
-                        thumbnailUrl = thumbnailUrl.substring(1);
-                    }
-                    
-                    Path imagePath = Paths.get(thumbnailUrl);
+                    // Lấy tên file từ thumbnailUrl
+                    String fileName = thumbnailUrl.substring(thumbnailUrl.lastIndexOf("/") + 1);
+                    Path imagePath = Paths.get("/uploads/products/" + fileName);
                     if (Files.exists(imagePath)) {
                         byte[] imageBytes = Files.readAllBytes(imagePath);
-                        
-                        // Xác định content type dựa trên extension
-                        String contentType = "image/jpeg"; // default
-                        String fileName = imagePath.getFileName().toString().toLowerCase();
-                        if (fileName.endsWith(".png")) {
-                            contentType = "image/png";
-                        } else if (fileName.endsWith(".gif")) {
-                            contentType = "image/gif";
-                        } else if (fileName.endsWith(".webp")) {
-                            contentType = "image/webp";
-                        }
-                        
+                        String contentType = Files.probeContentType(imagePath);
+                        if (contentType == null) contentType = "image/jpeg";
                         HttpHeaders headers = new HttpHeaders();
                         headers.setContentType(MediaType.parseMediaType(contentType));
                         headers.setContentLength(imageBytes.length);
-                        
                         return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
                     } else {
                         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Image file not found");
@@ -438,6 +452,9 @@ public class ProductController {
             productInfo.put("createdAt", product.getCreatedAt());
             productInfo.put("updatedAt", product.getUpdatedAt());
             productInfo.put("productCode", product.getProductCode());
+            productInfo.put("goldAge", product.getGoldAge());
+            productInfo.put("wage", product.getWage());
+            productInfo.put("description", product.getDescription());
             
             result.add(productInfo);
         }

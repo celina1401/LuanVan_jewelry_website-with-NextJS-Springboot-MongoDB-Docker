@@ -52,6 +52,8 @@ services:
       - mongodb
     networks:
       - microservice-networks
+    volumes:
+      - ./productservice/uploads:/uploads
 
   userservice:
     build:

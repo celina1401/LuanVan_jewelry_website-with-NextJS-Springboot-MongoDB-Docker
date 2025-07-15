@@ -24,6 +24,7 @@ export default function ProductPage() {
     quantity: "", // Thêm trường số lượng
     productCode: "", // Thêm trường mã sản phẩm
     price: "", // Thêm trường giá bán
+    description: "", // Thêm trường mô tả chi tiết
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -98,6 +99,7 @@ export default function ProductPage() {
   }, []);
   // State xác nhận xóa
   const [deleteConfirm, setDeleteConfirm] = useState<any>({ open: false, product: null });
+  const [showAdd, setShowAdd] = useState(false);
 
   // Hàm chuyển tiếng Việt có dấu sang không dấu (không dùng \p{Diacritic})
   function removeVietnameseTones(str: string) {
@@ -134,17 +136,43 @@ export default function ProductPage() {
     setForm(f => ({ ...f, sku }));
   }, [form.name, form.weight, form.origin, form.brand, form.goldAge, form.category]);
 
-  // Tự động sinh mã sản phẩm khi chọn loại
+  // Tự động sinh mã sản phẩm khi chọn loại, kiểm tra DB để lấy mã lớn nhất
   useEffect(() => {
-    let code = "";
-    switch (form.category) {
-      case "necklace": code = "D001"; break;
-      case "ring": code = "N001"; break;
-      case "earring": code = "E001"; break;
-      case "bracelet": code = "B001"; break;
-      default: code = "";
+    async function fetchNextProductCode() {
+      if (!form.category) {
+        setForm(f => ({ ...f, productCode: "" }));
+        return;
+      }
+      let prefix = "";
+      switch (form.category) {
+        case "necklace": prefix = "D"; break;
+        case "ring": prefix = "N"; break;
+        case "earring": prefix = "E"; break;
+        case "bracelet": prefix = "B"; break;
+        default: prefix = "X";
+      }
+      try {
+        const res = await fetch(`http://localhost:9004/api/products/search/category?q=${form.category}`);
+        if (res.ok) {
+          const data = await res.json();
+          let maxCode = 0;
+          data.forEach((p: any) => {
+            if (p.productCode && p.productCode.startsWith(prefix)) {
+              const num = parseInt(p.productCode.substring(1));
+              if (!isNaN(num) && num > maxCode) maxCode = num;
+            }
+          });
+          const nextCode = prefix + String(maxCode + 1).padStart(3, '0');
+          setForm(f => ({ ...f, productCode: nextCode }));
+        } else {
+          setForm(f => ({ ...f, productCode: prefix + '001' }));
+        }
+      } catch {
+        setForm(f => ({ ...f, productCode: prefix + '001' }));
+      }
     }
-    setForm(f => ({ ...f, productCode: code }));
+    fetchNextProductCode();
+    // eslint-disable-next-line
   }, [form.category]);
 
   function handleChange(e: any) {
@@ -165,9 +193,7 @@ export default function ProductPage() {
     const file = e.target.files?.[0];
     if (file) {
       setForm({ ...form, image: file });
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      setImagePreview(URL.createObjectURL(file));
     } else {
       setImagePreview(null);
       setForm({ ...form, image: "" });
@@ -176,7 +202,6 @@ export default function ProductPage() {
   // Sửa lại hàm handleSubmit để gửi FormData (multipart/form-data) khi thêm sản phẩm mới, phù hợp với backend nhận @RequestPart product (JSON) và @RequestPart image (file).
   async function handleSubmit(e: any) {
     e.preventDefault();
-    // Tạo object sản phẩm (bỏ trường image nếu là file)
     const { image, ...productData } = form;
     const formData = new FormData();
     formData.append('product', JSON.stringify(productData));
@@ -187,11 +212,10 @@ export default function ProductPage() {
       const res = await fetch('http://localhost:9004/api/products/add', {
         method: 'POST',
         body: formData,
-        // KHÔNG set Content-Type, browser sẽ tự động
       });
       if (res.ok) {
         // Fetch lại danh sách sản phẩm từ backend để đảm bảo đồng bộ
-        const listRes = await fetch('http://localhost:9004/api/products');
+        const listRes = await fetch('http://localhost:9004/api/products/all-with-images');
         const list = await listRes.json();
         setProducts(list);
         // Reset form
@@ -209,8 +233,10 @@ export default function ProductPage() {
           quantity: "",
           productCode: "",
           price: "",
+          description: "",
         });
         setImagePreview(null);
+        setShowAdd(false); // Đóng popup khi thêm thành công
       } else {
         alert('Thêm sản phẩm thất bại!');
       }
@@ -228,8 +254,9 @@ export default function ProductPage() {
   }
 
   // Hàm mở popup sửa, prefill dữ liệu
-  function handleEdit(product: any) {
-    setEditProduct({ ...product });
+  async function handleEdit(product: any) {
+    const detail = await fetchProductDetail(product.id || product.product_id);
+    setEditProduct(detail || product);
     setShowEdit(true);
   }
   // Hàm xử lý thay đổi form sửa
@@ -367,13 +394,13 @@ export default function ProductPage() {
             Debug Uploads
           </button> */}
         </div>
-        <Dialog>
+        <Dialog open={showAdd} onOpenChange={setShowAdd} modal>
           <DialogTrigger asChild>
-            <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold shadow hover:bg-primary/90 transition-colors">
+            <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold shadow hover:bg-primary/90 transition-colors" onClick={() => setShowAdd(true)}>
               Thêm mới
             </button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-screen border-2 border-rose-400 bg-[#111113] text-white rounded-2xl shadow-2xl">
+          <DialogContent className="max-w-4xl w-full overflow-y-auto max-h-screen border-2 border-border bg-card text-foreground rounded-2xl shadow-2xl" onInteractOutside={e => e.preventDefault()}>
             <DialogModalHeader>
               <DialogModalTitle className="text-2xl font-bold mb-2">Thêm sản phẩm mới</DialogModalTitle>
             </DialogModalHeader>
@@ -386,9 +413,10 @@ export default function ProductPage() {
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                 />
               </div>
+
               {/* Hàng 2: Loại sản phẩm - Mã sản phẩm - Số lượng */}
               <div className="grid grid-cols-3 gap-6 mb-2">
                 <div className="space-y-2">
@@ -397,7 +425,7 @@ export default function ProductPage() {
                     value={form.category}
                     onValueChange={(v) => handleSelect("category", v)}
                   >
-                    <SelectTrigger className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full">
+                    <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full">
                       <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
@@ -414,7 +442,7 @@ export default function ProductPage() {
                     name="productCode"
                     value={form.productCode}
                     readOnly
-                    className="bg-muted border border-rose-300 rounded-lg px-4 py-3 text-base w-full"
+                    className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
@@ -426,7 +454,7 @@ export default function ProductPage() {
                     value={form.quantity}
                     onChange={handleChange}
                     required
-                    className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>
               </div>
@@ -441,7 +469,7 @@ export default function ProductPage() {
                     value={form.weight}
                     onChange={handleChange}
                     required
-                    className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>
                 <div className="space-y-2">
@@ -451,7 +479,7 @@ export default function ProductPage() {
                     onValueChange={(v) => handleSelect("goldAge", v)}
                     required
                   >
-                    <SelectTrigger className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full">
+                    <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full">
                       <SelectValue placeholder="Chọn tuổi vàng" />
                     </SelectTrigger>
                     <SelectContent>
@@ -475,7 +503,7 @@ export default function ProductPage() {
                     onChange={handleChange}
                     onBlur={handleWageBlur}
                     required
-                    className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>
                 <div className="space-y-2">
@@ -487,7 +515,7 @@ export default function ProductPage() {
                     value={form.price}
                     onChange={handleChange}
                     required
-                    className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>
               </div>
@@ -500,7 +528,7 @@ export default function ProductPage() {
                     value={form.origin}
                     onChange={handleChange}
                     required
-                    className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>
                 <div className="space-y-2">
@@ -510,7 +538,7 @@ export default function ProductPage() {
                     value={form.brand}
                     onChange={handleChange}
                     required
-                    className="border border-rose-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-rose-400 bg-[#18181b] text-white w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>
               </div>
@@ -521,9 +549,23 @@ export default function ProductPage() {
                   name="sku"
                   value={form.sku}
                   readOnly
-                  className="bg-muted border border-rose-300 rounded-lg px-4 py-3 text-base w-full"
+                  className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground"
                 />
               </div>
+
+              {/* Mô tả chi tiết */}
+              <div className="space-y-2 mb-2">
+                <label className="font-semibold text-base">Mô tả chi tiết</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={3}
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full resize-none"
+                  placeholder="Nhập mô tả chi tiết về sản phẩm..."
+                />
+              </div>
+              
               {/* Nhãn */}
               <div className="space-y-2">
                 <label className="font-semibold text-base">Nhãn</label>
@@ -549,14 +591,14 @@ export default function ProductPage() {
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600"
+                    className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
                   />
                 </div>
                 {imagePreview && (
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="w-28 h-28 object-cover rounded-xl border border-rose-300 mt-2"
+                    className="w-28 h-28 object-cover rounded-xl border border-border mt-2"
                   />
                 )}
                 <div className="mt-4 flex justify-center w-full">
@@ -569,7 +611,7 @@ export default function ProductPage() {
                   />
                 </div>
               </div>
-              {/* Nút submit */}
+              {/* Nút submit và cancel */}
               <DialogFooter>
                 <button
                   type="submit"
@@ -577,9 +619,34 @@ export default function ProductPage() {
                 >
                   Thêm sản phẩm
                 </button>
+                <button
+                  type="button"
+                  className="w-full mt-2 bg-gray-400 text-white px-4 py-3 rounded-lg text-lg font-bold hover:bg-gray-500 border border-gray-300 shadow-sm"
+                  onClick={() => {
+                    setShowAdd(false);
+                    setForm({
+                      name: "",
+                      weight: "",
+                      origin: "",
+                      brand: "",
+                      goldAge: "",
+                      category: "",
+                      sku: "",
+                      image: "",
+                      tags: [],
+                      wage: "",
+                      quantity: "",
+                      productCode: "",
+                      price: "",
+                      description: "",
+                    });
+                    setImagePreview(null);
+                  }}
+                >
+                  Hủy
+                </button>
               </DialogFooter>
             </form>
-
           </DialogContent>
         </Dialog>
       </div>
@@ -590,27 +657,26 @@ export default function ProductPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <div className="grid grid-cols-12 gap-4 font-semibold border-b px-6 py-3 bg-gradient-to-r from-rose-100/80 to-rose-200/80 dark:from-[#23232b] dark:to-[#18181b] text-center rounded-t-lg">
-              <div>Mã SP</div>
-              <div>Tên SP</div>
-              <div>Loại</div>
-              <div>Chất liệu</div>
-              <div>Hàm lượng</div>
-              <div>Giá bán</div>
-              <div>Ảnh</div>
-              <div>Trạng thái</div>
-              <div>Ngày tạo</div>
-              <div>Ngày cập nhật</div>
-              <div>Chi tiết sản phẩm</div>
-              <div>Thao tác</div>
+              <div className="col-span-1 whitespace-nowrap">Mã SP</div>
+              <div className="col-span-2 whitespace">Tên SP</div>
+              <div className="col-span-1 whitespace-nowrap">Loại</div>
+              <div className="col-span-1 whitespace">Hàm lượng</div>
+              <div className="col-span-1 whitespace-nowrap">Tiền công</div>
+              <div className="col-span-1 whitespace-nowrap">Ảnh</div>
+              <div className="col-span-1 whitespace-nowrap">Trạng thái</div>
+              <div className="col-span-1 whitespace-nowrap">Ngày tạo</div>
+              <div className="col-span-1 whitespace">Ngày cập nhật</div>
+              <div className="col-span-1 whitespace">Chi tiết sản phẩm</div>
+              <div className="col-span-1 whitespace-nowrap">Thao tác</div>
             </div>
             {/* Hiển thị danh sách sản phẩm */}
             {products.map((product: any) => {
               console.log("Product row:", product);
               return (
                 <div key={product.id || product.product_id} className="grid grid-cols-12 gap-4 border-b px-6 py-3 items-center text-center hover:bg-rose-50/60 dark:hover:bg-[#23232b] transition-colors group">
-                  <div className="font-mono">{product.productCode}</div>
-                  <div className="font-medium">{product.name}</div>
-                  <div>{(() => {
+                  <div className="col-span-1 font-mono">{product.productCode}</div>
+                  <div className="col-span-2 font-medium text-left">{product.name}</div>
+                  <div className="col-span-1">{(() => {
                     switch (product.category) {
                       case 'necklace': return 'Dây chuyền';
                       case 'bracelet': return 'Vòng tay';
@@ -619,33 +685,16 @@ export default function ProductPage() {
                       default: return product.category;
                     }
                   })()}</div>
-                  <div>{product.material}</div>
-                  <div>{product.karat}</div>
-                  <div className="text-rose-600 font-bold">{product.price?.toLocaleString()}</div>
-                  <div className="flex justify-center">
-                    {product.thumbnailUrl ? (
+                  <div className="col-span-1">{product.goldAge || product.karat || '-'}</div>
+                  <div className="col-span-1 text-rose-600 font-bold">{product.wage?.toLocaleString() || '-'}</div>
+                  <div className="col-span-1 flex justify-center">
+                    {(product.id || product.product_id) ? (
                       <img
-                        src={`http://localhost:9004${product.thumbnailUrl}`}
+                        src={`http://localhost:9004/api/products/image/${product.id || product.product_id}`}
                         alt="thumb"
                         className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
                         onError={(e) => {
-                          console.log('Image load error for:', product.thumbnailUrl);
-                          // Fallback nếu ảnh không load được
-                          e.currentTarget.src = product.thumbnail_url || '/default-avatar.png';
-                        }}
-                        onLoad={() => {
-                          console.log('Image loaded successfully:', product.thumbnailUrl);
-                        }}
-                      />
-                    ) : product.thumbnail_url ? (
-                      <img
-                        src={product.thumbnail_url}
-                        alt="thumb"
-                        className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
-                        onError={(e) => {
-                          console.log('Fallback image load error for:', product.thumbnail_url);
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          e.currentTarget.src = '/default-avatar.png';
                         }}
                       />
                     ) : (
@@ -654,16 +703,16 @@ export default function ProductPage() {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div className="col-span-1">
                     {product.quantity > 0 ? (
                       <span className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">Còn hàng</span>
                     ) : (
                       <span className="inline-block px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">Hết hàng</span>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground">{product.created_at}</div>
-                  <div className="text-xs text-muted-foreground">{product.updated_at}</div>
-                  <div>
+                  <div className="col-span-1 text-xs text-muted-foreground">{product.createdAt ? new Date(product.createdAt).toLocaleDateString('vi-VN') : (product.created_at ? new Date(product.created_at).toLocaleDateString('vi-VN') : '-')}</div>
+                  <div className="col-span-1 text-xs text-muted-foreground">{product.updatedAt ? new Date(product.updatedAt).toLocaleDateString('vi-VN') : (product.updated_at ? new Date(product.updated_at).toLocaleDateString('vi-VN') : '-')}</div>
+                  <div className="col-span-1">
                     <button onClick={async () => {
                       const detail = await fetchProductDetail(product.id || product.product_id);
                       setDetailProduct(detail || product);
@@ -672,7 +721,7 @@ export default function ProductPage() {
                       className="text-blue-600 underline font-semibold hover:text-blue-800 transition-colors"
                     >Xem chi tiết</button>
                   </div>
-                  <div className="flex gap-2 justify-center">
+                  <div className="col-span-1 flex gap-2 justify-center">
                     <button
                       className="text-yellow-600 font-semibold hover:underline hover:text-yellow-700 transition-colors"
                       onClick={() => handleEdit(product)}
@@ -700,56 +749,73 @@ export default function ProductPage() {
             <DetailDialogTitle className="text-3xl font-extrabold mb-2 text-primary">Chi tiết sản phẩm</DetailDialogTitle>
           </DetailDialogHeader>
           {detailProduct && (
-            <div className="flex flex-col md:flex-row gap-8 px-8 pb-8">
-              {/* Ảnh sản phẩm */}
-              <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
-                {detailProduct.thumbnailUrl ? (
-                  <img
-                    src={`http://localhost:9004${detailProduct.thumbnailUrl}`}
-                    alt={detailProduct.name}
-                    className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-200"
-                    onError={(e) => {
-                      e.currentTarget.src = detailProduct.image_url || detailProduct.thumbnail_url || '/default-avatar.png';
-                    }}
-                  />
-                ) : (
-                  <div className="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
-                    Không có ảnh
+            (() => {
+              // Ưu tiên lấy thông tin từ productDetails[0] nếu có
+              const detail = Array.isArray(detailProduct.productDetails) && detailProduct.productDetails.length > 0
+                ? detailProduct.productDetails[0]
+                : {};
+              const getField = (field: string) => detail?.[field] ?? detailProduct?.[field] ?? '-';
+              const getDate = (field: string) => {
+                const val = detail?.[field] ?? detailProduct?.[field];
+                return val ? new Date(val).toLocaleDateString('vi-VN') : '-';
+              };
+              return (
+                <div className="flex flex-col md:flex-row gap-8 px-8 pb-8">
+                  {/* Ảnh sản phẩm */}
+                  <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
+                    {(detailProduct.id || detailProduct.product_id) ? (
+                      <img
+                        src={`http://localhost:9004/api/products/image/${detailProduct.id || detailProduct.product_id}`}
+                        alt={detailProduct.name}
+                        className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-200"
+                        onError={(e) => {
+                          e.currentTarget.src = '/default-avatar.png';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
+                        Không có ảnh
+                      </div>
+                    )}
                   </div>
-                )}
-                {/* Gallery nhỏ nếu có nhiều ảnh, hiện tại chỉ 1 ảnh */}
-                {/* <div className="flex gap-2 mt-2">
-                  <img src={detailProduct.image_url} alt="Ảnh chi tiết" className="w-14 h-14 object-cover rounded border" />
-                </div> */}
-              </div>
-              {/* Thông tin sản phẩm */}
-              <div className="flex-1 grid grid-cols-1 gap-y-2 text-base">
-                <div><span className="font-semibold text-gray-500">ID chi tiết:</span> <span className="font-medium">{detailProduct.detail_id || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{detailProduct.product_id || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Tên sản phẩm:</span> <span className="font-medium">{detailProduct.name || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{detailProduct.category || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Chất liệu:</span> <span className="font-medium">{detailProduct.material || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Hàm lượng:</span> <span className="font-medium">{detailProduct.karat || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Trọng lượng:</span> <span className="font-medium">{detailProduct.weight || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Thiết kế:</span> <span className="font-medium">{detailProduct.design || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Xuất xứ:</span> <span className="font-medium">{detailProduct.origin || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Số lượng tồn kho:</span> <span className="font-medium">{detailProduct.stock_quantity || '-'}</span></div>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="font-semibold text-gray-500">Giá bán:</span>
-                  <span className="text-2xl font-bold text-rose-600">{detailProduct.price ? detailProduct.price.toLocaleString() + ' VNĐ' : '-'}</span>
+                  {/* Thông tin sản phẩm */}
+                  <div className="flex-1 grid grid-cols-1 gap-y-2 text-base">
+                    {/* <div><span className="font-semibold text-gray-500">ID chi tiết:</span> <span className="font-medium">{getField('id')}</span></div> */}
+                    <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{getField('productCode')}</span></div>
+                    <div><span className="font-semibold text-gray-500">Tên sản phẩm:</span> <span className="font-medium">{getField('name') !== '-' ? getField('name') : detailProduct.name}</span></div>
+                    <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{(() => {
+                      switch (getField('category') !== '-' ? getField('category') : detailProduct.category) {
+                        case 'necklace': return 'Dây chuyền';
+                        case 'bracelet': return 'Vòng tay';
+                        case 'ring': return 'Nhẫn';
+                        case 'earring': return 'Bông tai';
+                        default: return getField('category') !== '-' ? getField('category') : detailProduct.category;
+                      }
+                    })()}</span></div>
+                    <div><span className="font-semibold text-gray-500">Chất liệu:</span> <span className="font-medium">Vàng</span></div>
+                    <div><span className="font-semibold text-gray-500">Hàm lượng:</span> <span className="font-medium">{getField('karat') !== '-' ? getField('karat') : detailProduct.goldAge}</span></div>
+                    <div><span className="font-semibold text-gray-500">Trọng lượng:</span> <span className="font-medium">{getField('weight')}</span></div>
+                    <div><span className="font-semibold text-gray-500">Xuất xứ:</span> <span className="font-medium">{getField('origin') !== '-' ? getField('origin') : detailProduct.origin}</span></div>
+                    <div><span className="font-semibold text-gray-500">Số lượng tồn kho:</span> <span className="font-medium">{getField('stockQuantity')}</span></div>
+                    {/* <div><span className="font-semibold text-gray-500">URL ảnh chi tiết:</span> <span className="font-medium">{getField('imageUrl')}</span></div> */}
+                    {/* <div><span className="font-semibold text-gray-500">Mã kiểm định:</span> <span className="font-medium">{getField('certificationNumber')}</span></div> */}
+                    <div><span className="font-semibold text-gray-500">Mô tả chi tiết sản phẩm:</span> <span className="font-medium">{getField('description') !== '-' ? getField('description') : '-'}</span></div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-semibold text-gray-500">Trạng thái:</span>
+                      {Number(getField('stockQuantity')) > 0 ? (
+                        <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-semibold shadow-sm">Còn hàng</span>
+                      ) : (
+                        <span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold shadow-sm">Hết hàng</span>
+                      )}
+                    </div>
+                    <div className="flex flex-row items-center justify-start gap-8 mt-2">
+                      <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày tạo:</span> <span className="font-medium">{getDate('createdAt')}</span></div>
+                      <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày cập nhật:</span> <span className="font-medium">{getDate('updatedAt')}</span></div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="font-semibold text-gray-500">Trạng thái:</span>
-                  <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-semibold shadow-sm">{detailProduct.status || '-'}</span>
-                </div>
-                <div><span className="font-semibold text-gray-500">Mã kiểm định:</span> <span className="font-medium">{detailProduct.certification_number || '-'}</span></div>
-                <div><span className="font-semibold text-gray-500">Ghi chú:</span> <span className="font-medium">{detailProduct.note || '-'}</span></div>
-                <div className="flex flex-row items-center justify-start gap-8 mt-2">
-                  <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày tạo:</span> <span className="font-medium">{detailProduct.created_at || '-'}</span></div>
-                  <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày cập nhật:</span> <span className="font-medium">{detailProduct.updated_at || '-'}</span></div>
-                </div>
-              </div>
-            </div>
+              );
+            })()
           )}
         </DetailDialogContent>
       </DetailDialog>
@@ -797,7 +863,7 @@ export default function ProductPage() {
                         }
                       }
                     }}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600"
+                    className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
                   />
                 </div>
                 {/* Nút xóa ảnh */}
@@ -827,56 +893,85 @@ export default function ProductPage() {
               <div className="flex-1 grid grid-cols-1 gap-y-3 text-base">
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Tên sản phẩm:</span>
-                  <input name="name" value={editProduct.name} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <input name="name" value={editProduct.name} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground" />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Loại:</span>
-                  <input name="category" value={editProduct.category} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <select name="category" value={editProduct.category} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground">
+                    <option value="">Chọn loại sản phẩm</option>
+                    <option value="ring">Nhẫn</option>
+                    <option value="necklace">Dây chuyền</option>
+                    <option value="earring">Bông tai</option>
+                    <option value="bracelet">Vòng tay</option>
+                  </select>
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Chất liệu:</span>
-                  <input name="material" value={editProduct.material} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <input name="material" value={editProduct.material || ''} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground" />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Hàm lượng:</span>
-                  <input name="karat" value={editProduct.karat} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <select name="karat" value={editProduct.karat || ''} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground">
+                    <option value="">Chọn hàm lượng</option>
+                    <option value="983">983</option>
+                    <option value="999">999</option>
+                    <option value="9999">9999</option>
+                    <option value="15k">15k</option>
+                    <option value="16k">16k</option>
+                    <option value="17k">17k</option>
+                    <option value="10k">10k</option>
+                  </select>
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Trọng lượng:</span>
-                  <input name="weight" value={editProduct.weight} onChange={handleEditChange} className="border rounded px-3 py-2" />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="font-semibold text-gray-500">Thiết kế:</span>
-                  <input name="design" value={editProduct.design} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <input name="weight" type="number" value={editProduct.weight} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground" />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Xuất xứ:</span>
-                  <input name="origin" value={editProduct.origin} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <input name="origin" value={editProduct.origin || ''} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground" />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Số lượng tồn kho:</span>
-                  <input name="stock_quantity" value={editProduct.stock_quantity} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <input name="stockQuantity" type="number" value={editProduct.stockQuantity || editProduct.stock_quantity || ''} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground" />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-gray-500">Giá bán:</span>
-                  <input name="price" value={editProduct.price} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <input name="price" type="number" value={editProduct.price} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground" />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="font-semibold text-gray-500">Trạng thái:</span>
-                  <input name="status" value={editProduct.status} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <span className="font-semibold text-gray-500">Tiền công:</span>
+                  <input name="wage" type="number" value={editProduct.wage || ''} onChange={handleEditChange} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground" />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="font-semibold text-gray-500">Mã kiểm định:</span>
-                  <input name="certification_number" value={editProduct.certification_number} onChange={handleEditChange} className="border rounded px-3 py-2" />
+                  <span className="font-semibold text-gray-500">Mô tả chi tiết:</span>
+                  <textarea name="description" value={editProduct.description || ''} onChange={handleEditChange} rows={3} className="border border-border rounded-lg px-4 py-3 text-base bg-background text-foreground w-full resize-none" placeholder="Nhập mô tả chi tiết về sản phẩm..." />
                 </label>
-                <label className="flex flex-col gap-1">
-                  <span className="font-semibold text-gray-500">Ghi chú:</span>
-                  <input name="note" value={editProduct.note} onChange={handleEditChange} className="border rounded px-3 py-2" />
-                </label>
-                {/* Có thể thêm upload ảnh ở đây */}
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold text-gray-500">Nhãn:</span>
+                  <div className="flex gap-4 flex-wrap">
+                    {['Mới nhất', 'Phổ biến nhất', 'Bán chạy', 'Khuyến mãi'].map(tag => (
+                      <label key={tag} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={editProduct.tags?.includes(tag)}
+                          onChange={() => {
+                            setEditProduct((prev: any) => ({
+                              ...prev,
+                              tags: prev.tags?.includes(tag)
+                                ? prev.tags.filter((t: string) => t !== tag)
+                                : [...(prev.tags || []), tag]
+                            }));
+                          }}
+                          className="accent-rose-500 w-4 h-4"
+                        />
+                        {tag}
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex flex-row items-center justify-start gap-8 mt-2">
-                  <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày tạo:</span> <span className="font-medium">{editProduct.created_at || '-'}</span></div>
-                  <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày cập nhật:</span> <span className="font-medium">{editProduct.updated_at || '-'}</span></div>
+                  <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày tạo:</span> <span className="font-medium">{editProduct.created_at || editProduct.createdAt || '-'}</span></div>
+                  <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày cập nhật:</span> <span className="font-medium">{editProduct.updated_at || editProduct.updatedAt || '-'}</span></div>
                 </div>
                 <button type="submit" className="mt-4 bg-rose-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-rose-600 transition-colors">Lưu</button>
               </div>
