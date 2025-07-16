@@ -22,21 +22,19 @@ public class Product {
     private String productCode;
     private String thumbnailUrl;
     private List<String> tags;
-    private double weight;
-    private int quantity;
-    private double price;
+    private Double weight;
+    private Integer quantity;
+    private Double price;
     private String karat;
     private String material;
     private String status;
     private String note;
     private String certificationNumber;
     private String design;
-    private int stockQuantity;
+    private Integer stockQuantity;
     private Double wage;
     private String description;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -59,12 +57,12 @@ public class Product {
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
-    public double getWeight() { return weight; }
-    public void setWeight(double weight) { this.weight = weight; }
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-    public double getPrice() { return price; }
-    public void setPrice(double price) { this.price = price; }
+    public Double getWeight() { return weight; }
+    public void setWeight(Double weight) { this.weight = weight; }
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public Double getPrice() { return price; }
+    public void setPrice(Double price) { this.price = price; }
     public String getKarat() { return karat; }
     public void setKarat(String karat) { this.karat = karat; }
     public String getMaterial() { return material; }
@@ -77,8 +75,8 @@ public class Product {
     public void setCertificationNumber(String certificationNumber) { this.certificationNumber = certificationNumber; }
     public String getDesign() { return design; }
     public void setDesign(String design) { this.design = design; }
-    public int getStockQuantity() { return stockQuantity; }
-    public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
+    public Integer getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
     public Double getWage() { return wage; }
     public void setWage(Double wage) { this.wage = wage; }
     public String getDescription() { return description; }

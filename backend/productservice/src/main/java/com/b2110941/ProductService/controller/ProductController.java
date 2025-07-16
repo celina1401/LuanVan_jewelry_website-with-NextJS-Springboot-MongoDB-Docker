@@ -29,8 +29,6 @@ public class ProductController {
     @Autowired
     private ProductDetailRepository productDetailRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     /**
      * Lấy tất cả sản phẩm
      */
@@ -191,6 +189,11 @@ public class ProductController {
             product.setCreatedAt(java.time.LocalDateTime.now());
             product.setUpdatedAt(java.time.LocalDateTime.now());
 
+            // Đảm bảo stockQuantity = quantity khi thêm mới
+            if (product.getQuantity() != null) {
+                product.setStockQuantity(product.getQuantity());
+            }
+
             // Lưu vào DB
             Product saved = productRepository.save(product);
             System.out.println("==> [POST /add] Lưu product thành công, id: " + saved.getId());
@@ -201,6 +204,7 @@ public class ProductController {
             detail.setWeight(saved.getWeight());
             detail.setDesign(saved.getDesign());
             detail.setOrigin(saved.getOrigin());
+            // Đảm bảo stockQuantity của ProductDetail cũng bằng quantity
             detail.setStockQuantity(saved.getQuantity());
             detail.setImageUrl(saved.getThumbnailUrl());
             detail.setCertificationNumber(saved.getCertificationNumber());
@@ -218,18 +222,76 @@ public class ProductController {
         }
     }
 
-    
-
     /**
      * Cập nhật sản phẩm theo ID
      */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProduct(@PathVariable String id, @RequestBody Product product) {
-        if (!productRepository.existsById(id)) {
+        System.out.println("Product nhận được từ frontend: " + product);
+        Optional<Product> productOpt = productRepository.findById(id);
+        if (!productOpt.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy sản phẩm.");
         }
-        product.setId(id);
-        Product updated = productRepository.save(product);
+        Product existing = productOpt.get();
+
+        // Lưu lại số lượng tồn kho cũ để kiểm tra
+        Integer oldStockQuantity = existing.getStockQuantity();
+        if (oldStockQuantity == null) oldStockQuantity = 0;
+        Integer oldQuantity = existing.getQuantity();
+        if (oldQuantity == null) oldQuantity = 0;
+
+        // Cập nhật các trường nếu có gửi lên (chỉ cập nhật nếu khác null)
+        if (product.getName() != null) existing.setName(product.getName());
+        if (product.getBrand() != null) existing.setBrand(product.getBrand());
+        if (product.getOrigin() != null) existing.setOrigin(product.getOrigin());
+        if (product.getGoldAge() != null) existing.setGoldAge(product.getGoldAge());
+        if (product.getCategory() != null) existing.setCategory(product.getCategory());
+        if (product.getSku() != null) existing.setSku(product.getSku());
+        if (product.getProductCode() != null) existing.setProductCode(product.getProductCode());
+        if (product.getTags() != null) existing.setTags(product.getTags());
+        if (product.getWeight() != null) existing.setWeight(product.getWeight());
+        if (product.getQuantity() != null) existing.setQuantity(product.getQuantity());
+        if (product.getPrice() != null) existing.setPrice(product.getPrice());
+        if (product.getStockQuantity() != null) {
+            // Nếu stockQuantity mới > stockQuantity cũ thì quantity += phần tăng thêm
+            if (product.getStockQuantity() > oldStockQuantity) {
+                int diff = product.getStockQuantity() - oldStockQuantity;
+                existing.setQuantity(oldQuantity + diff);
+            }
+            existing.setStockQuantity(product.getStockQuantity());
+        }
+        if (product.getKarat() != null) existing.setKarat(product.getKarat());
+        if (product.getMaterial() != null) existing.setMaterial(product.getMaterial());
+        if (product.getStatus() != null) existing.setStatus(product.getStatus());
+        if (product.getNote() != null) existing.setNote(product.getNote());
+        if (product.getCertificationNumber() != null) existing.setCertificationNumber(product.getCertificationNumber());
+        if (product.getDesign() != null) existing.setDesign(product.getDesign());
+        if (product.getWage() != null) existing.setWage(product.getWage());
+        if (product.getDescription() != null) existing.setDescription(product.getDescription());
+        // Không cập nhật thumbnailUrl ở đây (ảnh dùng endpoint riêng)
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        Product updated = productRepository.save(existing);
+
+        // --- Đồng bộ ProductDetail ---
+        List<ProductDetail> details = productDetailRepository.findByProductId(id);
+        if (details != null && !details.isEmpty()) {
+            for (ProductDetail detail : details) {
+                // Đồng bộ các trường chính
+                if (product.getWeight() != null) detail.setWeight(product.getWeight());
+                if (product.getOrigin() != null) detail.setOrigin(product.getOrigin());
+                if (product.getStockQuantity() != null) detail.setStockQuantity(product.getStockQuantity());
+                if (product.getDesign() != null) detail.setDesign(product.getDesign());
+                if (product.getCertificationNumber() != null) detail.setCertificationNumber(product.getCertificationNumber());
+                if (product.getNote() != null) detail.setNote(product.getNote());
+                if (product.getStatus() != null) detail.setStatus(product.getStatus());
+                if (product.getDescription() != null) detail.setDescription(product.getDescription());
+                // Nếu cần đồng bộ thêm trường nào, thêm ở đây
+                productDetailRepository.save(detail);
+            }
+        }
+        // --- End đồng bộ ProductDetail ---
+
         return ResponseEntity.ok(updated);
     }
 
