@@ -1,17 +1,9 @@
 "use client"
 
 import * as React from "react"
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
+import { useState } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from "./card"
-import { Badge } from "./badge"
 import {
   Table,
   TableBody,
@@ -21,16 +13,7 @@ import {
   TableRow,
 } from "./table"
 import { Input } from "./input"
-import { Button } from "./button"
-import { Search } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./select"
-import { Calendar } from "./calendar"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 
 interface GoldPrice {
@@ -48,350 +31,256 @@ interface GoldPriceHistory {
   timestamp: string
 }
 
-// Mock data - In real app, this would come from an API
-const goldPriceData = [
-  { date: "2023-01", price: 1800, key: "2023-01" },
-  { date: "2023-02", price: 1820, key: "2023-02" },
-  { date: "2023-03", price: 1850, key: "2023-03" },
-  { date: "2023-04", price: 1880, key: "2023-04" },
-  { date: "2023-05", price: 1900, key: "2023-05" },
-  { date: "2023-06", price: 1930, key: "2023-06" },
-  { date: "2023-07", price: 1950, key: "2023-07" },
-  { date: "2023-08", price: 1970, key: "2023-08" },
-  { date: "2023-09", price: 2000, key: "2023-09" },
-  { date: "2023-10", price: 2020, key: "2023-10" },
-  { date: "2023-11", price: 2030, key: "2023-11" },
-  { date: "2023-12", price: 2040, key: "2023-12" },
-  { date: "2024-01", price: 2050, key: "2024-01" },
-  { date: "2024-02", price: 2080, key: "2024-02" },
-  { date: "2024-03", price: 2120, key: "2024-03" },
-  { date: "2024-04", price: 2150, key: "2024-04" },
-  { date: "2024-05-01", price: 2180, key: "2024-05-01" },
-  { date: "2024-05-02", price: 2185, key: "2024-05-02" },
-  { date: "2024-05-03", price: 2188, key: "2024-05-03" },
-  { date: "2024-05-04", price: 2185, key: "2024-05-04" },
-  { date: "2024-05-05", price: 2190, key: "2024-05-05" },
-  { date: "2024-05-06", price: 2192, key: "2024-05-06" },
-  { date: "2024-05-07", price: 2195, key: "2024-05-07" },
-  { date: "2024-05-08", price: 2193, key: "2024-05-08" },
-  { date: "2024-05-09", price: 2198, key: "2024-05-09" },
-  { date: "2024-05-10", price: 2200, key: "2024-05-10" },
-  { date: "2024-05-11", price: 2203, key: "2024-05-11" },
-  { date: "2024-05-12", price: 2201, key: "2024-05-12" },
-  { date: "2024-05-13", price: 2205, key: "2024-05-13" },
-  { date: "2024-05-14", price: 2207, key: "2024-05-14" },
-  { date: "2024-05-15", price: 2210, key: "2024-05-15" },
-  { date: "2024-05-16", price: 2212, key: "2024-05-16" },
-  { date: "2024-05-17", price: 2215, key: "2024-05-17" },
-  { date: "2024-05-18", price: 2213, key: "2024-05-18" },
-  { date: "2024-05-19", price: 2217, key: "2024-05-19" },
-  { date: "2024-05-20", price: 2220, key: "2024-05-20" },
-  { date: "2024-05-21", price: 2223, key: "2024-05-21" },
-  { date: "2024-05-22", price: 2221, key: "2024-05-22" },
-  { date: "2024-05-23", price: 2225, key: "2024-05-23" },
-  { date: "2024-05-24", price: 2228, key: "2024-05-24" },
-  { date: "2024-05-25", price: 2230, key: "2024-05-25" },
-  { date: "2024-05-26", price: 2228, key: "2024-05-26" },
-  { date: "2024-05-27", price: 2232, key: "2024-05-27" },
-  { date: "2024-05-28", price: 2235, key: "2024-05-28" },
-  { date: "2024-05-29", price: 2233, key: "2024-05-29" },
-  { date: "2024-05-30", price: 2238, key: "2024-05-30" },
-  { date: "2024-05-31", price: 2240, key: "2024-05-31" },
-  { date: "2024-06-01", price: 2242, key: "2024-06-01" },
-  { date: "2024-06-02", price: 2245, key: "2024-06-02" },
-  { date: "2024-06-03", price: 2248, key: "2024-06-03" },
-  { date: "2024-06-04", price: 2246, key: "2024-06-04" },
-  { date: "2024-06-05", price: 2250, key: "2024-06-05" },
-  { date: "2024-06-06", price: 2253, key: "2024-06-06" },
-  { date: "2024-06-07", price: 2255, key: "2024-06-07" },
-  { date: "2024-06-08", price: 2257, key: "2024-06-08" },
-  { date: "2024-06-09", price: 2260, key: "2024-06-09" },
-  { date: "2024-06-10", price: 2263, key: "2024-06-10" },
-  { date: "2025-03-01", price: 2320, key: "2025-03-01" },
-  { date: "2025-03-02", price: 2325, key: "2025-03-02" },
-  { date: "2025-03-03", price: 2330, key: "2025-03-03" },
-]
-
-const goldTypes = [
-  { type: "SJC 9999", buy: 2200, sell: 2220 },
-  { type: "SJC 999", buy: 2190, sell: 2210 },
-  { type: "SJC 980", buy: 2180, sell: 2200 },
-  { type: "SJC 950", buy: 2170, sell: 2190 },
-  { type: "SJC 900", buy: 2160, sell: 2180 },
-  { type: "SJC 750", buy: 2150, sell: 2170 },
-]
-
-const currentPrice = goldPriceData[goldPriceData.length - 1].price
-const priceChange = currentPrice - goldPriceData[goldPriceData.length - 2].price
-const priceChangePercentage = ((priceChange / goldPriceData[goldPriceData.length - 2].price) * 100).toFixed(2)
+// Thay thế mock data bằng fetch từ GoldAPI
+const GOLD_API_KEY = "goldapi-4c7dtk19md649ycb-io"; // <-- Điền API Key tại đây
+const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
 
 export function GoldPriceChart() {
-  const [currentPrices, setCurrentPrices] = React.useState<GoldPrice[]>([])
-  const [priceHistory, setPriceHistory] = React.useState<GoldPriceHistory[]>([])
-  const [statistics, setStatistics] = React.useState<any>(null)
-  const [searchTerm, setSearchTerm] = React.useState("")
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = React.useState<string>("")
-  const [timeRange, setTimeRange] = React.useState("today") // Default to 'Hôm nay' (approx. 24h)
-  const [selectedYear, setSelectedYear] = React.useState<string>("") // Default to empty string
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [goldData, setGoldData] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = React.useState<string>("");
+  const [exchangeRate, setExchangeRate] = React.useState(25000); // Tỷ giá USD/VND mặc định
+  const [history, setHistory] = React.useState<Array<{price: number, timestamp: string}>>([]);
+  const [filterMode, setFilterMode] = useState<'day' | 'week' | 'month'>('day');
 
-  // Get unique years from data
-  const getUniqueYears = () => {
-    const years = goldPriceData.map(item => new Date(item.date).getFullYear().toString());
-    return ["all", ...Array.from(new Set(years))].sort();
-  };
+  // Hệ số quy đổi các tuổi vàng
+  const goldRatios = [
+    { label: '9999', ratio: 0.9999 },
+    { label: '999', ratio: 0.999 },
+    { label: '99', ratio: 0.99 },
+    { label: '24k', ratio: 1.0 },
+    { label: '23k', ratio: 0.958 },
+    { label: '17k', ratio: 0.708 },
+    { label: '16k', ratio: 0.666 },
+    { label: '15k', ratio: 0.625 },
+    { label: '10k', ratio: 0.416 },
+  ];
 
-  // Filter data based on selected time range and year
-  const getFilteredData = () => {
-    // Note: Using a fixed date for 'now' to demonstrate filtering with mock daily data.
-    // In a real app, use `new Date()`. Adjust this date to match your mock data range.
-    const now = new Date('2024-06-10'); // Using the last date in the detailed mock data
+  // Hàm tính giá vàng theo các đơn vị
+  function goldPriceInVND(priceUSD: number, exchangeRate: number, purity: number) {
+    const perGram = (priceUSD / 31.1035) * exchangeRate * purity;
+    const perChi = perGram * 3.75 + 200000;
+    const perLuong = perChi * 10;
+    return {
+      gram: Math.round(perGram),
+      chi: Math.round(perChi),
+      luong: Math.round(perLuong),
+    };
+  }
 
-    // Set time to midnight for consistent date comparisons
-    now.setHours(0, 0, 0, 0);
+  // Tính giá vàng cho từng loại
+  let goldPrices: Array<{label: string, ratio: number, price: number, pricePerChi: number, pricePerGram: number, pricePerLuong: number}> = [];
+  if (goldData && goldData.price) {
+    goldPrices = goldRatios.map(g => {
+      const priceObj = goldPriceInVND(goldData.price, exchangeRate, g.ratio);
+      return {
+        ...g,
+        price: priceObj.chi,
+        pricePerChi: priceObj.chi,
+        pricePerGram: priceObj.gram,
+        pricePerLuong: priceObj.luong,
+      };
+    });
+  }
 
-    const filteredByTimeRange = (() => {
-        switch (timeRange) {
-            case "today":
-                // Filter for data points from the fixed 'today' onwards
-                return goldPriceData.filter(item => {
-                    const itemDate = new Date(item.date);
-                    itemDate.setHours(0, 0, 0, 0);
-                    return itemDate.getTime() === now.getTime();
-                });
-            case "yesterday": // This option is not in the current Select, but keeping logic just in case
-                 // Filter for data points from the fixed 'yesterday'
-                 const yesterday = new Date(now);
-                 yesterday.setDate(now.getDate() - 1);
-                 return goldPriceData.filter(item => {
-                    const itemDate = new Date(item.date);
-                    itemDate.setHours(0, 0, 0, 0);
-                    return itemDate.getTime() === yesterday.getTime();
-                 });
-            case "last7d":
-                // Filter for data points in the last 7 full days (including the fixed 'today')
-                const last7d = new Date(now);
-                last7d.setDate(now.getDate() - 6); // Go back 6 days to include today
-                return goldPriceData.filter(item => {
-                    const itemDate = new Date(item.date);
-                    itemDate.setHours(0, 0, 0, 0);
-                    return itemDate >= last7d;
-                });
-            case "last30d": // This option is not in the current Select, but keeping logic just in case
-                 // Filter for data points in the last 30 full days (including the fixed 'today')
-                 const last30d = new Date(now);
-                 last30d.setDate(now.getDate() - 29); // Go back 29 days to include today
-                 return goldPriceData.filter(item => {
-                    const itemDate = new Date(item.date);
-                    itemDate.setHours(0, 0, 0, 0);
-                    return itemDate >= last30d;
-                 });
-            case "thisMonth":
-                // Filter for data points in the calendar month of the fixed 'now' date
-                return goldPriceData.filter(item => {
-                    const itemDate = new Date(item.date);
-                    return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
-                });
-            case "lastMonth":
-                // Filter for data points in the previous calendar month relative to the fixed 'now' date
-                const lastMonth = new Date(now);
-                lastMonth.setMonth(now.getMonth() - 1);
-                return goldPriceData.filter(item => {
-                    const itemDate = new Date(item.date);
-                    return itemDate.getMonth() === lastMonth.getMonth() && itemDate.getFullYear() === lastMonth.getFullYear();
-                });
-            case "all":
-                // If timeRange is 'all', filter by selected year
-                if (selectedYear !== "all") {
-                    return goldPriceData.filter(item => new Date(item.date).getFullYear().toString() === selectedYear);
-                }
-                return goldPriceData;
-            default:
-                // Default to last 6 months (approximate based on months relative to the fixed 'now' date)
-                const last6Months = new Date(now);
-                last6Months.setMonth(now.getMonth() - 6);
-                return goldPriceData.filter(item => {
-                   const itemDate = new Date(item.date);
-                   return itemDate >= last6Months;
-                });
-        }
-    })();
-
-    // Apply year filter ONLY when timeRange is 'all'
-    if (timeRange !== 'all' && selectedYear !== 'all') {
-      // This case is ignored based on current logic.
-      return filteredByTimeRange;
+  // Hàm lấy tỷ giá USD/VND từ Vietcombank
+  async function fetchVietcombankUSDRate(): Promise<number | null> {
+    try {
+      const res = await fetch('/api/vcb-rate');
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.rate || null;
+    } catch {
+      return null;
     }
+  }
 
-    return filteredByTimeRange;
-  };
-
-  // Update timestamp when component mounts
+  // Khi load component, tự động lấy tỷ giá Vietcombank và cập nhật mỗi tiếng
   React.useEffect(() => {
-    setLastUpdated(new Date().toLocaleString())
-  }, [])
+    function updateRate() {
+      fetchVietcombankUSDRate().then(rate => {
+        if (rate) setExchangeRate(rate);
+      });
+    }
+    updateRate(); // Gọi lần đầu
+    const interval = setInterval(updateRate, 60 * 60 * 1000); // 1 tiếng
+    return () => clearInterval(interval);
+  }, []);
+
+  React.useEffect(() => {
+    async function fetchGoldPrice() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(GOLD_API_URL, {
+          headers: {
+            'x-access-token': GOLD_API_KEY,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) throw new Error('Không lấy được giá vàng từ GoldAPI');
+        const data = await res.json();
+        setGoldData(data);
+        setLastUpdated(new Date().toLocaleString());
+        // Gửi giá và timestamp lên API để lưu vào file json mỗi 1 tiếng (nếu chưa có bản ghi trong giờ này)
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentDate = now.toISOString().slice(0, 13); // yyyy-mm-ddThh
+        // Kiểm tra history đã có bản ghi trong giờ này chưa
+        const hasThisHour = history.some(h => h.timestamp.slice(0, 13) === currentDate);
+        if (!hasThisHour) {
+          fetch('/api/gold-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ price: data.price, timestamp: now.toISOString() })
+          });
+        }
+      } catch (err: any) {
+        setError(err.message || 'Lỗi không xác định');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchGoldPrice();
+  }, []);
+
+  // Lấy dữ liệu lịch sử giá vàng từ file json
+  React.useEffect(() => {
+    async function fetchHistory() {
+      try {
+        const res = await fetch('/gold-history.json');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) setHistory(data);
+        }
+      } catch {}
+    }
+    fetchHistory();
+    // Cập nhật mỗi 5s để chart realtime
+    const interval = setInterval(fetchHistory, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Lọc dữ liệu history theo filterMode
+  const now = Date.now();
+  let filteredHistory = history;
+  if (filterMode === 'day') {
+    filteredHistory = history.filter(h => now - new Date(h.timestamp).getTime() <= 24 * 60 * 60 * 1000);
+  } else if (filterMode === 'week') {
+    filteredHistory = history.filter(h => now - new Date(h.timestamp).getTime() <= 7 * 24 * 60 * 60 * 1000);
+  } else if (filterMode === 'month') {
+    filteredHistory = history.filter(h => now - new Date(h.timestamp).getTime() <= 30 * 24 * 60 * 60 * 1000);
+  }
+
+  // Nếu muốn lọc nhiều loại vàng, cần fetch nhiều endpoint và map thành mảng. Ở đây chỉ có 1 loại XAU/USD.
+  const filteredGoldTypes = goldData ? [goldData] : [];
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Biểu đồ giá vàng</CardTitle>
-            <div className="flex items-center gap-2">
-              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Khoảng thời gian" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">24 giờ</SelectItem> {/* Approx 24h */}
-                  <SelectItem value="last7d">7 ngày</SelectItem>
-                  <SelectItem value="thisMonth">Tháng này</SelectItem>
-                  <SelectItem value="lastMonth">Tháng trước</SelectItem>
-                  <SelectItem value="all">Tất cả thời gian</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Chọn năm" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getUniqueYears().map(year => (
-                    <SelectItem key={year} value={year}>
-                      {year === "all" ? "Tất cả năm" : year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <span className="text-2xl font-bold">${currentPrice}</span>
-              <Badge variant={priceChange >= 0 ? "default" : "destructive"}>
-                {priceChange >= 0 ? "+" : ""}{priceChange} ({priceChangePercentage}%)
-              </Badge>
+    <div className="flex flex-col md:flex-row gap-6 md:items-stretch">
+      {/* Chart */}
+      <div className="w-full md:w-1/2 flex flex-col min-h-0">
+        <Card className="flex flex-col h-full min-h-0 max-h-[400px] rounded-xl shadow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
+          <CardHeader>
+            <CardTitle className="text-zinc-900 dark:text-zinc-100">Lịch sử giá vàng (USD/oz)</CardTitle>
+            <div className="mt-4 flex gap-4">
+              <button
+                className={`px-4 py-2 rounded-lg transition font-bold shadow-sm focus:outline-none ${filterMode === 'day' ? 'bg-yellow-400 text-black' : 'bg-zinc-100 text-black hover:bg-yellow-100'}`}
+                onClick={() => setFilterMode('day')}
+              >Theo ngày</button>
+              <button
+                className={`px-4 py-2 rounded-lg transition font-bold shadow-sm focus:outline-none ${filterMode === 'week' ? 'bg-yellow-400 text-black' : 'bg-zinc-100 text-black hover:bg-yellow-100'}`}
+                onClick={() => setFilterMode('week')}
+              >Theo tuần</button>
+              <button
+                className={`px-4 py-2 rounded-lg transition font-bold shadow-sm focus:outline-none ${filterMode === 'month' ? 'bg-yellow-400 text-black' : 'bg-zinc-100 text-black hover:bg-yellow-100'}`}
+                onClick={() => setFilterMode('month')}
+              >Theo tháng</button>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="w-full h-[300px]">
+          </CardHeader>
+          <CardContent className="flex-1 h-full p-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={getFilteredData()}>
-                <CartesianGrid stroke="#666" strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: "#bbb" }}
-                  axisLine={{ stroke: "#888" }}
-                  tickLine={{ stroke: "#888" }}
-                  tickFormatter={(value) => {
-                    // Check if the date value includes a day (YYYY-MM-DD)
-                    if (value.includes('-') && value.split('-').length === 3) {
-                        const [year, month, day] = value.split('-');
-                        return `${month}/${day}`; // Format as MM/DD for daily data
-                    } else {
-                        // Assume YYYY-MM format for monthly data
-                        const [year, month] = value.split('-');
-                        return `${year}-${month}`; // Keep YYYY-MM format for monthly data
-                    }
-                  }}
-                />
-                <YAxis
-                  domain={['dataMin - 50', 'dataMax + 50']}
-                  tickFormatter={(value) => `$${value}`}
-                  tick={{ fill: "#bbb" }}
-                  axisLine={{ stroke: "#888" }}
-                  tickLine={{ stroke: "#888" }}
-                />
-                <Tooltip
-                  contentStyle={{ background: "#333", border: "1px solid #555", color: "#fff", borderRadius: "4px" }}
-                  labelStyle={{ color: "#fff" }}
-                  itemStyle={{ color: "#FFD700" }}
-                  formatter={(value) => [`$${value}`, 'Price']}
-                  labelFormatter={(label) => label}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="price"
-                  stroke="#FFD700"
-                  strokeWidth={2}
-                  dot={(props: any) => {
-                    const { cx, cy, stroke, key, index } = props;
-                    // Check if this is the last data point
-                    if (index === getFilteredData().length - 1) {
-                      return (
-                        <svg key={key} x={cx - 4} y={cy - 4} width={8} height={8} fill="#FF0000" stroke="#FF0000" strokeWidth={2}>
-                          <circle cx={4} cy={4} r={4} />
-                        </svg>
-                      );
-                    }
-                    // Default dot for other data points
-                    return (
-                      <svg key={key} x={cx - 3} y={cy - 3} width={6} height={6} fill="#FFD700" stroke="#FFD700" strokeWidth={2}>
-                        <circle cx={3} cy={3} r={3} key={index} />
-                      </svg>
-                    );
-                  }}
-                  activeDot={{ r: 8, fill: "#FFD700" }}
-                />
+              <LineChart data={filteredHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="timestamp" tickFormatter={v => new Date(v).toLocaleTimeString()} minTickGap={40} />
+                <YAxis domain={['auto', 'auto']} />
+                <Tooltip labelFormatter={v => new Date(v).toLocaleString()} />
+                <Line type="monotone" dataKey="price" stroke="#FFD700" dot={false} />
               </LineChart>
             </ResponsiveContainer>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Cao nhất 24h</p>
-              <p className="text-lg font-semibold">${currentPrice + 20}</p>
+          </CardContent>
+        </Card>
+      </div>
+      {/* Bảng giá */}
+      <div className="w-full md:w-1/2 flex flex-col min-h-0">
+        <Card className="flex flex-col h-full min-h-0 rounded-xl shadow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <CardTitle className="whitespace-nowrap text-zinc-900 dark:text-zinc-100">Bảng giá vàng</CardTitle>
+              <div className="flex flex-row items-center gap-4 flex-nowrap">
+                <Input
+                  placeholder="Tìm theo loại..."
+                  value={searchTerm}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                  className="w-[200px] bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                />
+                <div className="flex flex-row items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={exchangeRate}
+                    readOnly
+                    className="w-[120px] bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                    placeholder="Tỷ giá USD/VND"
+                  />
+                  <span className="text-xs text-muted-foreground dark:text-zinc-400">Tỷ giá tự động lấy từ Vietcombank.</span>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Thấp nhất 24h</p>
-              <p className="text-lg font-semibold">${currentPrice - 20}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Bảng giá vàng</CardTitle>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Tìm theo loại..."
-                value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                className="w-[200px]"
-              />
-              <Button variant="ghost" size="icon">
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="max-h-[300px] overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Loại</TableHead>
-                  <TableHead className="text-right">Mua vào</TableHead>
-                  <TableHead className="text-right">Bán ra</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {goldTypes.map((gold) => (
-                  <TableRow key={gold.type}>
-                    <TableCell className="font-medium">{gold.type}</TableCell>
-                    <TableCell className="text-right">${gold.buy}</TableCell>
-                    <TableCell className="text-right">${gold.sell}</TableCell>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="flex flex-col">
+               <div className="overflow-y-auto max-h-[400px]">
+                 <Table className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                <TableHeader>
+                  <TableRow className="border-b border-zinc-200 dark:border-zinc-700">
+                    <TableHead className="text-left font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tuổi vàng</TableHead>
+                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tỷ lệ</TableHead>
+                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/gram (VNĐ)</TableHead>
+                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/chỉ (VNĐ)</TableHead>
+                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/lượng (VNĐ)</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="mt-4 text-sm text-muted-foreground">
-            <p>Cập nhật lần cuối: {lastUpdated}</p>
-            <p className="mt-1">Giá tính theo USD/ounce</p>
-          </div>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow><TableCell colSpan={5}>Đang tải...</TableCell></TableRow>
+                  ) : error ? (
+                    <TableRow><TableCell colSpan={5} className="text-red-500">{error}</TableCell></TableRow>
+                  ) : goldPrices.length > 0 ? (
+                    goldPrices.filter(g => g.label.toLowerCase().includes(searchTerm.toLowerCase())).map(g => (
+                      <TableRow key={g.label}>
+                        <TableCell className="font-medium py-2 text-zinc-900 dark:text-zinc-100">{g.label}</TableCell>
+                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.ratio}</TableCell>
+                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerGram.toLocaleString()}</TableCell>
+                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerChi.toLocaleString()}</TableCell>
+                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerLuong.toLocaleString()}</TableCell>
+                    </TableRow>
+                    ))
+                  ) : (
+                    <TableRow><TableCell colSpan={5}>Không có dữ liệu</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+               </div>
+            </div>
+            <div className="mt-4 text-sm text-muted-foreground dark:text-zinc-400">
+              <p>Cập nhật lần cuối: {lastUpdated}</p>
+              <p className="mt-1">Giá tính theo USD/ounce, tỷ giá: {exchangeRate.toLocaleString()} VND/USD</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  )
+  );
 }

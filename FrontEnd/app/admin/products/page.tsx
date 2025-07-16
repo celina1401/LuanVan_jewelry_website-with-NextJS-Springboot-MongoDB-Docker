@@ -159,16 +159,16 @@ export default function ProductPage() {
     // Nếu không thay đổi loại sản phẩm thì hiển thị lại mã ban đầu
     if (originalEditCategory === editProduct.category) {
       setEditProduct((prev: any) => ({ ...prev, productCode: originalEditProductCode }));
-      return;
-    }
-    let prefix = "";
+        return;
+      }
+      let prefix = "";
     switch (editProduct.category) {
-      case "necklace": prefix = "D"; break;
-      case "ring": prefix = "N"; break;
-      case "earring": prefix = "E"; break;
-      case "bracelet": prefix = "B"; break;
-      default: prefix = "X";
-    }
+        case "necklace": prefix = "D"; break;
+        case "ring": prefix = "N"; break;
+        case "earring": prefix = "E"; break;
+        case "bracelet": prefix = "B"; break;
+        default: prefix = "X";
+      }
     async function fetchNextProductCodeForEdit() {
       try {
         const res = await fetch(`http://localhost:9004/api/products/search/category?q=${editProduct.category}`);
@@ -296,7 +296,7 @@ export default function ProductPage() {
         [name]: value === '' ? null : Number(value)
       }));
     } else {
-      setEditProduct((prev: any) => ({ ...prev, [name]: value }));
+    setEditProduct((prev: any) => ({ ...prev, [name]: value }));
     }
   }
   // Sửa lại hàm lưu sản phẩm đã sửa để gọi API backend
@@ -1066,17 +1066,17 @@ export default function ProductPage() {
                   {(editProduct.id || editProduct.product_id) ? (
                     <img
                       src={`http://localhost:9004/api/products/image/${editProduct.id || editProduct.product_id}?t=${Date.now()}`}
-                      alt={editProduct.name}
+                    alt={editProduct.name}
                       className="w-28 h-28 object-cover rounded-xl border border-border mt-2"
-                      onError={(e) => {
-                        e.currentTarget.src = '/default-avatar.png';
-                      }}
-                    />
-                  ) : (
+                    onError={(e) => {
+                      e.currentTarget.src = '/default-avatar.png';
+                    }}
+                  />
+                ) : (
                     <div className="w-28 h-28 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 mt-2">
-                      Không có ảnh
-                    </div>
-                  )}
+                    Không có ảnh
+                  </div>
+                )}
                   <input
                     type="file"
                     accept="image/*"
@@ -1097,30 +1097,30 @@ export default function ProductPage() {
                     }}
                     className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
                   />
-                  {/* Nút xóa ảnh */}
-                  {editProduct.thumbnailUrl && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (editProduct) {
-                          try {
-                            await deleteProductImage(editProduct.id || editProduct.product_id);
-                            // Cập nhật editProduct sau khi xóa ảnh
-                            const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
-                            if (updatedProduct) {
-                              setEditProduct(updatedProduct);
-                            }
-                          } catch (error) {
-                            alert('Lỗi khi xóa ảnh!');
+                {/* Nút xóa ảnh */}
+                {editProduct.thumbnailUrl && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (editProduct) {
+                        try {
+                          await deleteProductImage(editProduct.id || editProduct.product_id);
+                          // Cập nhật editProduct sau khi xóa ảnh
+                          const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
+                          if (updatedProduct) {
+                            setEditProduct(updatedProduct);
                           }
+                        } catch (error) {
+                          alert('Lỗi khi xóa ảnh!');
                         }
-                      }}
+                      }
+                    }}
                       className="text-red-500 text-sm hover:text-red-700 underline mt-2"
-                    >
-                      Xóa ảnh
-                    </button>
-                  )}
-                </div>
+                  >
+                    Xóa ảnh
+                  </button>
+                )}
+              </div>
                 <div className="mt-4 flex justify-center w-full">
                   <Barcode
                     value={editProduct.sku || 'SKU'}
@@ -1129,8 +1129,8 @@ export default function ProductPage() {
                     fontSize={16}
                     displayValue={true}
                   />
+                  </div>
                 </div>
-              </div>
               {/* Nút submit và cancel */}
               <DialogFooter>
                 <button
