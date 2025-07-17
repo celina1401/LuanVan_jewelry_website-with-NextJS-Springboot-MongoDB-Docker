@@ -55,51 +55,51 @@ export default function ProductPage() {
   // State cho danh sách sản phẩm (bỏ mẫu hardcode)
   const [products, setProducts] = useState<any[]>([]);
 
-  // Fetch danh sách sản phẩm từ backend khi load trang
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        // Sử dụng endpoint mới để lấy sản phẩm với hình ảnh
-        const res = await fetch('http://localhost:9004/api/products/all-with-images');
-        if (res.ok) {
-          const data = await res.json();
-          console.log('Products with images:', data);
-          // Sắp xếp theo mã sản phẩm (productCode) tăng dần (A-Z, 0-9)
-          const sorted = [...data].sort((a, b) => {
-            if (!a.productCode) return 1;
-            if (!b.productCode) return -1;
-            return a.productCode.localeCompare(b.productCode, undefined, { numeric: true, sensitivity: 'base' });
-          });
-          setProducts(sorted);
-
-          // Debug: kiểm tra files trong uploads
-          try {
-            const uploadsRes = await fetch('http://localhost:9004/api/products/list-uploads');
-            if (uploadsRes.ok) {
-              const uploadsData = await uploadsRes.json();
-              console.log('Files in uploads directory:', uploadsData);
-            }
-          } catch (uploadsError) {
-            console.error('Error checking uploads:', uploadsError);
-          }
-        } else {
-          // Fallback về endpoint cũ nếu endpoint mới chưa hoạt động
-          const fallbackRes = await fetch('http://localhost:9004/api/products');
-          const fallbackData = await fallbackRes.json();
-          setProducts(fallbackData);
-        }
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        // Fallback về endpoint cũ
+  // Hàm fetch danh sách sản phẩm từ backend
+  async function fetchProducts() {
+    try {
+      // Sử dụng endpoint mới để lấy sản phẩm với hình ảnh
+      const res = await fetch('http://localhost:9004/api/products/all-with-images');
+      if (res.ok) {
+        const data = await res.json();
+        // Sắp xếp theo mã sản phẩm (productCode) tăng dần (A-Z, 0-9)
+        const sorted = [...data].sort((a, b) => {
+          if (!a.productCode) return 1;
+          if (!b.productCode) return -1;
+          return a.productCode.localeCompare(b.productCode, undefined, { numeric: true, sensitivity: 'base' });
+        });
+        setProducts(sorted);
+        // Debug: kiểm tra files trong uploads
         try {
-          const fallbackRes = await fetch('http://localhost:9004/api/products');
-          const fallbackData = await fallbackRes.json();
-          setProducts(fallbackData);
-        } catch (fallbackError) {
-          console.error('Error with fallback:', fallbackError);
+          const uploadsRes = await fetch('http://localhost:9004/api/products/list-uploads');
+          if (uploadsRes.ok) {
+            const uploadsData = await uploadsRes.json();
+            console.log('Files in uploads directory:', uploadsData);
+          }
+        } catch (uploadsError) {
+          console.error('Error checking uploads:', uploadsError);
         }
+      } else {
+        // Fallback về endpoint cũ nếu endpoint mới chưa hoạt động
+        const fallbackRes = await fetch('http://localhost:9004/api/products');
+        const fallbackData = await fallbackRes.json();
+        setProducts(fallbackData);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      // Fallback về endpoint cũ
+      try {
+        const fallbackRes = await fetch('http://localhost:9004/api/products');
+        const fallbackData = await fallbackRes.json();
+        setProducts(fallbackData);
+      } catch (fallbackError) {
+        console.error('Error with fallback:', fallbackError);
       }
     }
+  }
+
+  // Fetch danh sách sản phẩm khi load trang
+  useEffect(() => {
     fetchProducts();
   }, []);
   // State xác nhận xóa
@@ -193,6 +193,29 @@ export default function ProductPage() {
     fetchNextProductCodeForEdit();
   }, [showEdit, editProduct?.category, originalEditCategory, originalEditProductCode]);
 
+  // Hàm fetch mã sản phẩm tiếp theo cho form thêm mới
+  async function fetchNextProductCode(category: string, prefix: string) {
+    try {
+      const res = await fetch(`http://localhost:9004/api/products/search/category?q=${category}`);
+      if (res.ok) {
+        const data = await res.json();
+        let maxCode = 0;
+        data.forEach((p: any) => {
+          if (p.productCode && p.productCode.startsWith(prefix)) {
+            const num = parseInt(p.productCode.substring(1));
+            if (!isNaN(num) && num > maxCode) maxCode = num;
+          }
+        });
+        const nextCode = prefix + String(maxCode + 1).padStart(3, '0');
+        setForm(f => ({ ...f, productCode: nextCode }));
+      } else {
+        setForm(f => ({ ...f, productCode: prefix + '001' }));
+      }
+    } catch {
+      setForm(f => ({ ...f, productCode: prefix + '001' }));
+    }
+  }
+
   function handleChange(e: any) {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
@@ -206,6 +229,18 @@ export default function ProductPage() {
   }
   function handleSelect(name: string, value: string) {
     setForm({ ...form, [name]: value });
+    // Nếu chọn category ở form thêm mới, tự động sinh mã sản phẩm
+    if (name === 'category') {
+      let prefix = '';
+      switch (value) {
+        case 'necklace': prefix = 'D'; break;
+        case 'ring': prefix = 'N'; break;
+        case 'earring': prefix = 'E'; break;
+        case 'bracelet': prefix = 'B'; break;
+        default: prefix = 'X';
+      }
+      fetchNextProductCode(value, prefix);
+    }
   }
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -305,29 +340,13 @@ export default function ProductPage() {
     if (!editProduct || !(editProduct.id || editProduct.product_id)) return;
     try {
       const { createdAt, ...dataToSend } = editProduct;
-      console.log('Dữ liệu gửi lên:', dataToSend); // Thêm log
       const res = await fetch(`http://localhost:9004/api/products/${editProduct.id || editProduct.product_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        // body: JSON.stringify({
-        //   ...editProduct,
-        //   weight: editProduct.weight ? Number(editProduct.weight) : null,
-        //   wage: editProduct.wage ? Number(editProduct.wage) : null,
-        //   price: editProduct.price ? Number(editProduct.price) : null,
-        //   quantity: editProduct.quantity ? Number(editProduct.quantity) : null,
-        //   stockQuantity: editProduct.stockQuantity ? Number(editProduct.
-        //   stockQuantity) : null,
-        // }),
         body: JSON.stringify(dataToSend),
       });
       if (res.ok) {
-        // Fetch lại chi tiết sản phẩm vừa sửa
-        const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
-        setEditProduct(updatedProduct);
-        // Cập nhật lại danh sách sản phẩm bằng cách fetch lại toàn bộ
-        const listRes = await fetch('http://localhost:9004/api/products/all-with-images');
-        const list = await listRes.json();
-        setProducts(sortProductsByCode(list));
+        await fetchProducts(); // Cập nhật bảng ngay sau khi lưu
         setShowEdit(false);
       } else {
         alert('Cập nhật sản phẩm thất bại!');
@@ -515,14 +534,16 @@ export default function ProductPage() {
               {/* Hàng 3: Khối lượng - Tuổi vàng - Tiền công */}
               <div className="grid grid-cols-4 gap-6 mb-2">
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">Khối lượng (g)</label>
+                  <label className="font-semibold text-base">Khối lượng (chỉ)</label>
                   <Input
                     name="weight"
                     type="number"
                     min={0}
+                    step={0.01}
                     value={form.weight}
                     onChange={handleChange}
                     required
+                    placeholder="Nhập khối lượng theo chỉ"
                     className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>
@@ -848,7 +869,7 @@ export default function ProductPage() {
                     })()}</span></div>
                     <div><span className="font-semibold text-gray-500">Chất liệu:</span> <span className="font-medium">Vàng</span></div>
                     <div><span className="font-semibold text-gray-500">Hàm lượng:</span> <span className="font-medium">{getField('karat') !== '-' ? getField('karat') : getField('goldAge')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Trọng lượng:</span> <span className="font-medium">{getField('weight')}</span></div>
+                    <div><span className="font-semibold text-gray-500">Trọng lượng:</span> <span className="font-medium">{getField('weight')} chỉ</span></div>
                     <div><span className="font-semibold text-gray-500">Xuất xứ:</span> <span className="font-medium">{getField('origin')}</span></div>
                     <div><span className="font-semibold text-gray-500">Số lượng tồn kho:</span> <span className="font-medium">{getField('stockQuantity')}</span></div>
                     <div><span className="font-semibold text-gray-500">Mô tả chi tiết sản phẩm:</span> <span className="font-medium">{getField('description')}</span></div>
@@ -934,14 +955,16 @@ export default function ProductPage() {
               {/* Hàng 3: Khối lượng - Tuổi vàng - Tiền công - Giá bán */}
               <div className="grid grid-cols-4 gap-6 mb-2">
                 <div className="space-y-2">
-                  <label className="font-semibold text-base">Khối lượng (g)</label>
+                  <label className="font-semibold text-base">Khối lượng (chỉ)</label>
                   <Input
                     name="weight"
                     type="number"
                     min={0}
+                    step={0.01}
                     value={editProduct.weight}
                     onChange={handleEditChange}
                     required
+                    placeholder="Nhập khối lượng theo chỉ"
                     className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
                   />
                 </div>

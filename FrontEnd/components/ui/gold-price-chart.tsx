@@ -31,18 +31,11 @@ interface GoldPriceHistory {
   timestamp: string
 }
 
-// SỬ DỤNG API KEY TỪ BIẾN MÔI TRƯỜNG (NEXT_PUBLIC_POLYGON_API_KEY)
-const POLYGON_API_KEY = process.env.NEXT_PUBLIC_POLYGON_API_KEY;
-const POLYGON_GOLD_URL = `https://api.polygon.io/v2/aggs/ticker/C:XAUUSD/prev?adjusted=true&apiKey=${POLYGON_API_KEY}`;
-
-// Hàm định dạng ngày theo dd/mm/yyyy
-function formatDate(dateString: string) {
-  const d = new Date(dateString);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-}
+// Thay thế mock data bằng fetch từ GoldAPI
+const GOLD_API_KEY = "goldapi-4c7dtk19md649ycb-io"; // <-- Điền API Key tại đây
+const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
+// const GOLD_API_KEY = "YfPgzfA7EvMU4Y0X6UdiwEzWxR9mQ5kK"; // <-- Điền API Key tại đây
+// const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
 
 export function GoldPriceChart() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -79,20 +72,45 @@ export function GoldPriceChart() {
     };
   }
 
-  // Tính giá vàng cho từng loại
-  let goldPrices: Array<{label: string, ratio: number, price: number, pricePerChi: number, pricePerGram: number, pricePerLuong: number}> = [];
-  if (goldData && goldData.price) {
-    goldPrices = goldRatios.map(g => {
-      const priceObj = goldPriceInVND(goldData.price, exchangeRate, g.ratio);
-      return {
-        ...g,
-        price: priceObj.chi,
-        pricePerChi: priceObj.chi,
-        pricePerGram: priceObj.gram,
-        pricePerLuong: priceObj.luong,
-      };
-    });
+  // Hàm lấy giá vàng theo tuổi vàng từ API nội bộ
+  async function fetchGoldPriceByAge(age: string) {
+    try {
+      const res = await fetch(`/api/gold-price/latest?age=${age}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data;
+    } catch {
+      return null;
+    }
   }
+
+  // Lấy giá vàng cho tất cả các loại tuổi vàng từ API
+  React.useEffect(() => {
+    async function fetchAllGoldPrices() {
+      setLoading(true);
+      setError(null);
+      try {
+        const results = await Promise.all(
+          goldRatios.map(async (g) => {
+            const data = await fetchGoldPriceByAge(g.label);
+            return {
+              ...g,
+              pricePerChi: data?.pricePerChi || 0,
+              pricePerGram: data?.pricePerGram || 0,
+              pricePerLuong: (data?.pricePerChi || 0) * 10,
+            };
+          })
+        );
+        setGoldData(results);
+        setLastUpdated(new Date().toLocaleString());
+      } catch (err: any) {
+        setError(err.message || 'Lỗi không xác định');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAllGoldPrices();
+  }, [exchangeRate]);
 
   // Hàm lấy tỷ giá USD/VND từ Vietcombank
   async function fetchVietcombankUSDRate(): Promise<number | null> {
@@ -123,14 +141,15 @@ export function GoldPriceChart() {
       setLoading(true);
       setError(null);
       try {
-        // LẤY GIÁ VÀNG TỪ POLYGON.IO (endpoint đúng)
-        const res = await fetch(POLYGON_GOLD_URL);
-        if (!res.ok) throw new Error('Không lấy được giá vàng từ Polygon.io');
+        const res = await fetch(GOLD_API_URL, {
+          headers: {
+            'x-access-token': GOLD_API_KEY,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) throw new Error('Không lấy được giá vàng từ GoldAPI');
         const data = await res.json();
-        // Lấy giá đóng cửa gần nhất từ data.results[0].c
-        const price = data?.results?.[0]?.c;
-        if (!price) throw new Error('Không có dữ liệu giá vàng');
-        setGoldData({ price });
+        setGoldData(data);
         setLastUpdated(new Date().toLocaleString());
         // Gửi giá và timestamp lên API để lưu vào file json mỗi 1 tiếng (nếu chưa có bản ghi trong giờ này)
         const now = new Date();
@@ -142,7 +161,7 @@ export function GoldPriceChart() {
           fetch('/api/gold-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ price, timestamp: now.toISOString() })
+            body: JSON.stringify({ price: data.price, timestamp: now.toISOString() })
           });
         }
       } catch (err: any) {
@@ -211,9 +230,9 @@ export function GoldPriceChart() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="timestamp" tickFormatter={v => formatDate(v)} minTickGap={40} />
+                <XAxis dataKey="timestamp" tickFormatter={v => new Date(v).toLocaleTimeString()} minTickGap={40} />
                 <YAxis domain={['auto', 'auto']} />
-                <Tooltip labelFormatter={v => formatDate(v)} />
+                <Tooltip labelFormatter={v => new Date(v).toLocaleString()} />
                 <Line type="monotone" dataKey="price" stroke="#FFD700" dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -265,8 +284,8 @@ export function GoldPriceChart() {
                     <TableRow><TableCell colSpan={5}>Đang tải...</TableCell></TableRow>
                   ) : error ? (
                     <TableRow><TableCell colSpan={5} className="text-red-500">{error}</TableCell></TableRow>
-                  ) : goldPrices.length > 0 ? (
-                    goldPrices.filter(g => g.label.toLowerCase().includes(searchTerm.toLowerCase())).map(g => (
+                  ) : goldData && goldData.length > 0 ? (
+                    goldData.filter((g: any) => g.label.toLowerCase().includes(searchTerm.toLowerCase())).map((g: any) => (
                       <TableRow key={g.label}>
                         <TableCell className="font-medium py-2 text-zinc-900 dark:text-zinc-100">{g.label}</TableCell>
                         <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.ratio}</TableCell>
@@ -283,7 +302,7 @@ export function GoldPriceChart() {
                </div>
             </div>
             <div className="mt-4 text-sm text-muted-foreground dark:text-zinc-400">
-              <p>Cập nhật lần cuối: {lastUpdated ? `${formatDate(lastUpdated)}, ${new Date(lastUpdated).toLocaleTimeString()}` : ''}</p>
+              <p>Cập nhật lần cuối: {lastUpdated}</p>
               <p className="mt-1">Giá tính theo USD/ounce, tỷ giá: {exchangeRate.toLocaleString()} VND/USD</p>
             </div>
           </CardContent>

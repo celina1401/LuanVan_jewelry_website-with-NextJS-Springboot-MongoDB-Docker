@@ -12,6 +12,7 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/ChatBox";
+import { useRef } from "react";
 
 type Product = {
   id: number;
@@ -20,12 +21,20 @@ type Product = {
   images: string[];
   description: string;
   price: number;
-  rating: number;
+  rating?: number; // sẽ tính động
   reviews: number;
   category: string;
   code?: string;
   colors?: string[];
   stock?: number;
+  sold?: number;
+  ratings?: number[]; // mảng điểm đánh giá
+  productCode?: string; // Thêm trường mã sản phẩm
+  weight?: number; // Khối lượng
+  goldAge?: string; // Tuổi vàng
+  goldPrice?: number; // Giá tuổi vàng
+  wage?: number; // Tiền công
+  karat?: string; // Tuổi vàng (có thể từ backend)
 };
 
 type Comment = {
@@ -50,12 +59,18 @@ const mockProducts: Product[] = [
     ],
     description: "Nhẫn cầu hôn Vàng 14K đá CZ",
     price: 5971000,
-    rating: 4.9,
     reviews: 128,
     category: "Nhẫn",
     code: "NDINO284",
     colors: ["#cccccc", "#ffe066"],
     stock: 10,
+    sold: 100,
+    ratings: [5, 5, 4, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 5, 4, 5, 5, 5, 5, 4],
+    productCode: "NDH284",
+    weight: 10,
+    goldAge: "10K",
+    goldPrice: 500000,
+    wage: 100000,
   },
   {
     id: 2,
@@ -67,9 +82,15 @@ const mockProducts: Product[] = [
     ],
     description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
     price: 2999000,
-    rating: 4.8,
     reviews: 95,
     category: "Vòng tay",
+    sold: 50,
+    ratings: [5, 4, 5, 4, 5, 5, 4, 5, 4, 5],
+    productCode: "VT284",
+    weight: 5,
+    goldAge: "14K",
+    goldPrice: 400000,
+    wage: 50000,
   },
   {
     id: 3,
@@ -80,9 +101,15 @@ const mockProducts: Product[] = [
     ],
     description: "Nhẫn vàng 18K sang trọng",
     price: 4500000,
-    rating: 4.7,
     reviews: 80,
     category: "Nhẫn",
+    sold: 20,
+    ratings: [4, 5, 4, 5, 4, 5, 4, 5],
+    productCode: "NH18K",
+    weight: 15,
+    goldAge: "18K",
+    goldPrice: 600000,
+    wage: 150000,
   },
   {
     id: 4,
@@ -93,9 +120,15 @@ const mockProducts: Product[] = [
     ],
     description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
     price: 3499000,
-    rating: 4.9,
     reviews: 112,
     category: "Bông tai",
+    sold: 150,
+    ratings: [5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5],
+    productCode: "BTKC",
+    weight: 0.5,
+    goldAge: "18K",
+    goldPrice: 500000,
+    wage: 25000,
   },
   {
     id: 5,
@@ -106,9 +139,15 @@ const mockProducts: Product[] = [
     ],
     description: "Bông tai ngọc trai tự nhiên",
     price: 2990000,
-    rating: 4.8,
     reviews: 90,
     category: "Bông tai",
+    sold: 80,
+    ratings: [5, 4, 5, 4, 5, 5, 4, 5, 4, 5],
+    productCode: "BTNT",
+    weight: 0.3,
+    goldAge: "14K",
+    goldPrice: 450000,
+    wage: 15000,
   },
   {
     id: 6,
@@ -119,9 +158,15 @@ const mockProducts: Product[] = [
     ],
     description: "Vòng tay bạc thời trang",
     price: 1990000,
-    rating: 4.6,
     reviews: 60,
     category: "Vòng tay",
+    sold: 30,
+    ratings: [4, 5, 4, 5, 4, 5],
+    productCode: "VTBA",
+    weight: 10,
+    goldAge: "14K",
+    goldPrice: 400000,
+    wage: 100000,
   },
 ];
 
@@ -204,6 +249,30 @@ function CommentList({ comments }: { comments: Comment[] }) {
   );
 }
 
+// Hàm tính điểm đánh giá trung bình từ mảng ratings
+function calculateAverageRating(ratings: number[] = []) {
+  if (!ratings || ratings.length === 0) return 5.0;
+  const total = ratings.reduce((sum, r) => sum + r, 0);
+  return total / ratings.length;
+}
+
+// Hook lấy giá vàng động (theo chỉ)
+function useCurrentGoldPricePerChi(age: string | undefined) {
+  const [price, setPrice] = useState<number | null>(null);
+  useEffect(() => {
+    if (!age) return;
+    fetch(`/api/gold-price/latest?age=${age}`)
+      .then(res => res.json())
+      .then(data => {
+        console.log('[CLIENT] API trả về:', data);
+        if (data.pricePerChi) setPrice(data.pricePerChi);
+        // fallback nếu chỉ có pricePerGram (giữ lại cho backward compatibility)
+        else if (data.pricePerGram) setPrice(data.pricePerGram * 3.75);
+      });
+  }, [age]);
+  return price;
+}
+
 export default function ProductDetailPage() {
   const { theme } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -219,6 +288,16 @@ export default function ProductDetailPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+
+  // Đảm bảo hook luôn được gọi ở đầu component
+  const currentGoldPricePerChi = useCurrentGoldPricePerChi(product?.goldAge || product?.karat || "");
+
+  // Log giá vàng theo tuổi vàng khi vào chi tiết sản phẩm hoặc khi giá vàng thay đổi
+  useEffect(() => {
+    if (product?.goldAge || product?.karat) {
+      console.log("[LOG] Tuổi vàng:", product.goldAge || product.karat, "- Giá vàng theo tuổi:", currentGoldPricePerChi);
+    }
+  }, [product?.goldAge, product?.karat, currentGoldPricePerChi]);
 
   useEffect(() => {
     if (!productId) return;
@@ -241,6 +320,14 @@ export default function ProductDetailPage() {
 
   if (loading) return <div>Đang tải...</div>;
   if (!product) return notFound();
+
+  // Tính tổng tiền động
+  const totalPrice = currentGoldPricePerChi && product.weight
+    ? currentGoldPricePerChi * product.weight + (product.wage || 0)
+    : null;
+
+  // Tính điểm rating trung bình từ mảng ratings
+  const avgRating = calculateAverageRating(product.ratings);
 
   const addToCart = (product: Product) => {
     addItem({
@@ -337,9 +424,67 @@ export default function ProductDetailPage() {
                 <FaRegHeart />
               </button>
             </div>
+            {/* Hiển thị đánh giá, số lượng đánh giá, đã bán... */}
+            <div className="flex items-center gap-6 mb-2">
+              {/* Điểm đánh giá trung bình */}
+              <div className="flex items-center gap-1">
+                <span className="text-xl font-bold text-yellow-500">{avgRating.toFixed(1)}</span>
+                <div className="flex items-center ml-1">
+                  {[...Array(5)].map((_, i) => {
+                    const fullStars = Math.floor(avgRating);
+                    const hasHalfStar = avgRating - fullStars >= 0.25 && avgRating - fullStars < 0.75;
+                    if (i < fullStars) {
+                      return (
+                        <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      );
+                    } else if (i === fullStars && hasHalfStar) {
+                      return (
+                        <svg key={i} className="w-5 h-5 text-yellow-400" viewBox="0 0 20 20">
+                          <defs>
+                            <linearGradient id={`half-star-${i}`}>
+                              <stop offset="50%" stopColor="#facc15" />
+                              <stop offset="50%" stopColor="#d1d5db" />
+                            </linearGradient>
+                          </defs>
+                          <path fill={`url(#half-star-${i})`} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      );
+                    } else {
+                      return (
+                        <svg key={i} className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      );
+                    }
+                  })}
+                </div>
+              </div>
+              {/* Số lượng đánh giá */}
+              <div className="flex items-center gap-1 border-l border-gray-300 dark:border-gray-700 pl-4">
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{product.reviews ? product.reviews.toLocaleString() : '0'}</span>
+                <span className="text-gray-500 text-base">Đánh Giá</span>
+              </div>
+              {/* Đã bán */}
+              <div className="flex items-center gap-1 border-l border-gray-300 dark:border-gray-700 pl-4">
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{product.sold ? (product.sold > 1000 ? (product.sold/1000).toFixed(1) + 'k+' : product.sold) : '10k+'}</span>
+                <span className="text-gray-500 text-base">Đã Bán</span>
+              </div>
+            </div>
+            {/* Chi tiết sản phẩm */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-2 text-sm">
+              <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{product.code || product.productCode || '-'}</span></div>
+              <div><span className="font-semibold text-gray-500">Tồn kho:</span> <span className={`font-medium ${product.stock && product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>{product.stock && product.stock > 0 ? 'Còn hàng' : 'Hết hàng'}</span></div>
+              <div><span className="font-semibold text-gray-500">Khối lượng:</span> <span className="font-medium">{product.weight || '-'} chỉ</span></div>
+              <div><span className="font-semibold text-gray-500">Tuổi vàng:</span> <span className="font-medium">{product.goldAge || product.karat || '-'}</span></div>
+              <div><span className="font-semibold text-gray-500">Tiền công:</span> <span className="font-medium">{product.wage ? Number(product.wage).toLocaleString() : '-'}₫</span></div>
+            </div>
             <p className="mb-1 text-lg text-gray-700 dark:text-gray-300 font-medium">{product.description}</p>
-            <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">Mã sản phẩm: <span className="font-semibold">{product.code}</span></p>
-            <p className="mb-2 text-3xl font-extrabold text-rose-500">{product.price.toLocaleString()}₫</p>
+            {/* Tổng tiền động phía dưới mô tả sản phẩm */}
+            <p className="mb-2 text-3xl font-extrabold text-rose-500">
+              {totalPrice ? totalPrice.toLocaleString() + '₫' : '-'}
+            </p>
             {/* Chọn màu */}
             {product.colors && (
               <div className="flex items-center gap-3 mb-2">
@@ -417,6 +562,11 @@ export default function ProductDetailPage() {
               <div className="flex flex-col items-center gap-1"><FaShieldAlt className="text-2xl" /> Bảo hành trọn đời</div>
               <div className="flex flex-col items-center gap-1"><FaComments className="text-2xl" /> Tư vấn 24/7</div>
             </div>
+            {/* Công thức tính điểm đánh giá */}
+            {/* <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Công thức: <span className="font-mono">Tổng số điểm đánh giá / Tổng số lượt đánh giá</span><br />
+              Ví dụ: ({product.ratings?.join(" + ")}) / {product.ratings?.length} = <b>{avgRating.toFixed(2)}</b>
+            </div> */}
           </div>
         </div>
         {/* Bình luận */}
