@@ -31,9 +31,18 @@ interface GoldPriceHistory {
   timestamp: string
 }
 
-// Thay thế mock data bằng fetch từ GoldAPI
-const GOLD_API_KEY = "goldapi-4c7dtk19md649ycb-io"; // <-- Điền API Key tại đây
-const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
+// SỬ DỤNG API KEY TỪ BIẾN MÔI TRƯỜNG (NEXT_PUBLIC_POLYGON_API_KEY)
+const POLYGON_API_KEY = process.env.NEXT_PUBLIC_POLYGON_API_KEY;
+const POLYGON_GOLD_URL = `https://api.polygon.io/v2/aggs/ticker/C:XAUUSD/prev?adjusted=true&apiKey=${POLYGON_API_KEY}`;
+
+// Hàm định dạng ngày theo dd/mm/yyyy
+function formatDate(dateString: string) {
+  const d = new Date(dateString);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 export function GoldPriceChart() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -114,15 +123,14 @@ export function GoldPriceChart() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(GOLD_API_URL, {
-          headers: {
-            'x-access-token': GOLD_API_KEY,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!res.ok) throw new Error('Không lấy được giá vàng từ GoldAPI');
+        // LẤY GIÁ VÀNG TỪ POLYGON.IO (endpoint đúng)
+        const res = await fetch(POLYGON_GOLD_URL);
+        if (!res.ok) throw new Error('Không lấy được giá vàng từ Polygon.io');
         const data = await res.json();
-        setGoldData(data);
+        // Lấy giá đóng cửa gần nhất từ data.results[0].c
+        const price = data?.results?.[0]?.c;
+        if (!price) throw new Error('Không có dữ liệu giá vàng');
+        setGoldData({ price });
         setLastUpdated(new Date().toLocaleString());
         // Gửi giá và timestamp lên API để lưu vào file json mỗi 1 tiếng (nếu chưa có bản ghi trong giờ này)
         const now = new Date();
@@ -134,7 +142,7 @@ export function GoldPriceChart() {
           fetch('/api/gold-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ price: data.price, timestamp: now.toISOString() })
+            body: JSON.stringify({ price, timestamp: now.toISOString() })
           });
         }
       } catch (err: any) {
@@ -203,9 +211,9 @@ export function GoldPriceChart() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="timestamp" tickFormatter={v => new Date(v).toLocaleTimeString()} minTickGap={40} />
+                <XAxis dataKey="timestamp" tickFormatter={v => formatDate(v)} minTickGap={40} />
                 <YAxis domain={['auto', 'auto']} />
-                <Tooltip labelFormatter={v => new Date(v).toLocaleString()} />
+                <Tooltip labelFormatter={v => formatDate(v)} />
                 <Line type="monotone" dataKey="price" stroke="#FFD700" dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -275,7 +283,7 @@ export function GoldPriceChart() {
                </div>
             </div>
             <div className="mt-4 text-sm text-muted-foreground dark:text-zinc-400">
-              <p>Cập nhật lần cuối: {lastUpdated}</p>
+              <p>Cập nhật lần cuối: {lastUpdated ? `${formatDate(lastUpdated)}, ${new Date(lastUpdated).toLocaleTimeString()}` : ''}</p>
               <p className="mt-1">Giá tính theo USD/ounce, tỷ giá: {exchangeRate.toLocaleString()} VND/USD</p>
             </div>
           </CardContent>

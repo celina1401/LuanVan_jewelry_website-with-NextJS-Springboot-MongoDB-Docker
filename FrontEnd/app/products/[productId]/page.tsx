@@ -209,18 +209,37 @@ export default function ProductDetailPage() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const params = useParams<{ productId: string }>();
   const productId = params.productId;
-  const product = mockProducts.find((p) => p.id.toString() === productId);
-  const [selectedImg, setSelectedImg] = useState(product?.images[0]);
-  const [comments, setComments] = useState<Comment[]>(mockComments);
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
+  const [product, setProduct] = useState<Product | null>(null);
+  const [selectedImg, setSelectedImg] = useState<string | undefined>(undefined);
+  const [selectedColor, setSelectedColor] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
   const { toast } = useToast();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    if (!productId) return;
+    setLoading(true);
+    fetch(`http://localhost:9004/api/products/${productId}`)
+      .then(res => res.json())
+      .then((data: Product) => {
+        setProduct(data);
+        setSelectedImg((data.images && data.images.length > 0) ? data.images[0] : "/images/no-image.png");
+        setSelectedColor(data.colors?.[0] || "");
+        setLoading(false);
+      })
+      .catch(() => {
+        setProduct(null);
+        setLoading(false);
+      });
+  }, [productId]);
+
   useEffect(() => { setMounted(true); }, []);
 
+  if (loading) return <div>Đang tải...</div>;
   if (!product) return notFound();
 
   const addToCart = (product: Product) => {
@@ -228,7 +247,11 @@ export default function ProductDetailPage() {
       id: product.id.toString(),
       name: product.name,
       price: product.price,
-      image: product.images[0],
+      image: (product.images && product.images.length > 0)
+        ? (product.images[0] && !product.images[0].startsWith('http')
+            ? `http://localhost:9004/${product.images[0].replace(/^\/+/, '')}`
+            : product.images[0])
+        : "/images/no-image.png",
       metadata: product.colors ? { color: selectedColor } : undefined,
     }, quantity);
     toast({
@@ -267,6 +290,14 @@ export default function ProductDetailPage() {
       p.tags.some(tag => product.tags!.includes(tag))
   );
 
+  // Hàm lấy URL ảnh sản phẩm giống trang admin
+  function getProductImageUrl(product: any): string {
+    if (product.id || product.product_id) {
+      return `http://localhost:9004/api/products/image/${product.id || product.product_id}`;
+    }
+    return "/no-image.png";
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       <Navbar />
@@ -275,12 +306,12 @@ export default function ProductDetailPage() {
           {/* Ảnh sản phẩm */}
           <div className="flex-1 flex flex-col items-center">
             <img
-              src={selectedImg}
+              src={getProductImageUrl(product)}
               alt={product.name}
               className="w-full max-w-lg h-[480px] object-contain rounded-2xl shadow-2xl border-2 border-white bg-white"
             />
             <div className="flex gap-4 mt-6">
-              {product.images.map((img) => (
+              {[getProductImageUrl(product)].map((img) => (
                 <img
                   key={img}
                   src={img}

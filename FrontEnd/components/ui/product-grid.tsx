@@ -9,83 +9,19 @@ import { useCart } from "../../contexts/cart-context"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
-// Mock data - In real app, this would come from an API
-const products = [
-  {
-    id: 1,
-    name: "Nhẫn đính hôn kim cương",
-    description: "Nhẫn kim cương solitaire cổ điển với viên chủ 1 carat",
-    price: 4999,
-    image: "/images/products/ring1.jpg",
-    category: "Nhẫn",
-    rating: 4.9,
-    reviews: 128,
-    isNew: true,
-    gender: "female"
-  },
-  {
-    id: 2,
-    name: "Vòng tay vàng",
-    description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
-    price: 2999,
-    image: "/images/products/bracelet1.jpg",
-    category: "Vòng tay",
-    rating: 4.8,
-    reviews: 95,
-    isNew: false,
-    gender: "female"
-  },
-  {
-    id: 3,
-    name: "Dây chuyền ngọc trai",
-    description: "Dây chuyền ngọc trai nước ngọt cao cấp với khóa vàng",
-    price: 1999,
-    image: "/images/products/necklace1.jpg",
-    category: "Dây chuyền",
-    rating: 4.7,
-    reviews: 76,
-    isNew: true,
-    gender: "female"
-  },
-  {
-    id: 4,
-    name: "Bông tai kim cương",
-    description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
-    price: 3499,
-    image: "/images/products/earrings1.jpg",
-    category: "Bông tai",
-    rating: 4.9,
-    reviews: 112,
-    isNew: false,
-    gender: "female"
-  },
-  // Thêm ví dụ sản phẩm cho nam
-  {
-    id: 5,
-    name: "Đồng hồ vàng nam",
-    description: "Đồng hồ vàng sang trọng cho nam",
-    price: 5999,
-    image: "/images/products/watch1.jpg",
-    category: "Đồng hồ",
-    rating: 4.6,
-    reviews: 60,
-    isNew: true,
-    gender: "male"
-  },
-  {
-    id: 6,
-    name: "Vòng tay bạc nam",
-    description: "Vòng tay bạc thời trang cho nam",
-    price: 1599,
-    image: "/images/products/bracelet1.jpg",
-    category: "Vòng tay",
-    rating: 4.5,
-    reviews: 40,
-    isNew: false,
-    gender: "male"
-  },
-  // Add more products as needed
-]
+// Lấy danh sách sản phẩm từ backend
+interface Product {
+  id: string | number;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  rating: number;
+  reviews: number;
+  isNew?: boolean;
+  gender?: string;
+}
 
 interface ProductGridProps {
   category: string
@@ -118,12 +54,38 @@ function useFavorites() {
   return { favorites, toggleFavorite, isFavorite };
 }
 
+// Hàm lấy URL ảnh sản phẩm giống trang admin
+function getProductImageUrl(product: any): string {
+  if (product.id || product.product_id) {
+    return `http://localhost:9004/api/products/image/${product.id || product.product_id}`;
+  }
+  return "/no-image.png";
+}
+
 export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGridProps) {
   const { addItem } = useCart()
   const router = useRouter();
   const { toast } = useToast();
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const [mounted, setMounted] = React.useState(false);
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch('http://localhost:9004/api/products'); // Đổi lại endpoint nếu cần
+        const data = await res.json();
+        setProducts(data);
+      } catch (err) {
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProducts();
+  }, []);
+
   React.useEffect(() => { setMounted(true); }, []);
 
   const filteredProducts = React.useMemo(() => {
@@ -158,10 +120,14 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
         }
       })
     if (sortBy === "favorite") {
-      filtered = filtered.filter(product => favorites.includes(product.id));
+      filtered = filtered.filter(product => favorites.includes(product.id as number));
     }
     return filtered;
-  }, [category, priceRange, sortBy, favorites, gender])
+  }, [products, category, priceRange, sortBy, favorites, gender]);
+
+  if (loading) {
+    return <div className="text-center py-12">Đang tải sản phẩm...</div>;
+  }
 
   if (filteredProducts.length === 0) {
     return (
@@ -185,7 +151,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
           <CardHeader className="p-0">
             <div className="relative aspect-square">
               <Image
-                src={product.image}
+                src={getProductImageUrl(product)}
                 alt={product.name}
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
@@ -200,9 +166,9 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
               )}
               {/* Icon tim yêu thích */}
               <button
-                className={`absolute bottom-2 right-2 text-xl z-10 transition-colors ${mounted && isFavorite(product.id) ? "text-rose-500" : "text-gray-300 hover:text-rose-400"}`}
-                onClick={e => { e.stopPropagation(); toggleFavorite(product.id); }}
-                title={mounted ? (isFavorite(product.id) ? "Bỏ yêu thích" : "Thêm vào yêu thích") : "Thêm vào yêu thích"}
+                className={`absolute bottom-2 right-2 text-xl z-10 transition-colors ${mounted && isFavorite(product.id as number) ? "text-rose-500" : "text-gray-300 hover:text-rose-400"}`}
+                onClick={e => { e.stopPropagation(); toggleFavorite(product.id as number); }}
+                title={mounted ? (isFavorite(product.id as number) ? "Bỏ yêu thích" : "Thêm vào yêu thích") : "Thêm vào yêu thích"}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="28" height="28">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
