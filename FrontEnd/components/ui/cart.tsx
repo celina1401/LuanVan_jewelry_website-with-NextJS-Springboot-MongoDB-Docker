@@ -6,6 +6,7 @@ import { Button } from "./button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./card"
 import { useCart } from "../../contexts/cart-context"
 import { useRouter } from "next/navigation"
+import { getProductImageUrl } from "../../lib/utils";
 
 export function Cart() {
   const { items, removeItem, updateQuantity, total } = useCart()
@@ -18,11 +19,17 @@ export function Cart() {
           <CardTitle>Giỏ hàng của bạn</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-muted-foreground">Giỏ hàng của bạn đang trống</p>
+          <p className="text-center text-muted-foreground">
+            Giỏ hàng của bạn đang trống
+          </p>
         </CardContent>
       </Card>
     )
   }
+
+  React.useEffect(() => {
+    console.log('Cart items:', items);
+  }, [items]);
 
   return (
     <Card>
@@ -36,22 +43,24 @@ export function Cart() {
               <div key={item.id} className="flex items-center gap-4">
                 <div className="relative h-20 w-20">
                   <Image
-                    src={item.image}
-                    alt={item.name}
+                    src={getProductImageUrl(item)}
+                    alt={item.name || "Ảnh sản phẩm"}
                     fill
                     className="object-cover rounded-md"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (!img.src.includes("default-avatar.png")) {
+                        img.src = "/default-avatar.png";
+                      }
+                    }}
                   />
                 </div>
                 <div className="flex-1">
-                  {/* <h3 className="font-medium">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    ${item.price.toLocaleString()}
-                  </p> */}
-
                   <h3 className="font-medium">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    ${item.price.toLocaleString()}
+                    {item.price ? `$${item.price.toLocaleString()}` : "Không rõ giá"}
                   </p>
+
                   {item.metadata?.color && (
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm text-gray-500">Màu:</span>
@@ -66,7 +75,7 @@ export function Cart() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                     >
                       -
                     </Button>
@@ -97,8 +106,10 @@ export function Cart() {
           <span>Tổng cộng:</span>
           <span>${total.toLocaleString()}</span>
         </div>
-        <Button className="w-full" onClick={() => router.push("/order")}>Thanh toán</Button>
+        <Button className="w-full" onClick={() => router.push("/order")}>
+          Thanh toán
+        </Button>
       </CardFooter>
     </Card>
   )
-} 
+}

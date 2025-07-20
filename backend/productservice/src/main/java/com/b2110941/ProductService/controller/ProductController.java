@@ -19,7 +19,9 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import org.springframework.http.MediaType;
+import java.util.Arrays;
 
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -30,10 +32,10 @@ public class ProductController {
     private ProductDetailRepository productDetailRepository;
 
     /**
-     * Lấy tất cả sản phẩm
+     * Lấy tất cả sản phẩm (hỗ trợ cả /all cho tương thích client cũ)
      */
-    @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
+    @GetMapping("/all")
+    public ResponseEntity<List<Product>> getAllProductsAll() {
         return ResponseEntity.ok(productRepository.findAll());
     }
 
@@ -559,5 +561,15 @@ public class ProductController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
+    }
+
+    /**
+     * Lấy nhiều sản phẩm theo danh sách id
+     */
+    @GetMapping("/batch")
+    public ResponseEntity<List<Product>> getProductsByIds(@RequestParam("ids") String ids) {
+        List<String> idList = Arrays.asList(ids.split(","));
+        List<Product> products = productRepository.findByIdIn(idList);
+        return ResponseEntity.ok(products);
     }
 }

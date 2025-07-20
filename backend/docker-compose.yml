@@ -17,17 +17,22 @@ services:
       - "8080:8080"
     depends_on:
       - discoveryserver
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
     networks:
       - microservice-networks
 
-  notificationservice:
+  userservice:
     build:
-      context: ./notificationservice
+      context: ./userservice
     ports:
-      - "9002:9002"
+      - "9001:9001"
     depends_on:
       - discoveryserver
       - mongodb
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
     networks:
       - microservice-networks
 
@@ -39,6 +44,9 @@ services:
     depends_on:
       - discoveryserver
       - mongodb
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
     networks:
       - microservice-networks
 
@@ -47,35 +55,45 @@ services:
       context: ./productservice
     ports:
       - "9004:9004"
-    depends_on:
-      - discoveryserver
-      - mongodb
-    networks:
-      - microservice-networks
     volumes:
       - ./productservice/uploads:/uploads
-
-  userservice:
-    build:
-      context: ./userservice
-    ports:
-      - "9001:9001"
     depends_on:
       - discoveryserver
       - mongodb
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
     networks:
       - microservice-networks
 
-  # chatservice:
-  #   build:
-  #     context: ./chatservice
-  #   ports:
-  #     - "9005:9005"
-  #   depends_on:
-  #     - discoveryserver
-  #     - mongodb
-  #   networks:
-  #     - microservice-networks
+  cartservice:
+    build:
+      context: ./cartservice
+    ports:
+      - "9005:9005"
+    depends_on:
+      - discoveryserver
+      - mongodb
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    networks:
+      - microservice-networks
+
+  notificationservice:
+    build:
+      context: ./notificationservice
+    ports:
+      - "9002:9002"
+    depends_on:
+      - discoveryserver
+      - mongodb
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    networks:
+      - microservice-networks
 
   mongodb:
     image: mongo:latest

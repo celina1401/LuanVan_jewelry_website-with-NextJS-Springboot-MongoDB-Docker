@@ -36,7 +36,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public Cart addItemToCart(String userId, String productId, int quantity) {
         // Gọi productservice trực tiếp qua localhost:9004 nếu không dùng Eureka
-        String productServiceUrl = "http://localhost:9004/api/products/" + productId;
+        String productServiceUrl = "http://productservice/api/products/" + productId;
         ProductResponse product = restTemplate.getForObject(productServiceUrl, ProductResponse.class);
         if (product == null) {
             throw new RuntimeException("Không lấy được sản phẩm");

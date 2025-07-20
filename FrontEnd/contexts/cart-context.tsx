@@ -1,13 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useToast } from "./use-toast"
+import { getProductImageUrl } from "../lib/utils"
+// import { useApi } from '../app/api/apiClient';
 
 // Loại sản phẩm trong giỏ
 interface CartItem {
   id: string
+  productId?: string // thêm productId để fix linter
   name: string
   price: number
   quantity: number
@@ -29,11 +32,42 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+const CART_API_URL = "http://localhost:9005/api";
+const PRODUCT_API_URL = "http://localhost:9004/api";
+
+// Hàm fetch cart và gộp thông tin sản phẩm
+async function fetchCartWithProductDetails(userId: string) {
+  const cartData = await fetch(`${CART_API_URL}/cart?userId=${userId}`, { credentials: "include" }).then(res => res.json());
+  const items = cartData.items || [];
+  if (items.length === 0) return [];
+  const productIds = items.map((item: any) => item.productId);
+  const products = await fetch(`${PRODUCT_API_URL}/products/batch?ids=${productIds.join(",")}`, { credentials: "include" }).then(res => res.json());
+  return items.map((item: any, idx: number) => {
+    const product = products.find((p: any) => p.id === item.productId);
+    return {
+      ...item,
+      id: item.productId || item.id || `cartitem-${idx}-${Date.now()}`,
+      productId: item.productId, // luôn gán productId
+      name: product?.name || "Sản phẩm",
+      price: product?.price || 0,
+      image: product ? getProductImageUrl(product) : "/default-avatar.png"
+    };
+  });
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const { userId, isLoaded } = useAuth()
   const { toast } = useToast()
 
+  // Fetch cart from backend when userId changes or on mount
+  useEffect(() => {
+    if (isLoaded && userId) {
+      fetchCartWithProductDetails(userId).then(setItems).catch(() => setItems([]));
+    }
+  }, [userId, isLoaded]);
+
+  // Add item to cart and sync with backend
   const addItem = (item: Omit<CartItem, "quantity">, quantity: number = 1) => {
     if (!isLoaded || !userId) {
       toast({
@@ -43,49 +77,76 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       })
       return
     }
-
-    setItems((currentItems) => {
-      const existingItem = currentItems.find(
-        (i) =>
-          i.id === item.id &&
-          i.metadata?.color === item.metadata?.color
-      )
-
-      if (existingItem) {
-        return currentItems.map((i) =>
-          i.id === item.id && i.metadata?.color === item.metadata?.color
-            ? { ...i, quantity: i.quantity + quantity }
-            : i
-        )
-      }
-
-      return [...currentItems, { ...item, quantity }]
+    fetch(`${CART_API_URL}/cart/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        userId,
+        productId: item.id, // id ở đây là productId thực tế
+        quantity
+      })
     })
+      .then(res => res.json())
+      .then(() => {
+        fetchCartWithProductDetails(userId).then(setItems).catch(() => setItems([]));
+        toast({
+          title: "Đã thêm vào giỏ hàng!",
+          description: item.name,
+        })
+      })
+      .catch(() => {
+        toast({
+          title: "Lỗi khi thêm vào giỏ hàng",
+          description: item.name,
+          variant: "destructive"
+        })
+      })
   }
 
+  // Xóa sản phẩm khỏi giỏ hàng và sync với backend
   const removeItem = (id: string, metadata?: CartItem["metadata"]) => {
-    setItems((currentItems) =>
-      currentItems.filter(
-        (item) =>
-          item.id !== id ||
-          item.metadata?.color !== metadata?.color
-      )
-    )
+    if (!isLoaded || !userId) return;
+    // Tìm lại productId thực tế từ items
+    const item = items.find(i => i.id === id);
+    const productId = (item && (item.productId || item.id)) ? String(item.productId || item.id) : id;
+    fetch(`${CART_API_URL}/cart/remove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        userId,
+        productId
+      })
+    })
+      .then(res => res.json())
+      .then(() => fetchCartWithProductDetails(userId).then(setItems).catch(() => setItems([])))
+      .catch(() => setItems([]));
   }
 
+  // Cập nhật số lượng sản phẩm và sync với backend
   const updateQuantity = (id: string, quantity: number, metadata?: CartItem["metadata"]) => {
+    if (!isLoaded || !userId) return;
     if (quantity < 1) {
-      removeItem(id, metadata)
-      return
+      removeItem(id, metadata);
+      return;
     }
-
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === id && item.metadata?.color === metadata?.color
-          ? { ...item, quantity }
-          : item
-      )
-    )
+    // Tìm lại productId thực tế từ items
+    const item = items.find(i => i.id === id);
+    const productId = (item && (item.productId || item.id)) ? String(item.productId || item.id) : id;
+    fetch(`${CART_API_URL}/cart/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        userId,
+        productId,
+        quantity
+      })
+    })
+      .then(res => res.json())
+      .then(() => fetchCartWithProductDetails(userId).then(setItems).catch(() => setItems([])))
+      .catch(() => setItems([]));
   }
 
   const total = items.reduce(
@@ -93,7 +154,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     0
   )
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => setItems([])
 
   return (
     <CartContext.Provider

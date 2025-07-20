@@ -10,38 +10,49 @@ spring:
       discovery:
         locator:
           enabled: true
+
       routes:
         - id: userservice
-          uri: lb://USERSERVICE
+          uri: http://localhost:9001
           predicates:
             - Path=/api/users/**
+
         - id: orderservice
-          uri: lb://orderservice
+          uri: http://localhost:9003
           predicates:
+            - Path=/api/orders/**
             - Path=/api/v1/orders/**
+
         - id: productservice
-          uri: lb://productservice
+          uri: http://localhost:9002
           predicates:
-            - Path=/api/v1/products/**
+            - Path=/api/products/**
+
+        - id: cartservice
+          uri: http://localhost:9005
+          predicates:
+            - Path=/api/cart/**
+
         - id: notificationservice
-          uri: lb://notificationservice
+          uri: http://localhost:9004
           predicates:
-            - Path=/api/v1/notifications/**
-        # - id: chatservice
-        #   uri: lb://chatservice
-        #   predicates:
-        #     - Path=/api/v1/chats/**
+            - Path=/api/notifications/**
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
       globalcors:
+        add-to-simple-url-handler-mapping: true
         corsConfigurations:
           '[/**]':
             allowedOrigins:
               - "http://localhost:3000"
             allowedMethods:
-              - "GET"
-              - "POST"
-              - "PUT"
-              - "DELETE"
-              - "OPTIONS"
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
             allowedHeaders:
               - "*"
             allowCredentials: true
@@ -52,3 +63,9 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://discoveryserver:8761/eureka
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.cors: DEBUG
+    reactor.netty.http.server: DEBUG

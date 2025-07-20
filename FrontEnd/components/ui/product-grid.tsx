@@ -9,6 +9,7 @@ import { useCart } from "../../contexts/cart-context"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect } from "react";
+import { getProductImageUrl } from "../../lib/utils";
 
 // Lấy danh sách sản phẩm từ backend
 interface Product {
@@ -73,14 +74,6 @@ function useCurrentGoldPricePerChi(age: string | undefined) {
   return price;
 }
 
-// Hàm lấy URL ảnh sản phẩm giống trang admin
-function getProductImageUrl(product: any): string {
-  if (product.id || product.product_id) {
-    return `http://localhost:9004/api/products/image/${product.id || product.product_id}`;
-  }
-  return "/no-image.png";
-}
-
 export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGridProps) {
   const { addItem } = useCart()
   const router = useRouter();
@@ -95,7 +88,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
   React.useEffect(() => {
     async function fetchProducts() {
       try {
-        const res = await fetch('http://localhost:9004/api/products'); // Đổi lại endpoint nếu cần
+        const res = await fetch('http://localhost:9004/api/products/all');
         const data = await res.json();
         setProducts(data);
       } catch (err) {
@@ -279,7 +272,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                     id: product.id.toString(),
                     name: product.name,
                     price: product.price,
-                    image: product.image
+                    image: getProductImageUrl(product)
                   });
                   toast({
                     title: "Đã thêm vào giỏ hàng!",

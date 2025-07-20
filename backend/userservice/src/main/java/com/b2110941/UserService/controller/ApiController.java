@@ -11,10 +11,10 @@ import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/role")
+@RequestMapping("/api/users")
 public class ApiController {
 
-    @GetMapping("/all")
+    @GetMapping("/public")
     public ResponseEntity<Map<String, String>> allAccess() {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Public Content.");

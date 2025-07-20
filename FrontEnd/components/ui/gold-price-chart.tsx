@@ -32,7 +32,7 @@ interface GoldPriceHistory {
 }
 
 // Thay thế mock data bằng fetch từ GoldAPI
-const GOLD_API_KEY = "goldapi-4c7dtk19md649ycb-io"; // <-- Điền API Key tại đây
+const GOLD_API_KEY = "goldapi-4dosmdb9z65q-io"; // <-- Điền API Key tại đây
 const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
 // const GOLD_API_KEY = "YfPgzfA7EvMU4Y0X6UdiwEzWxR9mQ5kK"; // <-- Điền API Key tại đây
 // const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";

@@ -61,7 +61,7 @@ export function HeroSlider() {
     setSelectedIndex(emblaApi.selectedScrollSnap());
     setCanScrollPrev(prev);
     setCanScrollNext(next);
-    console.log(`onSelect called: canScrollPrev=${prev}, canScrollNext=${next}, selectedIndex=${emblaApi.selectedScrollSnap()}`);
+    // console.log(`onSelect called: canScrollPrev=${prev}, canScrollNext=${next}, selectedIndex=${emblaApi.selectedScrollSnap()}`);
   }, [emblaApi])
 
   // Autoplay function

@@ -13,6 +13,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/ChatBox";
 import { useRef } from "react";
+import { getProductImageUrl } from "@/lib/utils";
 
 type Product = {
   id: number;
@@ -330,15 +331,19 @@ export default function ProductDetailPage() {
   const avgRating = calculateAverageRating(product.ratings);
 
   const addToCart = (product: Product) => {
+    if (product.stock === 0) {
+      toast({
+        title: "Sản phẩm đã hết hàng!",
+        description: product.name,
+        variant: "destructive"
+      });
+      return;
+    }
     addItem({
       id: product.id.toString(),
       name: product.name,
       price: product.price,
-      image: (product.images && product.images.length > 0)
-        ? (product.images[0] && !product.images[0].startsWith('http')
-            ? `http://localhost:9004/${product.images[0].replace(/^\/+/, '')}`
-            : product.images[0])
-        : "/images/no-image.png",
+      image: getProductImageUrl(product),
       metadata: product.colors ? { color: selectedColor } : undefined,
     }, quantity);
     toast({
