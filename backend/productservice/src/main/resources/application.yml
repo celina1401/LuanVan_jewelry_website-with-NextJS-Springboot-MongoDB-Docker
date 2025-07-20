@@ -1,0 +1,13 @@
+server:
+  port: 9004
+
+spring:
+  application:
+    name: productservice
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discoveryserver:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true 

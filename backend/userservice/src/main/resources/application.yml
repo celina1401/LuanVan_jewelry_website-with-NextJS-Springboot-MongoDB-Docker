@@ -1,0 +1,13 @@
+server:
+  port: 9001
+
+spring:
+  application:
+    name: userservice
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discoveryserver:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true 
