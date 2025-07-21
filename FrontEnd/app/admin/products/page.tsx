@@ -7,8 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import Barcode from "react-barcode";
-import { useApi } from '../../api/apiClient';
-import { getProductImageUrl, translateProductTag } from "@/lib/utils";
 
 export default function ProductPage() {
   const [form, setForm] = useState({
@@ -36,7 +34,7 @@ export default function ProductPage() {
   // Hàm lấy thông tin chi tiết sản phẩm với hình ảnh
   const fetchProductDetail = async (productId: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/products/profile/${productId}`);
+      const res = await fetch(`http://localhost:9004/api/products/profile/${productId}`);
       if (res.ok) {
         const data = await res.json();
         return data;
@@ -60,8 +58,8 @@ export default function ProductPage() {
   // Hàm fetch danh sách sản phẩm từ backend
   async function fetchProducts() {
     try {
-      const api = useApi();
-      const res = await api.get('/products/all-with-images');
+      // Sử dụng endpoint mới để lấy sản phẩm với hình ảnh
+      const res = await fetch('http://localhost:9004/api/products/all-with-images');
       if (res.ok) {
         const data = await res.json();
         // Sắp xếp theo mã sản phẩm (productCode) tăng dần (A-Z, 0-9)
@@ -73,7 +71,7 @@ export default function ProductPage() {
         setProducts(sorted);
         // Debug: kiểm tra files trong uploads
         try {
-          const uploadsRes = await fetch('http://localhost:8080/api/products/list-uploads');
+          const uploadsRes = await fetch('http://localhost:9004/api/products/list-uploads');
           if (uploadsRes.ok) {
             const uploadsData = await uploadsRes.json();
             console.log('Files in uploads directory:', uploadsData);
@@ -83,7 +81,7 @@ export default function ProductPage() {
         }
       } else {
         // Fallback về endpoint cũ nếu endpoint mới chưa hoạt động
-        const fallbackRes = await fetch('http://localhost:8080/api/products');
+        const fallbackRes = await fetch('http://localhost:9004/api/products');
         const fallbackData = await fallbackRes.json();
         setProducts(fallbackData);
       }
@@ -91,7 +89,7 @@ export default function ProductPage() {
       console.error('Error fetching products:', error);
       // Fallback về endpoint cũ
       try {
-        const fallbackRes = await fetch('http://localhost:8080/api/products');
+        const fallbackRes = await fetch('http://localhost:9004/api/products');
         const fallbackData = await fallbackRes.json();
         setProducts(fallbackData);
       } catch (fallbackError) {
@@ -173,7 +171,7 @@ export default function ProductPage() {
       }
     async function fetchNextProductCodeForEdit() {
       try {
-        const res = await fetch(`http://localhost:8080/api/products/search/category?q=${editProduct.category}`);
+        const res = await fetch(`http://localhost:9004/api/products/search/category?q=${editProduct.category}`);
         if (res.ok) {
           const data = await res.json();
           let maxCode = 0;
@@ -198,7 +196,7 @@ export default function ProductPage() {
   // Hàm fetch mã sản phẩm tiếp theo cho form thêm mới
   async function fetchNextProductCode(category: string, prefix: string) {
     try {
-      const res = await fetch(`http://localhost:8080/api/products/search/category?q=${category}`);
+      const res = await fetch(`http://localhost:9004/api/products/search/category?q=${category}`);
       if (res.ok) {
         const data = await res.json();
         let maxCode = 0;
@@ -264,13 +262,13 @@ export default function ProductPage() {
       formData.append('image', form.image); // form.image là file
     }
     try {
-      const api = useApi();
-      const res = await api.post('/products/add', {
+      const res = await fetch('http://localhost:9004/api/products/add', {
+        method: 'POST',
         body: formData,
       });
       if (res.ok) {
         // Fetch lại danh sách sản phẩm từ backend để đảm bảo đồng bộ
-        const listRes = await api.get('/products/all-with-images');
+        const listRes = await fetch('http://localhost:9004/api/products/all-with-images');
         const list = await listRes.json();
         setProducts(sortProductsByCode(list)); // Khi thêm mới
         // Reset form
@@ -342,8 +340,9 @@ export default function ProductPage() {
     if (!editProduct || !(editProduct.id || editProduct.product_id)) return;
     try {
       const { createdAt, ...dataToSend } = editProduct;
-      const api = useApi();
-      const res = await api.put(`/products/${editProduct.id || editProduct.product_id}`, {
+      const res = await fetch(`http://localhost:9004/api/products/${editProduct.id || editProduct.product_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend),
       });
       if (res.ok) {
@@ -363,8 +362,8 @@ export default function ProductPage() {
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      const api = useApi();
-      const res = await api.put(`/products/${productId}/image`, {
+      const res = await fetch(`http://localhost:9004/api/products/${productId}/image`, {
+        method: 'PUT',
         body: formData,
       });
 
@@ -391,8 +390,9 @@ export default function ProductPage() {
   // Hàm xóa hình ảnh sản phẩm
   const deleteProductImage = async (productId: string) => {
     try {
-      const api = useApi();
-      const res = await api.delete(`/products/${productId}/image`);
+      const res = await fetch(`http://localhost:9004/api/products/${productId}/image`, {
+        method: 'DELETE',
+      });
 
       if (res.ok) {
         // Cập nhật danh sách sản phẩm
@@ -420,8 +420,9 @@ export default function ProductPage() {
   async function confirmDelete() {
     if (!deleteConfirm.product?.id && !deleteConfirm.product?.product_id) return;
     try {
-      const api = useApi();
-      const res = await api.delete(`/products/${deleteConfirm.product.id || deleteConfirm.product.product_id}`);
+      const res = await fetch(`http://localhost:9004/api/products/${deleteConfirm.product.id || deleteConfirm.product.product_id}`, {
+        method: 'DELETE',
+      });
       if (res.ok) {
         setProducts((prev: any[]) => sortProductsByCode(prev.filter((p: any) => (p.id || p.product_id) !== (deleteConfirm.product.id || deleteConfirm.product.product_id)))); // Khi xóa
         setDeleteConfirm({ open: false, product: null });
@@ -501,10 +502,10 @@ export default function ProductPage() {
                       <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ring">{translateProductTag('ring')}</SelectItem>
-                      <SelectItem value="necklace">{translateProductTag('necklace')}</SelectItem>
-                      <SelectItem value="earring">{translateProductTag('earring')}</SelectItem>
-                      <SelectItem value="bracelet">{translateProductTag('bracelet')}</SelectItem>
+                      <SelectItem value="ring">Nhẫn</SelectItem>
+                      <SelectItem value="necklace">Dây chuyền</SelectItem>
+                      <SelectItem value="earring">Bông tai</SelectItem>
+                      <SelectItem value="bracelet">Vòng tay</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -751,14 +752,20 @@ export default function ProductPage() {
                   <div className="col-span-1 font-mono">{product.productCode}</div>
                   <div className="col-span-2 font-medium text-left">{product.name}</div>
                   <div className="col-span-1">{(() => {
-                    return translateProductTag(product.category);
+                    switch (product.category) {
+                      case 'necklace': return 'Dây chuyền';
+                      case 'bracelet': return 'Vòng tay';
+                      case 'ring': return 'Nhẫn';
+                      case 'earring': return 'Bông tai';
+                      default: return product.category;
+                    }
                   })()}</div>
                   <div className="col-span-1">{product.goldAge || product.karat || '-'}</div>
                   <div className="col-span-1 text-rose-600 font-bold">{product.wage?.toLocaleString() || '-'}</div>
                   <div className="col-span-1 flex justify-center">
                     {(product.id || product.product_id) ? (
                       <img
-                        src={getProductImageUrl(product)}
+                        src={`http://localhost:9004/api/products/image/${product.id || product.product_id}`}
                         alt="thumb"
                         className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
                         onError={(e) => {
@@ -834,7 +841,7 @@ export default function ProductPage() {
                   <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
                     {(detailProduct.id || detailProduct.product_id) ? (
                       <img
-                        src={getProductImageUrl(detailProduct)}
+                        src={`http://localhost:9004/api/products/image/${detailProduct.id || detailProduct.product_id}`}
                         alt={detailProduct.name}
                         className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-200"
                         onError={(e) => {
@@ -851,7 +858,15 @@ export default function ProductPage() {
                   <div className="flex-1 grid grid-cols-1 gap-y-2 text-base">
                     <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{getField('productCode')}</span></div>
                     <div><span className="font-semibold text-gray-500">Tên sản phẩm:</span> <span className="font-medium">{getField('name')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{translateProductTag(getField('category'))}</span></div>
+                    <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{(() => {
+                      switch (getField('category')) {
+                        case 'necklace': return 'Dây chuyền';
+                        case 'bracelet': return 'Vòng tay';
+                        case 'ring': return 'Nhẫn';
+                        case 'earring': return 'Bông tai';
+                        default: return getField('category');
+                      }
+                    })()}</span></div>
                     <div><span className="font-semibold text-gray-500">Chất liệu:</span> <span className="font-medium">Vàng</span></div>
                     <div><span className="font-semibold text-gray-500">Hàm lượng:</span> <span className="font-medium">{getField('karat') !== '-' ? getField('karat') : getField('goldAge')}</span></div>
                     <div><span className="font-semibold text-gray-500">Trọng lượng:</span> <span className="font-medium">{getField('weight')} chỉ</span></div>
@@ -908,10 +923,10 @@ export default function ProductPage() {
                       <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ring">{translateProductTag('ring')}</SelectItem>
-                      <SelectItem value="necklace">{translateProductTag('necklace')}</SelectItem>
-                      <SelectItem value="earring">{translateProductTag('earring')}</SelectItem>
-                      <SelectItem value="bracelet">{translateProductTag('bracelet')}</SelectItem>
+                      <SelectItem value="ring">Nhẫn</SelectItem>
+                      <SelectItem value="necklace">Dây chuyền</SelectItem>
+                      <SelectItem value="earring">Bông tai</SelectItem>
+                      <SelectItem value="bracelet">Vòng tay</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1073,7 +1088,7 @@ export default function ProductPage() {
                   <label className="font-semibold text-base">Ảnh sản phẩm</label>
                   {(editProduct.id || editProduct.product_id) ? (
                     <img
-                      src={getProductImageUrl(editProduct)}
+                      src={`http://localhost:9004/api/products/image/${editProduct.id || editProduct.product_id}?t=${Date.now()}`}
                     alt={editProduct.name}
                       className="w-28 h-28 object-cover rounded-xl border border-border mt-2"
                     onError={(e) => {

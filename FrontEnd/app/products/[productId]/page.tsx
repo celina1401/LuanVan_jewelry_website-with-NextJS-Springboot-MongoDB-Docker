@@ -12,9 +12,9 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/ChatBox";
-import { useRef } from "react";
-import { getProductImageUrl } from "@/lib/utils";
 import { translateProductTag } from "@/lib/utils";
+import { MagnifierImage } from "@/app/components/MagnifierImage";
+
 
 type Product = {
   id: number;
@@ -28,7 +28,7 @@ type Product = {
   category: string;
   code?: string;
   colors?: string[];
-  stock?: number;
+  stockQuantity?: number;
   sold?: number;
   ratings?: number[]; // mảng điểm đánh giá
   productCode?: string; // Thêm trường mã sản phẩm
@@ -65,7 +65,7 @@ const mockProducts: Product[] = [
     category: "Nhẫn",
     code: "NDINO284",
     colors: ["#cccccc", "#ffe066"],
-    stock: 10,
+    stockQuantity: 10,
     sold: 100,
     ratings: [5, 5, 4, 5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 5, 4, 5, 5, 5, 5, 4],
     productCode: "NDH284",
@@ -93,82 +93,6 @@ const mockProducts: Product[] = [
     goldAge: "14K",
     goldPrice: 400000,
     wage: 50000,
-  },
-  {
-    id: 3,
-    name: "Nhẫn vàng 18K",
-    tags: ["Nhẫn"],
-    images: [
-      "/images/products/ring1.jpg"
-    ],
-    description: "Nhẫn vàng 18K sang trọng",
-    price: 4500000,
-    reviews: 80,
-    category: "Nhẫn",
-    sold: 20,
-    ratings: [4, 5, 4, 5, 4, 5, 4, 5],
-    productCode: "NH18K",
-    weight: 15,
-    goldAge: "18K",
-    goldPrice: 600000,
-    wage: 150000,
-  },
-  {
-    id: 4,
-    name: "Bông tai kim cương",
-    tags: ["Bông tai"],
-    images: [
-      "/images/products/earrings1.jpg"
-    ],
-    description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
-    price: 3499000,
-    reviews: 112,
-    category: "Bông tai",
-    sold: 150,
-    ratings: [5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5],
-    productCode: "BTKC",
-    weight: 0.5,
-    goldAge: "18K",
-    goldPrice: 500000,
-    wage: 25000,
-  },
-  {
-    id: 5,
-    name: "Bông tai ngọc trai",
-    tags: ["Bông tai", "Mới"],
-    images: [
-      "/images/products/earrings1.jpg"
-    ],
-    description: "Bông tai ngọc trai tự nhiên",
-    price: 2990000,
-    reviews: 90,
-    category: "Bông tai",
-    sold: 80,
-    ratings: [5, 4, 5, 4, 5, 5, 4, 5, 4, 5],
-    productCode: "BTNT",
-    weight: 0.3,
-    goldAge: "14K",
-    goldPrice: 450000,
-    wage: 15000,
-  },
-  {
-    id: 6,
-    name: "Vòng tay bạc",
-    tags: ["Vòng tay"],
-    images: [
-      "/images/products/bracelet1.jpg"
-    ],
-    description: "Vòng tay bạc thời trang",
-    price: 1990000,
-    reviews: 60,
-    category: "Vòng tay",
-    sold: 30,
-    ratings: [4, 5, 4, 5, 4, 5],
-    productCode: "VTBA",
-    weight: 10,
-    goldAge: "14K",
-    goldPrice: 400000,
-    wage: 100000,
   },
 ];
 
@@ -332,7 +256,7 @@ export default function ProductDetailPage() {
   const avgRating = calculateAverageRating(product.ratings);
 
   const addToCart = (product: Product) => {
-    if (product.stock === 0) {
+    if (product.stockQuantity === 0) {
       toast({
         title: "Sản phẩm đã hết hàng!",
         description: product.name,
@@ -398,10 +322,19 @@ export default function ProductDetailPage() {
         <div className="flex flex-col md:flex-row gap-10 items-start">
           {/* Ảnh sản phẩm */}
           <div className="flex-1 flex flex-col items-center">
-            <img
+            {/* <img
               src={getProductImageUrl(product)}
               alt={product.name}
               className="w-full max-w-lg h-[480px] object-contain rounded-2xl shadow-2xl border-2 border-white bg-white"
+            /> */}
+
+            <MagnifierImage
+              src={getProductImageUrl(product)}
+              alt={product.name}
+              width={480}
+              height={480}
+              zoom={1.5} // Tăng zoom rõ hơn một chút
+              lensSize={320} // Thu nhỏ vùng kính lúp xuống 80x80 pixel
             />
             <div className="flex gap-4 mt-6">
               {[getProductImageUrl(product)].map((img) => (
@@ -409,11 +342,10 @@ export default function ProductDetailPage() {
                   key={img}
                   src={img}
                   alt=""
-                  className={`w-20 h-20 object-cover rounded-xl border-4 cursor-pointer transition-all duration-150 shadow ${
-                    selectedImg === img
+                  className={`w-20 h-20 object-cover rounded-xl border-4 cursor-pointer transition-all duration-150 shadow ${selectedImg === img
                       ? "border-blue-500 ring-4 ring-blue-200 scale-105"
                       : "border-gray-200 hover:border-blue-300"
-                  }`}
+                    }`}
                   onClick={() => setSelectedImg(img)}
                 />
               ))}
@@ -474,15 +406,15 @@ export default function ProductDetailPage() {
               </div>
               {/* Đã bán */}
               <div className="flex items-center gap-1 border-l border-gray-300 dark:border-gray-700 pl-4">
-                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{product.sold ? (product.sold > 1000 ? (product.sold/1000).toFixed(1) + 'k+' : product.sold) : '10k+'}</span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{product.sold ? (product.sold > 1000 ? (product.sold / 1000).toFixed(1) + 'k+' : product.sold) : '10k+'}</span>
                 <span className="text-gray-500 text-base">Đã Bán</span>
               </div>
             </div>
             {/* Chi tiết sản phẩm */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-2 text-sm">
-              <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{product.code || product.productCode || '-'}</span></div>
+              <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{product.productCode || '-'}</span></div>
               <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{translateProductTag(product.category)}</span></div>
-              <div><span className="font-semibold text-gray-500">Tồn kho:</span> <span className={`font-medium ${product.stock && product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>{product.stock && product.stock > 0 ? 'Còn hàng' : 'Hết hàng'}</span></div>
+              <div><span className="font-semibold text-gray-500">Tồn kho:</span> <span className={`font-medium ${product.stockQuantity && product.stockQuantity > 0 ? 'text-green-600' : 'text-red-500'}`}>{product.stockQuantity && product.stockQuantity > 0 ? 'Còn hàng' : 'Hết hàng'}</span></div>
               <div><span className="font-semibold text-gray-500">Khối lượng:</span> <span className="font-medium">{product.weight || '-'} chỉ</span></div>
               <div><span className="font-semibold text-gray-500">Tuổi vàng:</span> <span className="font-medium">{product.goldAge || product.karat || '-'}</span></div>
               <div><span className="font-semibold text-gray-500">Tiền công:</span> <span className="font-medium">{product.wage ? Number(product.wage).toLocaleString() : '-'}₫</span></div>
@@ -523,13 +455,13 @@ export default function ProductDetailPage() {
                 className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold"
                 onClick={() => setQuantity(q => q + 1)}
               >+</button>
-              <span className="ml-2 text-sm text-gray-500">{product.stock === 0 ? "Hết hàng" : null}</span>
+              <span className="ml-2 text-sm text-gray-500">{product.stockQuantity === 0 ? "Hết hàng" : null}</span>
             </div>
             {/* Nút đặt mua/giỏ hàng */}
             <div className="flex flex-wrap gap-4 mt-4">
               <button
                 className="px-8 py-3 bg-rose-400 text-white rounded-full font-bold text-lg shadow hover:bg-rose-500 transition"
-                disabled={product.stock === 0}
+                disabled={product.stockQuantity === 0}
                 onClick={() => alert("Đặt hàng thành công!")}
               >
                 Đặt hàng
@@ -537,7 +469,7 @@ export default function ProductDetailPage() {
               <button
                 className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2"
                 onClick={() => addToCart(product)}
-                disabled={product.stock === 0}
+                disabled={product.stockQuantity === 0}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A1 1 0 007.52 17h8.96a1 1 0 00.87-1.47L17 13M7 13V6h13" /></svg>
                 Thêm vào giỏ
@@ -545,14 +477,14 @@ export default function ProductDetailPage() {
               <button
                 className="px-8 py-3 bg-green-500 text-white rounded-full font-bold text-lg shadow hover:bg-green-600 transition flex items-center gap-2"
                 onClick={() => buyNow(product)}
-                disabled={product.stock === 0}
+                disabled={product.stockQuantity === 0}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 Mua ngay
               </button>
             </div>
             {/* Trả góp */}
-            <div className="flex gap-4 mt-4">
+            {/* <div className="flex gap-4 mt-4">
               <div className="flex-1 bg-gray-100 dark:bg-[#23272f] rounded-lg p-3 text-center">
                 <div className="font-semibold text-gray-900 dark:text-gray-100">Trả góp 3 tháng</div>
                 <div className="text-sm text-gray-500 dark:text-gray-300">(Chỉ từ {(product.price/3).toLocaleString()}₫/tháng)</div>
@@ -561,7 +493,7 @@ export default function ProductDetailPage() {
                 <div className="font-semibold text-gray-900 dark:text-gray-100">Trả góp 6 tháng</div>
                 <div className="text-sm text-gray-500 dark:text-gray-300">(Chỉ từ {(product.price/6).toLocaleString()}₫/tháng)</div>
               </div>
-            </div>
+            </div> */}
             {/* Tiện ích */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-center text-sm text-gray-600 dark:text-gray-300">
               <div className="flex flex-col items-center gap-1"><FaSyncAlt className="text-2xl" /> Đổi miễn phí trong 72 giờ</div>
