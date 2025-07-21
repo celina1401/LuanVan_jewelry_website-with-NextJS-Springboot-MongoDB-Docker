@@ -9,7 +9,7 @@ import { useCart } from "../../contexts/cart-context"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect } from "react";
-import { getProductImageUrl } from "../../lib/utils";
+import { getProductImageUrl, translateProductTag } from "../../lib/utils";
 
 // Lấy danh sách sản phẩm từ backend
 interface Product {
@@ -214,7 +214,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                   className="object-cover transition-transform group-hover:scale-105"
                 />
                 <Badge className="absolute top-2 right-2">
-                  {product.category}
+                  {translateProductTag(product.category)}
                 </Badge>
                 {product.isNew && (
                   <Badge variant="secondary" className="absolute top-2 left-2">

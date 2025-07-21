@@ -5,13 +5,14 @@ import { Navbar } from "../../components/navbar"
 import { ProductGrid } from "../../components/ui/product-grid"
 import { ProductFilters } from "../../components/ui/product-filters"
 import { ProductSort } from "../../components/ui/product-sort"
+import { translateProductTag } from "@/lib/utils";
 
 const categories = [
-  "Tất cả",
-  "Nhẫn",
-  "Dây chuyền",
-  "Bông tai",
-  "Vòng tay",
+  translateProductTag("all"),
+  translateProductTag("ring"),
+  translateProductTag("necklace"),
+  translateProductTag("earring"),
+  translateProductTag("bracelet"),
   "Đồng hồ"
 ]
 

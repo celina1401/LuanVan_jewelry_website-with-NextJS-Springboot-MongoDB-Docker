@@ -5,6 +5,7 @@ import { Button } from "./button"
 import { Card, CardContent, CardHeader, CardTitle } from "./card"
 import { RadioGroup, RadioGroupItem } from "./radio-group"
 import { Label } from "./label"
+import { translateProductTag } from "../../lib/utils";
 
 interface ProductFiltersProps {
   categories: string[]
@@ -42,7 +43,7 @@ export function ProductFilters({
             {categories.map((category) => (
               <div key={category} className="flex items-center space-x-2">
                 <RadioGroupItem value={category} id={category} />
-                <Label htmlFor={category}>{category}</Label>
+                <Label htmlFor={category}>{translateProductTag(category)}</Label>
               </div>
             ))}
           </RadioGroup>

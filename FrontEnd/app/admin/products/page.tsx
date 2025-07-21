@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { useState, useEffect } from "react";
 import Barcode from "react-barcode";
 import { useApi } from '../../api/apiClient';
-import { getProductImageUrl } from "@/lib/utils";
+import { getProductImageUrl, translateProductTag } from "@/lib/utils";
 
 export default function ProductPage() {
   const [form, setForm] = useState({
@@ -501,10 +501,10 @@ export default function ProductPage() {
                       <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ring">Nhẫn</SelectItem>
-                      <SelectItem value="necklace">Dây chuyền</SelectItem>
-                      <SelectItem value="earring">Bông tai</SelectItem>
-                      <SelectItem value="bracelet">Vòng tay</SelectItem>
+                      <SelectItem value="ring">{translateProductTag('ring')}</SelectItem>
+                      <SelectItem value="necklace">{translateProductTag('necklace')}</SelectItem>
+                      <SelectItem value="earring">{translateProductTag('earring')}</SelectItem>
+                      <SelectItem value="bracelet">{translateProductTag('bracelet')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -751,13 +751,7 @@ export default function ProductPage() {
                   <div className="col-span-1 font-mono">{product.productCode}</div>
                   <div className="col-span-2 font-medium text-left">{product.name}</div>
                   <div className="col-span-1">{(() => {
-                    switch (product.category) {
-                      case 'necklace': return 'Dây chuyền';
-                      case 'bracelet': return 'Vòng tay';
-                      case 'ring': return 'Nhẫn';
-                      case 'earring': return 'Bông tai';
-                      default: return product.category;
-                    }
+                    return translateProductTag(product.category);
                   })()}</div>
                   <div className="col-span-1">{product.goldAge || product.karat || '-'}</div>
                   <div className="col-span-1 text-rose-600 font-bold">{product.wage?.toLocaleString() || '-'}</div>
@@ -857,15 +851,7 @@ export default function ProductPage() {
                   <div className="flex-1 grid grid-cols-1 gap-y-2 text-base">
                     <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{getField('productCode')}</span></div>
                     <div><span className="font-semibold text-gray-500">Tên sản phẩm:</span> <span className="font-medium">{getField('name')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{(() => {
-                      switch (getField('category')) {
-                        case 'necklace': return 'Dây chuyền';
-                        case 'bracelet': return 'Vòng tay';
-                        case 'ring': return 'Nhẫn';
-                        case 'earring': return 'Bông tai';
-                        default: return getField('category');
-                      }
-                    })()}</span></div>
+                    <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{translateProductTag(getField('category'))}</span></div>
                     <div><span className="font-semibold text-gray-500">Chất liệu:</span> <span className="font-medium">Vàng</span></div>
                     <div><span className="font-semibold text-gray-500">Hàm lượng:</span> <span className="font-medium">{getField('karat') !== '-' ? getField('karat') : getField('goldAge')}</span></div>
                     <div><span className="font-semibold text-gray-500">Trọng lượng:</span> <span className="font-medium">{getField('weight')} chỉ</span></div>
@@ -922,10 +908,10 @@ export default function ProductPage() {
                       <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ring">Nhẫn</SelectItem>
-                      <SelectItem value="necklace">Dây chuyền</SelectItem>
-                      <SelectItem value="earring">Bông tai</SelectItem>
-                      <SelectItem value="bracelet">Vòng tay</SelectItem>
+                      <SelectItem value="ring">{translateProductTag('ring')}</SelectItem>
+                      <SelectItem value="necklace">{translateProductTag('necklace')}</SelectItem>
+                      <SelectItem value="earring">{translateProductTag('earring')}</SelectItem>
+                      <SelectItem value="bracelet">{translateProductTag('bracelet')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

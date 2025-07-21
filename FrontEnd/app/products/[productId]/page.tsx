@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/ChatBox";
 import { useRef } from "react";
 import { getProductImageUrl } from "@/lib/utils";
+import { translateProductTag } from "@/lib/utils";
 
 type Product = {
   id: number;
@@ -480,6 +481,7 @@ export default function ProductDetailPage() {
             {/* Chi tiết sản phẩm */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-2 text-sm">
               <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{product.code || product.productCode || '-'}</span></div>
+              <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{translateProductTag(product.category)}</span></div>
               <div><span className="font-semibold text-gray-500">Tồn kho:</span> <span className={`font-medium ${product.stock && product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>{product.stock && product.stock > 0 ? 'Còn hàng' : 'Hết hàng'}</span></div>
               <div><span className="font-semibold text-gray-500">Khối lượng:</span> <span className="font-medium">{product.weight || '-'} chỉ</span></div>
               <div><span className="font-semibold text-gray-500">Tuổi vàng:</span> <span className="font-medium">{product.goldAge || product.karat || '-'}</span></div>
@@ -598,7 +600,7 @@ export default function ProductDetailPage() {
                         alt={item.name}
                         className="object-cover w-full h-full"
                       />
-                      <Badge className="absolute top-2 right-2">{item.category}</Badge>
+                      <Badge className="absolute top-2 right-2">{translateProductTag(item.category)}</Badge>
                       {item.tags?.includes("Mới") && (
                         <Badge variant="secondary" className="absolute top-2 left-2">Mới</Badge>
                       )}

@@ -11,6 +11,7 @@ import useEmblaCarousel from "embla-carousel-react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useCart } from "../../contexts/cart-context"
 import { useAuth } from "@clerk/nextjs"
+import { translateProductTag } from "../../lib/utils";
 
 const bestSellerProducts = [
   {
@@ -152,7 +153,7 @@ export function BestSellerProducts() {
                           className="object-cover"
                         />
                         <Badge className="absolute top-2 right-2">
-                          {product.category}
+                          {translateProductTag(product.category)}
                         </Badge>
                       </div>
                     </CardHeader>

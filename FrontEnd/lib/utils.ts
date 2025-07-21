@@ -19,3 +19,18 @@ export function getProductImageUrl(productOrId: any): string {
   }
   return "/default-avatar.png";
 }
+
+// Chuyển đổi tag/category sản phẩm từ tiếng Anh sang tiếng Việt
+export function translateProductTag(tag: string): string {
+  switch (tag) {
+    case 'all': return 'Tất cả';
+    case 'earring': return 'Bông tai';
+    case 'ring': return 'Nhẫn';
+    case 'bracelet': return 'Vòng tay';
+    case 'necklace': return 'Dây chuyền';
+    case 'new': return 'Mới';
+    case 'best-seller': return 'Bán chạy';
+    case 'promotion': return 'Khuyến mãi';
+    default: return tag;
+  }
+}
