@@ -66,12 +66,31 @@ export default function OrderPage() {
     return sum + unitPrice * item.quantity;
   }, 0);
 
-  const handleOrder = (e: React.FormEvent) => {
+  const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agree) return;
+  
+    const orderId = `ORD${Date.now()}`; // mã đơn hàng ngẫu nhiên
+  
+    if (payment === "vnpay") {
+      try {
+        const res = await fetch(`http://localhost:9006/api/payment/vnpay?orderId=${orderId}&amount=${finalTotal}`);
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      } catch (err) {
+        alert("Không thể kết nối VNPAY");
+        return;
+      }
+    }
+  
+    // Xử lý COD như cũ
     setSuccess(true);
     clearCart();
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">

@@ -37,6 +37,12 @@ spring:
           uri: http://localhost:9004
           predicates:
             - Path=/api/notifications/**
+      
+        - id: paymentservice
+          uri: http://localhost:9006
+          predicates:
+            - Path=/api/payments/**
+
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST

@@ -46,7 +46,7 @@ public class ProductController {
     public ResponseEntity<Product> getProductById(@PathVariable String id) {
         Optional<Product> product = productRepository.findById(id);
         return product.map(ResponseEntity::ok)
-                      .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -101,12 +101,12 @@ public class ProductController {
     @PostMapping(value = "/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> addProduct(
             @RequestPart("product") String productJson,
-            @RequestPart(value = "image", required = false) MultipartFile image
-    ) {
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         System.out.println("==> [POST /add] Nhận request thêm sản phẩm");
         System.out.println("==> [POST /add] productJson: " + productJson);
         if (image != null) {
-            System.out.println("==> [POST /add] Có file ảnh: " + image.getOriginalFilename() + ", size: " + image.getSize());
+            System.out.println(
+                    "==> [POST /add] Có file ảnh: " + image.getOriginalFilename() + ", size: " + image.getSize());
         } else {
             System.out.println("==> [POST /add] Không có file ảnh");
         }
@@ -150,11 +150,20 @@ public class ProductController {
             // Sinh mã sản phẩm tự động, không trùng
             String prefix = "";
             switch (product.getCategory()) {
-                case "necklace": prefix = "D"; break;
-                case "ring": prefix = "N"; break;
-                case "earring": prefix = "E"; break;
-                case "bracelet": prefix = "B"; break;
-                default: prefix = "X"; // fallback
+                case "necklace":
+                    prefix = "D";
+                    break;
+                case "ring":
+                    prefix = "N";
+                    break;
+                case "earring":
+                    prefix = "E";
+                    break;
+                case "bracelet":
+                    prefix = "B";
+                    break;
+                default:
+                    prefix = "X"; // fallback
             }
             // Tìm mã lớn nhất hiện có cho loại này
             List<Product> sameTypeProducts = productRepository.findByCategory(product.getCategory());
@@ -164,8 +173,10 @@ public class ProductController {
                 if (code != null && code.startsWith(prefix)) {
                     try {
                         int num = Integer.parseInt(code.substring(1));
-                        if (num > maxCode) maxCode = num;
-                    } catch (Exception ignore) {}
+                        if (num > maxCode)
+                            maxCode = num;
+                    } catch (Exception ignore) {
+                    }
                 }
             }
             String newCode = prefix + String.format("%03d", maxCode + 1);
@@ -173,7 +184,8 @@ public class ProductController {
 
             // Xử lý ảnh nếu có
             if (image != null && !image.isEmpty()) {
-                String filename = System.currentTimeMillis() + "_" + Paths.get(image.getOriginalFilename()).getFileName().toString();
+                String filename = System.currentTimeMillis() + "_"
+                        + Paths.get(image.getOriginalFilename()).getFileName().toString();
                 Path uploadPath = Paths.get("/uploads/products");
                 System.out.println("[UPLOAD] Tạo thư mục: " + uploadPath.toAbsolutePath());
                 Files.createDirectories(uploadPath); // Tạo thư mục nếu chưa có
@@ -238,22 +250,35 @@ public class ProductController {
 
         // Lưu lại số lượng tồn kho cũ để kiểm tra
         Integer oldStockQuantity = existing.getStockQuantity();
-        if (oldStockQuantity == null) oldStockQuantity = 0;
+        if (oldStockQuantity == null)
+            oldStockQuantity = 0;
         Integer oldQuantity = existing.getQuantity();
-        if (oldQuantity == null) oldQuantity = 0;
+        if (oldQuantity == null)
+            oldQuantity = 0;
 
         // Cập nhật các trường nếu có gửi lên (chỉ cập nhật nếu khác null)
-        if (product.getName() != null) existing.setName(product.getName());
-        if (product.getBrand() != null) existing.setBrand(product.getBrand());
-        if (product.getOrigin() != null) existing.setOrigin(product.getOrigin());
-        if (product.getGoldAge() != null) existing.setGoldAge(product.getGoldAge());
-        if (product.getCategory() != null) existing.setCategory(product.getCategory());
-        if (product.getSku() != null) existing.setSku(product.getSku());
-        if (product.getProductCode() != null) existing.setProductCode(product.getProductCode());
-        if (product.getTags() != null) existing.setTags(product.getTags());
-        if (product.getWeight() != null) existing.setWeight(product.getWeight());
-        if (product.getQuantity() != null) existing.setQuantity(product.getQuantity());
-        if (product.getPrice() != null) existing.setPrice(product.getPrice());
+        if (product.getName() != null)
+            existing.setName(product.getName());
+        if (product.getBrand() != null)
+            existing.setBrand(product.getBrand());
+        if (product.getOrigin() != null)
+            existing.setOrigin(product.getOrigin());
+        if (product.getGoldAge() != null)
+            existing.setGoldAge(product.getGoldAge());
+        if (product.getCategory() != null)
+            existing.setCategory(product.getCategory());
+        if (product.getSku() != null)
+            existing.setSku(product.getSku());
+        if (product.getProductCode() != null)
+            existing.setProductCode(product.getProductCode());
+        if (product.getTags() != null)
+            existing.setTags(product.getTags());
+        if (product.getWeight() != null)
+            existing.setWeight(product.getWeight());
+        if (product.getQuantity() != null)
+            existing.setQuantity(product.getQuantity());
+        if (product.getPrice() != null)
+            existing.setPrice(product.getPrice());
         if (product.getStockQuantity() != null) {
             // Nếu stockQuantity mới > stockQuantity cũ thì quantity += phần tăng thêm
             if (product.getStockQuantity() > oldStockQuantity) {
@@ -262,14 +287,22 @@ public class ProductController {
             }
             existing.setStockQuantity(product.getStockQuantity());
         }
-        if (product.getKarat() != null) existing.setKarat(product.getKarat());
-        if (product.getMaterial() != null) existing.setMaterial(product.getMaterial());
-        if (product.getStatus() != null) existing.setStatus(product.getStatus());
-        if (product.getNote() != null) existing.setNote(product.getNote());
-        if (product.getCertificationNumber() != null) existing.setCertificationNumber(product.getCertificationNumber());
-        if (product.getDesign() != null) existing.setDesign(product.getDesign());
-        if (product.getWage() != null) existing.setWage(product.getWage());
-        if (product.getDescription() != null) existing.setDescription(product.getDescription());
+        if (product.getKarat() != null)
+            existing.setKarat(product.getKarat());
+        if (product.getMaterial() != null)
+            existing.setMaterial(product.getMaterial());
+        if (product.getStatus() != null)
+            existing.setStatus(product.getStatus());
+        if (product.getNote() != null)
+            existing.setNote(product.getNote());
+        if (product.getCertificationNumber() != null)
+            existing.setCertificationNumber(product.getCertificationNumber());
+        if (product.getDesign() != null)
+            existing.setDesign(product.getDesign());
+        if (product.getWage() != null)
+            existing.setWage(product.getWage());
+        if (product.getDescription() != null)
+            existing.setDescription(product.getDescription());
         // Không cập nhật thumbnailUrl ở đây (ảnh dùng endpoint riêng)
         existing.setUpdatedAt(LocalDateTime.now());
 
@@ -280,14 +313,22 @@ public class ProductController {
         if (details != null && !details.isEmpty()) {
             for (ProductDetail detail : details) {
                 // Đồng bộ các trường chính
-                if (product.getWeight() != null) detail.setWeight(product.getWeight());
-                if (product.getOrigin() != null) detail.setOrigin(product.getOrigin());
-                if (product.getStockQuantity() != null) detail.setStockQuantity(product.getStockQuantity());
-                if (product.getDesign() != null) detail.setDesign(product.getDesign());
-                if (product.getCertificationNumber() != null) detail.setCertificationNumber(product.getCertificationNumber());
-                if (product.getNote() != null) detail.setNote(product.getNote());
-                if (product.getStatus() != null) detail.setStatus(product.getStatus());
-                if (product.getDescription() != null) detail.setDescription(product.getDescription());
+                if (product.getWeight() != null)
+                    detail.setWeight(product.getWeight());
+                if (product.getOrigin() != null)
+                    detail.setOrigin(product.getOrigin());
+                if (product.getStockQuantity() != null)
+                    detail.setStockQuantity(product.getStockQuantity());
+                if (product.getDesign() != null)
+                    detail.setDesign(product.getDesign());
+                if (product.getCertificationNumber() != null)
+                    detail.setCertificationNumber(product.getCertificationNumber());
+                if (product.getNote() != null)
+                    detail.setNote(product.getNote());
+                if (product.getStatus() != null)
+                    detail.setStatus(product.getStatus());
+                if (product.getDescription() != null)
+                    detail.setDescription(product.getDescription());
                 // Nếu cần đồng bộ thêm trường nào, thêm ở đây
                 productDetailRepository.save(detail);
             }
@@ -303,15 +344,14 @@ public class ProductController {
     @PutMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProductImage(
             @PathVariable String id,
-            @RequestPart("image") MultipartFile image
-    ) {
+            @RequestPart("image") MultipartFile image) {
         Optional<Product> productOpt = productRepository.findById(id);
         if (!productOpt.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy sản phẩm.");
         }
 
         Product product = productOpt.get();
-        
+
         try {
             // Xử lý upload ảnh mới
             String uploadsDir = "/uploads/products";
@@ -331,14 +371,14 @@ public class ProductController {
 
             // Lưu vào DB
             Product updated = productRepository.save(product);
-            
+
             // Trả về thông tin cập nhật
             Map<String, Object> result = new HashMap<>();
             result.put("id", updated.getId());
             result.put("name", updated.getName());
             result.put("thumbnailUrl", updated.getThumbnailUrl());
             result.put("updatedAt", updated.getUpdatedAt());
-            
+
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi khi cập nhật hình ảnh: " + e.getMessage());
@@ -369,7 +409,7 @@ public class ProductController {
 
         Product product = productOpt.get();
         String thumbnailUrl = product.getThumbnailUrl();
-        
+
         if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
             try {
                 // Xóa file hình ảnh từ hệ thống
@@ -380,15 +420,16 @@ public class ProductController {
                 if (Files.exists(imagePath)) {
                     Files.delete(imagePath);
                 }
-                
+
                 // Cập nhật sản phẩm - xóa URL hình ảnh
                 product.setThumbnailUrl(null);
                 product.setUpdatedAt(LocalDateTime.now());
                 productRepository.save(product);
-                
+
                 return ResponseEntity.ok("Đã xóa hình ảnh sản phẩm thành công");
             } catch (IOException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xóa file hình ảnh: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Lỗi khi xóa file hình ảnh: " + e.getMessage());
             }
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Sản phẩm không có hình ảnh để xóa");
@@ -476,7 +517,8 @@ public class ProductController {
                     if (Files.exists(imagePath)) {
                         byte[] imageBytes = Files.readAllBytes(imagePath);
                         String contentType = Files.probeContentType(imagePath);
-                        if (contentType == null) contentType = "image/jpeg";
+                        if (contentType == null)
+                            contentType = "image/jpeg";
                         HttpHeaders headers = new HttpHeaders();
                         headers.setContentType(MediaType.parseMediaType(contentType));
                         headers.setContentLength(imageBytes.length);
@@ -502,7 +544,7 @@ public class ProductController {
     public ResponseEntity<?> getAllProductsWithImages() {
         List<Product> products = productRepository.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         for (Product product : products) {
             Map<String, Object> productInfo = new HashMap<>();
             productInfo.put("id", product.getId());
@@ -513,16 +555,17 @@ public class ProductController {
             productInfo.put("thumbnailUrl", product.getThumbnailUrl());
             productInfo.put("status", product.getStatus());
             productInfo.put("quantity", product.getQuantity());
+            productInfo.put("stockQuantity", product.getStockQuantity()); 
             productInfo.put("createdAt", product.getCreatedAt());
             productInfo.put("updatedAt", product.getUpdatedAt());
             productInfo.put("productCode", product.getProductCode());
             productInfo.put("goldAge", product.getGoldAge());
             productInfo.put("wage", product.getWage());
             productInfo.put("description", product.getDescription());
-            
+
             result.add(productInfo);
         }
-        
+
         return ResponseEntity.ok(result);
     }
 
@@ -536,7 +579,8 @@ public class ProductController {
             if (Files.exists(imagePath)) {
                 return ResponseEntity.ok("Image exists: " + imagePath.toAbsolutePath());
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Image not found: " + imagePath.toAbsolutePath());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Image not found: " + imagePath.toAbsolutePath());
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());

@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader as DialogModalHeader, DialogTitle as DialogModalTitle, DialogFooter } from "@/components/ui/dialog";
 import { Dialog as DetailDialog, DialogContent as DetailDialogContent, DialogHeader as DetailDialogHeader, DialogTitle as DetailDialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -159,16 +159,16 @@ export default function ProductPage() {
     // Nếu không thay đổi loại sản phẩm thì hiển thị lại mã ban đầu
     if (originalEditCategory === editProduct.category) {
       setEditProduct((prev: any) => ({ ...prev, productCode: originalEditProductCode }));
-        return;
-      }
-      let prefix = "";
+      return;
+    }
+    let prefix = "";
     switch (editProduct.category) {
-        case "necklace": prefix = "D"; break;
-        case "ring": prefix = "N"; break;
-        case "earring": prefix = "E"; break;
-        case "bracelet": prefix = "B"; break;
-        default: prefix = "X";
-      }
+      case "necklace": prefix = "D"; break;
+      case "ring": prefix = "N"; break;
+      case "earring": prefix = "E"; break;
+      case "bracelet": prefix = "B"; break;
+      default: prefix = "X";
+    }
     async function fetchNextProductCodeForEdit() {
       try {
         const res = await fetch(`http://localhost:9004/api/products/search/category?q=${editProduct.category}`);
@@ -331,7 +331,7 @@ export default function ProductPage() {
         [name]: value === '' ? null : Number(value)
       }));
     } else {
-    setEditProduct((prev: any) => ({ ...prev, [name]: value }));
+      setEditProduct((prev: any) => ({ ...prev, [name]: value }));
     }
   }
   // Sửa lại hàm lưu sản phẩm đã sửa để gọi API backend
@@ -640,7 +640,7 @@ export default function ProductPage() {
                   placeholder="Nhập mô tả chi tiết về sản phẩm..."
                 />
               </div>
-              
+
               {/* Nhãn */}
               <div className="space-y-2">
                 <label className="font-semibold text-base">Nhãn</label>
@@ -747,6 +747,8 @@ export default function ProductPage() {
             {/* Hiển thị danh sách sản phẩm */}
             {products.map((product: any) => {
               // console.log("Product row:", product);
+              const stockQty = product?.stockQuantity ?? product?.quantity ?? 0;
+
               return (
                 <div key={product.id || product.product_id} className="grid grid-cols-12 gap-4 border-b px-6 py-3 items-center text-center hover:bg-rose-50/60 dark:hover:bg-[#23232b] transition-colors group">
                   <div className="col-span-1 font-mono">{product.productCode}</div>
@@ -765,7 +767,8 @@ export default function ProductPage() {
                   <div className="col-span-1 flex justify-center">
                     {(product.id || product.product_id) ? (
                       <img
-                        src={`http://localhost:9004/api/products/image/${product.id || product.product_id}`}
+                        // src={`http://localhost:9004/api/products/image/${product.id || product.product_id}`}
+                        src={`http://localhost:9004/api/products/image/${product.id || product.product_id}?t=${Date.now()}`}
                         alt="thumb"
                         className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
                         onError={(e) => {
@@ -778,13 +781,19 @@ export default function ProductPage() {
                       </div>
                     )}
                   </div>
+
                   <div className="col-span-1">
-                    {((typeof product.stockQuantity !== 'undefined' ? product.stockQuantity : product.quantity) > 0) ? (
-                      <span className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">Còn hàng</span>
+                    {stockQty > 0 ? (
+                      <span className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                        Còn hàng
+                      </span>
                     ) : (
-                      <span className="inline-block px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">Hết hàng</span>
+                      <span className="inline-block px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
+                        Hết hàng
+                      </span>
                     )}
                   </div>
+
                   <div className="col-span-1 text-xs text-muted-foreground">{product.createdAt ? new Date(product.createdAt).toLocaleDateString('vi-VN') : (product.created_at ? new Date(product.created_at).toLocaleDateString('vi-VN') : '-')}</div>
                   <div className="col-span-1 text-xs text-muted-foreground">{product.updatedAt ? new Date(product.updatedAt).toLocaleDateString('vi-VN') : (product.updated_at ? new Date(product.updated_at).toLocaleDateString('vi-VN') : '-')}</div>
                   <div className="col-span-1">
@@ -875,7 +884,7 @@ export default function ProductPage() {
                     <div><span className="font-semibold text-gray-500">Mô tả chi tiết sản phẩm:</span> <span className="font-medium">{getField('description')}</span></div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="font-semibold text-gray-500">Trạng thái:</span>
-                      {Number(getField('stockQuantity')) > 0 ? (
+                      {Number(getField('stockQuantity') !== '-' ? getField('stockQuantity') : getField('quantity')) > 0 ? (
                         <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-semibold shadow-sm">Còn hàng</span>
                       ) : (
                         <span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold shadow-sm">Hết hàng</span>
@@ -1089,17 +1098,17 @@ export default function ProductPage() {
                   {(editProduct.id || editProduct.product_id) ? (
                     <img
                       src={`http://localhost:9004/api/products/image/${editProduct.id || editProduct.product_id}?t=${Date.now()}`}
-                    alt={editProduct.name}
+                      alt={editProduct.name}
                       className="w-28 h-28 object-cover rounded-xl border border-border mt-2"
-                    onError={(e) => {
-                      e.currentTarget.src = '/default-avatar.png';
-                    }}
-                  />
-                ) : (
+                      onError={(e) => {
+                        e.currentTarget.src = '/default-avatar.png';
+                      }}
+                    />
+                  ) : (
                     <div className="w-28 h-28 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 mt-2">
-                    Không có ảnh
-                  </div>
-                )}
+                      Không có ảnh
+                    </div>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -1120,30 +1129,30 @@ export default function ProductPage() {
                     }}
                     className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
                   />
-                {/* Nút xóa ảnh */}
-                {editProduct.thumbnailUrl && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (editProduct) {
-                        try {
-                          await deleteProductImage(editProduct.id || editProduct.product_id);
-                          // Cập nhật editProduct sau khi xóa ảnh
-                          const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
-                          if (updatedProduct) {
-                            setEditProduct(updatedProduct);
+                  {/* Nút xóa ảnh */}
+                  {editProduct.thumbnailUrl && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (editProduct) {
+                          try {
+                            await deleteProductImage(editProduct.id || editProduct.product_id);
+                            // Cập nhật editProduct sau khi xóa ảnh
+                            const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
+                            if (updatedProduct) {
+                              setEditProduct(updatedProduct);
+                            }
+                          } catch (error) {
+                            alert('Lỗi khi xóa ảnh!');
                           }
-                        } catch (error) {
-                          alert('Lỗi khi xóa ảnh!');
                         }
-                      }
-                    }}
+                      }}
                       className="text-red-500 text-sm hover:text-red-700 underline mt-2"
-                  >
-                    Xóa ảnh
-                  </button>
-                )}
-              </div>
+                    >
+                      Xóa ảnh
+                    </button>
+                  )}
+                </div>
                 <div className="mt-4 flex justify-center w-full">
                   <Barcode
                     value={editProduct.sku || 'SKU'}
@@ -1152,8 +1161,8 @@ export default function ProductPage() {
                     fontSize={16}
                     displayValue={true}
                   />
-                  </div>
                 </div>
+              </div>
               {/* Nút submit và cancel */}
               <DialogFooter>
                 <button

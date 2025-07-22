@@ -11,4 +11,8 @@ public interface ProductRepository extends MongoRepository<Product, String> {
     List<Product> findBySku(String sku);
     List<Product> findByBrand(String brand);
     List<Product> findByIdIn(List<String> ids);
+
+    // @Query("{ '_id': ?0 }")
+    // Optional<Product> findByObjectId(String id);
+
 }
