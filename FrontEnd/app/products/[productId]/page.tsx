@@ -11,7 +11,7 @@ import { useTheme } from "next-themes";
 import { useFavorites } from "@/hooks/use-favorites";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import ChatBox from "@/app/components/ChatBox";
+import ChatBox from "@/app/components/chatbox/ChatBox";
 import { translateProductTag } from "@/lib/utils";
 import { MagnifierImage } from "@/app/components/MagnifierImage";
 

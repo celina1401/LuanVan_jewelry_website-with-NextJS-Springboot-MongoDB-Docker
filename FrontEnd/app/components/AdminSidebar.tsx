@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Home, Box, Users, FileText, BarChart2, User, ListChecks, Calendar, Lock, LogOut } from "lucide-react";
+import { Home, Box, Users, FileText, BarChart2, User, ListChecks, Calendar, Lock, LogOut, MessageCircleMore } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
 import { TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -12,9 +12,10 @@ import { usePathname } from "next/navigation";
 const navLinks = [
   { href: "/admin", label: "Bảng điều khiển", icon: <Home size={18} /> },
   // { href: "/admin/inventory", label: "Kho hàng", icon: <Box size={18} /> },
-  { href: "/admin/products", label: "Sản phẩm", icon: <BarChart2 size={18} /> },
-  { href: "/admin/reports", label: "Báo cáo", icon: <FileText size={18} /> },
   { href: "/admin/users", label: "Quản lý người dùng", icon: <Users size={18} /> },
+  { href: "/admin/products", label: "Quản lý sản phẩm", icon: <BarChart2 size={18} /> },
+  { href: "/admin/message", label: "Quản lý trò chuyện", icon: <MessageCircleMore size={18} /> },
+  { href: "/admin/reports", label: "Báo cáo", icon: <FileText size={18} /> },
   { href: "/admin/profile", label: "Hồ sơ", icon: <User size={18} /> },
   { href: "/admin/tasks", label: "Công việc", icon: <ListChecks size={18} /> },
   { href: "/admin/calendar", label: "Lịch", icon: <Calendar size={18} /> },

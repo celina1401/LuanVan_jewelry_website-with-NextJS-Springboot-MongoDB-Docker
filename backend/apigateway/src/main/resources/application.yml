@@ -43,6 +43,11 @@ spring:
           predicates:
             - Path=/api/payments/**
 
+        - id: chatservice
+          uri: http://localhost:9006
+          predicates:
+            - Path=/api/chat/**
+
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST

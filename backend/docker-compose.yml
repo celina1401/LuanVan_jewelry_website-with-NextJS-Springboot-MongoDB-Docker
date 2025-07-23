@@ -101,7 +101,22 @@ services:
     ports:
       - "9006:9006"
     depends_on:
+      - discoveryserver      
+      - mongodb
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    networks:
+      - microservice-networks
+      
+  chatservice:
+    build:
+      context: ./chatservice
+    ports:
+      - "9007:9007"
+    depends_on:
       - discoveryserver
+      - mongodb
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true

@@ -1,0 +1,17 @@
+server:
+  port: 9007
+
+spring:
+  application:
+    name: cartservice
+  
+  data:
+    mongodb:
+      uri: mongodb://mongodb:27017/jewelry_db
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discoveryserver:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
