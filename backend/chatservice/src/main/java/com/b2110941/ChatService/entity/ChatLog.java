@@ -18,8 +18,11 @@ public class ChatLog {
 
     private String sender;
     private String role;
+    private String receiver;
     private String content;
     private Date timestamp;
+    private boolean read = false;
+
 
     public String getSender() {
         return sender;
@@ -35,6 +38,14 @@ public class ChatLog {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
     }
 
     public String getContent() {

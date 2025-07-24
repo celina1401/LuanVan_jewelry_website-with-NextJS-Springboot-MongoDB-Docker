@@ -1,7 +1,7 @@
 export interface Message {
-    sender: string;
-    role: "user" | "admin";
-    content: string;
-    timestamp: string;
-  }
-  
+  sender: string;
+  receiver?: string; // 👈 THÊM
+  role: "user" | "admin";
+  content: string;
+  timestamp: string;
+}

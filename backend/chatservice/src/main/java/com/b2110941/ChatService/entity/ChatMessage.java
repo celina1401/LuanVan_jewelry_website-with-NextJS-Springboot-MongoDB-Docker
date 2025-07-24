@@ -2,14 +2,19 @@ package com.b2110941.ChatService.entity;
 
 import java.util.Date;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ChatMessage {
     private String sender;
     private String nickname;
+    private String receiver;
     private String role;
     private String content;
     private Date timestamp;
@@ -35,6 +40,14 @@ public class ChatMessage {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public String getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
     }
 
     public String getRole() {

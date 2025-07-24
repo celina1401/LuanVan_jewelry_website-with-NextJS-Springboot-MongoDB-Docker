@@ -1,15 +1,13 @@
-"use client"
+"use client";
 
-import { Navbar } from "@/components/navbar";
 import { useUser } from "@clerk/nextjs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ChartContainer } from "@/components/ui/chart";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
-import { UserButton } from "@clerk/nextjs";
+import { useState } from "react";
+import AdminChatInbox from "@/app/components/chatbox/AdminChatInbox";
+import AdminChatDetail from "@/app/components/chatbox/AdminChatDetail";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarIcon, ShoppingCart, DollarSign, Users, Package } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend } from "recharts";
 
 const statCards = [
   {
@@ -70,22 +68,18 @@ const pieData = [
 
 export default function AdminDashboard() {
   const { user } = useUser();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   return (
     <div className="flex min-h-screen bg-[#f5f4fa] dark:bg-background">
-
-      {/* Main content */}
       <main className="flex-1 p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
           <h2 className="text-3xl font-extrabold text-primary tracking-tight flex items-center gap-2">
             <span>Bảng điều khiển</span>
           </h2>
-          {/* <div className="flex gap-2">
-            <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">Download Free Version</button>
-            <button className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Upgrade To Pro</button>
-          </div> */}
         </div>
-        {/* Stat cards */}
+
+        {/* Stat Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-8 mb-8">
           {statCards.map((card) => (
             <Card key={card.label} className="shadow border-0">
@@ -103,9 +97,9 @@ export default function AdminDashboard() {
             </Card>
           ))}
         </div>
-        {/* Main grid: line chart, pie chart, calendar, map */}
+
+        {/* Chart Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          {/* Line chart */}
           <Card className="shadow border-0">
             <CardHeader>
               <CardTitle>Biến động gần đây</CardTitle>
@@ -121,7 +115,7 @@ export default function AdminDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          {/* Pie chart */}
+
           <Card className="shadow border-0">
             <CardHeader>
               <CardTitle>Trình duyệt sử dụng</CardTitle>
@@ -140,9 +134,9 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-        {/* Calendar & Real-time map row */}
+
+        {/* Calendar + Map */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          {/* Calendar */}
           <Card className="shadow border-0">
             <CardHeader className="flex flex-row items-center gap-2">
               <CalendarIcon className="text-indigo-500" />
@@ -154,7 +148,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          {/* Real-time map */}
+
           <Card className="shadow border-0">
             <CardHeader>
               <CardTitle>Thời gian thực</CardTitle>
@@ -166,7 +160,26 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Chat admin tích hợp */}
+        {/* <div className="mt-12 bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h3 className="text-xl font-semibold mb-4 text-primary">Trò chuyện với người dùng</h3>
+          <div className="flex border rounded-lg overflow-hidden min-h-[400px]">
+            <div className="w-1/3 border-r dark:border-gray-700">
+              <AdminChatInbox onSelect={(userId) => setSelectedUserId(userId)} />
+            </div>
+            <div className="flex-1">
+              {selectedUserId ? (
+                <AdminChatDetail userId={selectedUserId} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400 py-20">
+                  Chọn một người dùng để bắt đầu chat
+                </div>
+              )}
+            </div>
+          </div> */}
+        {/* </div> */}
       </main>
     </div>
   );
-} 
+}

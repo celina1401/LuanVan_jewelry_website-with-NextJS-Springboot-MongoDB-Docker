@@ -1,81 +1,107 @@
 "use client";
-import { useEffect, useState } from "react";
 
-interface ChatLog {
-  sender: string;
-  role: "user" | "admin";
-  content: string;
+import { useEffect, useState } from "react";
+import AdminChatDetail from "@/app/components/chatbox/AdminChatDetail";
+
+interface ChatSummary {
+  userId: string;
+  lastMessage: string;
   timestamp: string;
+  unreadCount: number;
 }
 
 export default function AdminMessagePage() {
-  const [conversations, setConversations] = useState<Record<string, ChatLog[]>>({});
+  const [inbox, setInbox] = useState<ChatSummary[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(
+    () => localStorage.getItem("selected_user_id") || null
+  );
   const [loading, setLoading] = useState(true);
-
-  const fetchChatLogs = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("http://localhost:9007/api/chat/filter");
-      const data = await res.json();
-      console.log("📦 Dữ liệu tin nhắn:", data);
-
-      if (!Array.isArray(data)) {
-        console.error("❌ Dữ liệu trả về không phải mảng:", data);
-        setConversations({});
-        return;
-      }
-
-      const grouped: Record<string, ChatLog[]> = {};
-      data
-        .filter((log: ChatLog) => log.role === "user")
-        .forEach((log: ChatLog) => {
-          if (!grouped[log.sender]) grouped[log.sender] = [];
-          grouped[log.sender].push(log);
-        });
-
-      setConversations(grouped);
-    } catch (err) {
-      console.error("❌ Lỗi khi tải lịch sử:", err);
-      setConversations({});
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchChatLogs();
+    const savedInbox = localStorage.getItem("admin_inbox");
+    if (savedInbox) {
+      setInbox(JSON.parse(savedInbox));
+    }
+
+    const fetchInbox = async () => {
+      try {
+        const res = await fetch("http://localhost:9007/api/chat/inbox");
+        if (!res.ok) throw new Error(`Lỗi: ${res.statusText}`);
+        const data = await res.json();
+        setInbox(data);
+        localStorage.setItem("admin_inbox", JSON.stringify(data));
+      } catch (err: any) {
+        console.error("❌ Lỗi khi tải hộp thư:", err);
+        setError("Không thể tải hộp thư");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInbox();
   }, []);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      localStorage.setItem("selected_user_id", selectedUserId);
+    }
+  }, [selectedUserId]);
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">📨 Tin nhắn từ khách hàng</h1>
-
-      {loading ? (
-        <p>Đang tải dữ liệu...</p>
-      ) : Object.keys(conversations).length === 0 ? (
-        <p className="text-gray-500 italic">Chưa có khách hàng nào gửi tin nhắn.</p>
-      ) : (
-        <div className="grid gap-4">
-          {Object.entries(conversations).map(([userId, logs]) => {
-            const lastMessage = logs[logs.length - 1];
-            return (
-              <div
-                key={userId}
-                className="border p-4 rounded shadow hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer"
-                onClick={() => window.location.href = `/admin/message/${userId}`}
-              >
-                <div className="font-semibold">👤 Khách hàng: {userId}</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {new Date(lastMessage.timestamp).toLocaleString()}
+      <h1 className="text-2xl font-bold mb-6">📨 Tin nhắn từ khách hàng</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="border-r w-full overflow-y-auto max-h-[80vh]">
+          {loading ? (
+            <p className="p-4">Đang tải dữ liệu...</p>
+          ) : error ? (
+            <p className="p-4 text-red-500">{error}</p>
+          ) : inbox.length === 0 ? (
+            <p className="p-4 text-gray-500 italic">Chưa có khách hàng nào gửi tin nhắn.</p>
+          ) : (
+            inbox
+              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+              .map((chat) => (
+                <div
+                  key={chat.userId}
+                  onClick={() => setSelectedUserId(chat.userId)}
+                  className={`cursor-pointer px-4 py-3 border-b hover:bg-gray-100 dark:hover:bg-gray-800 flex justify-between items-center ${
+                    selectedUserId === chat.userId ? "bg-blue-100 dark:bg-blue-800" : ""
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold">👤 {chat.userId}</div>
+                    <div className="text-sm text-gray-500 mt-1 truncate">{chat.lastMessage}</div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(chat.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                  {chat.unreadCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      {chat.unreadCount}
+                    </span>
+                  )}
                 </div>
-                <div className="text-sm mt-2 truncate">
-                  {lastMessage.content || <em className="text-gray-400">[Không có nội dung]</em>}
-                </div>
-              </div>
-            );
-          })}
+              ))
+          )}
         </div>
-      )}
+
+        <div className="lg:col-span-2 border rounded shadow p-4 min-h-[400px]">
+          {selectedUserId ? (
+            <>
+              <div className="font-semibold mb-2 text-lg text-primary">
+                💬 Đang trò chuyện với: {selectedUserId}
+              </div>
+              <AdminChatDetail userId={selectedUserId} />
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500 italic">
+              Chọn một người dùng để bắt đầu trò chuyện
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
