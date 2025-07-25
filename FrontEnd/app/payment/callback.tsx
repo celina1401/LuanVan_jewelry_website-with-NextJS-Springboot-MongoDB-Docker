@@ -8,11 +8,16 @@ export default function PaymentCallback() {
   const [message, setMessage] = useState("Đang xử lý kết quả thanh toán...");
 
   useEffect(() => {
+    // Xử lý cho nhiều phương thức thanh toán nếu cần
     const responseCode = params.get("vnp_ResponseCode");
+    // Có thể mở rộng thêm các tham số khác nếu cần
     if (responseCode === "00") {
       setMessage("✅ Thanh toán thành công!");
-    } else {
+    } else if (responseCode) {
       setMessage("❌ Thanh toán thất bại hoặc bị hủy.");
+    } else {
+      // Trường hợp không có responseCode (có thể là phương thức khác)
+      setMessage("Đang xử lý kết quả thanh toán hoặc phương thức không xác định.");
     }
   }, [params]);
 

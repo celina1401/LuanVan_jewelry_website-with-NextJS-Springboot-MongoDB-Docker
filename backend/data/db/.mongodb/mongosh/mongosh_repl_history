@@ -1,5 +1,7 @@
 db.chat_logs.drop()
 db.chat_logs.find().pretty()
+db.chat_logs.drop()
+db.chat_logs.find().pretty()
 db.chat_log.find().pretty()
 db.chat_logs.drop()
 db.chat_logs.find().pretty()

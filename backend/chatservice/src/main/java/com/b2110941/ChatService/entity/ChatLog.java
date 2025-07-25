@@ -63,5 +63,6 @@ public class ChatLog {
     public void setTimestamp(Date timestamp) {
         this.timestamp = timestamp;
     }
+    
 
 }

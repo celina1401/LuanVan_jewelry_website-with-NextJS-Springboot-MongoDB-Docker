@@ -38,111 +38,58 @@ public class ChatserviceController {
 
     private final Set<String> onlineUsers = ConcurrentHashMap.newKeySet();
 
-    // @MessageMapping("/chat")
-    // public void handleMessage(@Payload ChatMessage message, @Header("userId") String userId) {
-    //     try {
-    //         if (userId == null || userId.isEmpty()) {
-    //             System.err.println("❌ Header userId thiếu hoặc rỗng");
-    //             return;
-    //         }
-
-    //         String role = userServiceClient.getUserRole(userId);
-    //         if (role == null) {
-    //             System.err.println("❌ Không lấy được role từ UserServiceClient");
-    //             return;
-    //         }
-
-    //         // Gán sender nếu chưa có
-    //         if (message.getSender() == null || message.getSender().isEmpty()) {
-    //             message.setSender(userId);
-    //         }
-
-    //         message.setRole(role);
-    //         message.setTimestamp(new Date());
-
-    //         if (message.getReceiver() == null || message.getReceiver().isEmpty()) {
-    //             System.err.println("❌ Receiver rỗng");
-    //             return;
-    //         }
-
-    //         // Chỉ lưu nếu chưa tồn tại theo content + timestamp
-    //         boolean isDuplicate = chatLogRepository
-    //                 .findByContentAndTimestamp(message.getContent(), message.getTimestamp())
-    //                 .stream()
-    //                 .findAny()
-    //                 .isPresent();
-
-    //         if (!isDuplicate) {
-    //             ChatLog log = ChatLog.builder()
-    //                     .sender(message.getSender())
-    //                     .receiver(message.getReceiver())
-    //                     .role(message.getRole())
-    //                     .content(message.getContent())
-    //                     .timestamp(message.getTimestamp())
-    //                     .read(false)
-    //                     .build();
-
-    //             chatLogRepository.save(log);
-    //             System.out.printf("✅ Tin nhắn được lưu: %s → %s (%s)%n", message.getSender(), message.getReceiver(), message.getContent());
-    //         } else {
-    //             System.out.println("⚠️ Tin nhắn trùng, không lưu lại: " + message.getContent());
-    //         }
-
-    //         // Gửi đến đúng topic theo role
-    //         if ("admin".equals(role)) {
-    //             messagingTemplate.convertAndSend("/topic/user/" + message.getReceiver(), message);
-    //         } else {
-    //             messagingTemplate.convertAndSend("/topic/admin", message);
-    //         }
-
-    //     } catch (Exception e) {
-    //         System.err.println("❌ Exception trong handleMessage: " + e.getMessage());
-    //     }
-    // }
-
     @MessageMapping("/chat")
-public void handleMessage(@Payload ChatMessage message) {
-    try {
-        if (message.getSender() == null) {
-            System.err.println("❌ Lỗi: Sender null trong payload!");
-            return;
-        }
+    public void handleMessage(@Payload ChatMessage message) {
+        try {
+            if (message.getSender() == null) {
+                System.err.println("❌ Lỗi: Sender null trong payload!");
+                return;
+            }
 
-        String role = userServiceClient.getUserRole(message.getSender());
-        if (role == null) {
-            System.err.println("❌ Lỗi: Không tìm thấy role cho sender: " + message.getSender());
-            return;
-        }
+            String role = userServiceClient.getUserRole(message.getSender());
+            if (role == null) {
+                System.err.println("❌ Lỗi: Không tìm thấy role cho sender: " + message.getSender());
+                return;
+            }
 
-        message.setRole(role);
-        message.setTimestamp(new Date());
+            message.setRole(role);
+            message.setTimestamp(new Date());
 
-        // Kiểm tra tin nhắn đã tồn tại chưa
-        if (chatLogRepository.findByContentAndTimestamp(message.getContent(), message.getTimestamp()).isEmpty()) {
-            ChatLog log = ChatLog.builder()
-                .sender(message.getSender())
-                .receiver(message.getReceiver())
-                .role(message.getRole())
-                .content(message.getContent())
-                .timestamp(message.getTimestamp())
-                .read(false)
-                .build();
+            // Kiểm tra tin nhắn đã tồn tại chưa
+            if (chatLogRepository.findByContentAndTimestamp(message.getContent(), message.getTimestamp()).isEmpty()) {
+                ChatLog log = ChatLog.builder()
+                        .sender(message.getSender())
+                        .receiver(message.getReceiver())
+                        .role(message.getRole())
+                        .content(message.getContent())
+                        .timestamp(message.getTimestamp())
+                        .read(false)
+                        .build();
 
-            chatLogRepository.save(log);
-        }
+                chatLogRepository.save(log);
+            }
 
-        // Gửi tin nhắn đến đúng topic
-        if ("admin".equals(role)) {
-            messagingTemplate.convertAndSend("/topic/user/" + message.getReceiver(), message);
-        } else {
-            messagingTemplate.convertAndSend("/topic/admin", message);
-        }
+            // Gửi tin nhắn đến đúng topic
+            // if ("admin".equals(role)) {
+            //     messagingTemplate.convertAndSend("/topic/user/" + message.getReceiver(), message);
+            // } else {
+            //     messagingTemplate.convertAndSend("/topic/admin", message);
+            // }
 
-    } catch (Exception e) {
-        System.err.println("❌ Lỗi xử lý tin nhắn: " + e.getMessage());
-    }
+            // Gửi tin nhắn đến đúng topic
+if ("admin".equals(role)) {
+    messagingTemplate.convertAndSend("/topic/user/" + message.getReceiver(), message);
+} else {
+    // ✅ Thêm type để admin client biết là tin mới => reload inbox
+    message.setType("new-message");
+    messagingTemplate.convertAndSend("/topic/admin", message);
 }
 
+
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi xử lý tin nhắn: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/logs")
     public ResponseEntity<List<ChatLog>> getAllLogs(@RequestParam(defaultValue = "50") int limit) {
@@ -157,16 +104,14 @@ public void handleMessage(@Payload ChatMessage message) {
 
     @GetMapping("/filter/{userId}")
     public ResponseEntity<List<ChatMessage>> filterByUserId(@PathVariable String userId,
-                                                             @RequestParam(defaultValue = "50") int limit) {
+            @RequestParam(defaultValue = "50") int limit) {
         try {
             List<ChatLog> logs = chatLogRepository
                     .findBySenderOrReceiver(userId, Sort.by(Sort.Direction.DESC, "timestamp"))
                     .stream()
                     .limit(limit)
-                    .filter(log ->
-                            (log.getSender().equals(userId) && log.getReceiver().equals("admin")) ||
-                            (log.getSender().equals("admin") && log.getReceiver().equals(userId))
-                    )
+                    .filter(log -> (log.getSender().equals(userId) && log.getReceiver().equals("admin")) ||
+                            (log.getSender().equals("admin") && log.getReceiver().equals(userId)))
                     .collect(Collectors.toList());
 
             List<ChatMessage> messages = logs.stream()
@@ -199,24 +144,45 @@ public void handleMessage(@Payload ChatMessage message) {
         }
     }
 
+    //     @PostMapping("/markAsRead/{userId}")
+    //     public ResponseEntity<?> markAsRead(@PathVariable String userId) {
+    //         try {
+    //             List<ChatLog> unread = chatLogRepository.findBySenderAndReceiverAndReadIsFalse(userId, "admin");
+    //             if (!unread.isEmpty()) {
+    //                 unread.forEach(log -> log.setRead(true));
+    //                 chatLogRepository.saveAll(unread);
+    //             }
+
+    //             ChatMessage signal = new ChatMessage();
+    // signal.setReceiver(userId);
+    // signal.setType("read-update");
+    // messagingTemplate.convertAndSend("/topic/admin", signal);
+
+
+    //             return ResponseEntity.ok().build();
+    //         } catch (Exception e) {
+    //             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    //         }
+    //     }
+
     @PostMapping("/markAsRead/{userId}")
     public ResponseEntity<?> markAsRead(@PathVariable String userId) {
-        try {
-            List<ChatLog> unread = chatLogRepository.findBySenderAndReceiverAndReadIsFalse(userId, "admin");
-            if (!unread.isEmpty()) {
-                unread.forEach(log -> log.setRead(true));
-                chatLogRepository.saveAll(unread);
-            }
-
-            ChatMessage signal = new ChatMessage();
-            signal.setReceiver(userId);
-            messagingTemplate.convertAndSend("/topic/admin", signal);
-
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        List<ChatLog> unread = chatLogRepository.findBySenderAndReceiverAndReadIsFalse(userId, "admin");
+        System.out.println("🔍 Tin chưa đọc từ user " + userId + ": " + unread.size());
+    
+        if (!unread.isEmpty()) {
+            unread.forEach(log -> log.setRead(true));
+            chatLogRepository.saveAll(unread);
         }
+    
+        ChatMessage signal = new ChatMessage();
+        signal.setReceiver(userId);
+        signal.setType("read-update");
+        messagingTemplate.convertAndSend("/topic/admin", signal);
+    
+        return ResponseEntity.ok().build();
     }
+    
 
     @EventListener
     public void handleConnect(SessionConnectEvent event) {

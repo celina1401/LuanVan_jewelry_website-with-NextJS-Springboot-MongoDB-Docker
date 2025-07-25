@@ -3,6 +3,10 @@
 import { useCart } from "@/contexts/cart-context";
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/navbar";
+import { useUser, useAuth } from "@clerk/nextjs";
+// import type { Address } from "@/app/dashboard/page";
+import AddAddressForm, { Address } from "@/app/components/AddAddressForm";
+
 
 const provinces = ["Hồ Chí Minh", "Hà Nội", "Đà Nẵng"];
 const districts = ["Quận 1", "Quận 2", "Quận 3"];
@@ -14,6 +18,9 @@ const paymentMethods = [
 
 export default function OrderPage() {
   const { items, total, clearCart, updateQuantity } = useCart();
+  const { user } = useUser();
+  const { getToken } = useAuth();
+
   const [dynamicPrices, setDynamicPrices] = useState<{ [id: string]: number }>({});
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -33,6 +40,39 @@ export default function OrderPage() {
   const [invoice, setInvoice] = useState(false);
   const [promo, setPromo] = useState("");
 
+  // ✅ Tự động load thông tin người dùng
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [showAddAddress, setShowAddAddress] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (!user) return;
+      try {
+        const token = await getToken();
+        const res = await fetch(`http://localhost:9001/api/users/users/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setPhone(data.phone || "");
+        const addrList = data.addresses || [];
+        setAddresses(addrList);
+        const defaultAddr = addrList.find((a: any) => a.isDefault);
+        if (defaultAddr) {
+          setName(defaultAddr.receiverName || "");
+          setProvince(defaultAddr.province || "");
+          setDistrict(defaultAddr.district || "");
+          setWard(defaultAddr.ward || "");
+          setAddress(defaultAddr.street || "");
+        }
+      } catch (err) {
+        console.error("Không thể lấy thông tin user:", err);
+      }
+    };
+    fetchUserInfo();
+  }, [user, getToken]);
+
+  //Tinh gia vang dong
   useEffect(() => {
     async function fetchPrices() {
       const result: { [id: string]: number } = {};
@@ -69,9 +109,9 @@ export default function OrderPage() {
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agree) return;
-  
+
     const orderId = `ORD${Date.now()}`; // mã đơn hàng ngẫu nhiên
-  
+
     if (payment === "vnpay") {
       try {
         const res = await fetch(`http://localhost:9006/api/payment/vnpay?orderId=${orderId}&amount=${finalTotal}`);
@@ -85,12 +125,20 @@ export default function OrderPage() {
         return;
       }
     }
-  
+
     // Xử lý COD như cũ
     setSuccess(true);
     clearCart();
   };
-  
+
+  const handleAddAddress = (newAddress: Address) => {
+    let updatedAddresses = addresses;
+    if (newAddress.isDefault) {
+      updatedAddresses = addresses.map(addr => ({ ...addr, isDefault: false }));
+    }
+    setAddresses([...updatedAddresses, newAddress]);
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -139,9 +187,13 @@ export default function OrderPage() {
                 <button type="button" className="bg-rose-400 text-white px-4 py-2 rounded font-semibold">Áp dụng</button>
               </div>
             </div>
+
+            {/* giao hang */}
+
             <div className="bg-white dark:bg-[#18181b] rounded-xl shadow p-4">
               <h2 className="font-semibold mb-2">Hình thức nhận hàng</h2>
               <div className="flex gap-4 mb-4">
+
                 <button type="button" onClick={() => setDeliveryType("home")} className={`flex-1 border rounded-lg p-3 flex flex-col items-center gap-1 ${deliveryType === "home" ? "bg-yellow-100 border-yellow-400" : "bg-gray-50 dark:bg-gray-900"}`}>
                   <span className="font-bold text-yellow-600">Giao hàng tận nơi</span>
                   <span className="text-xs text-gray-500 dark:text-gray-900">Miễn phí toàn quốc</span>
@@ -150,34 +202,129 @@ export default function OrderPage() {
                   <span className="font-bold text-purple-600">Nhận tại cửa hàng</span>
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                <select className="border rounded p-2" value={province} onChange={e => setProvince(e.target.value)} required>
-                  <option value="">Chọn tỉnh/thành *</option>
-                  {provinces.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-                <select className="border rounded p-2" value={district} onChange={e => setDistrict(e.target.value)} required>
-                  <option value="">Quận/huyện *</option>
-                  {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-                <select className="border rounded p-2" value={ward} onChange={e => setWard(e.target.value)} required>
-                  <option value="">Phường/xã *</option>
-                  {wards.map(w => <option key={w} value={w}>{w}</option>)}
-                </select>
-                <input className="border rounded p-2" placeholder="Nhập địa chỉ khách hàng *" value={address} onChange={e => setAddress(e.target.value)} required />
+
+              {deliveryType === "home" && (
+                <>
+                  <label className="block mb-1 font-medium">Chọn địa chỉ giao hàng</label>
+                  <select
+                    className="w-full border p-2 rounded mb-2"
+                    value={selectedIndex}
+                    onChange={(e) => {
+                      const index = parseInt(e.target.value, 10);
+                      setSelectedIndex(index);
+                      const addr = addresses[index];
+                      if (addr) {
+                        setName(addr.receiverName);
+                        setProvince(addr.province);
+                        setDistrict(addr.district);
+                        setWard(addr.ward);
+                        setAddress(addr.street);
+                      }
+                    }}
+                  >
+                    {(() => {
+                      const defaultIdx = addresses.findIndex(addr => addr.isDefault);
+                      if (addresses.length === 0) {
+                        return <option value={-1}>Chưa có địa chỉ giao hàng</option>;
+                      }
+                      if (defaultIdx !== -1) {
+                        return [
+                          <option key={defaultIdx} value={defaultIdx}>
+                            ⭐ {`${addresses[defaultIdx].receiverName} - ${addresses[defaultIdx].street}, ${addresses[defaultIdx].ward}, ${addresses[defaultIdx].district}, ${addresses[defaultIdx].province}`}
+                          </option>,
+                          ...addresses.map((addr, idx) =>
+                            idx !== defaultIdx ? (
+                              <option key={idx} value={idx}>
+                                {`${addr.receiverName} - ${addr.street}, ${addr.ward}, ${addr.district}, ${addr.province}`}
+                              </option>
+                            ) : null
+                          )
+                        ];
+                      }
+                      return [
+                        <option key={-1} value={-1}>Chọn địa chỉ giao hàng</option>,
+                        ...addresses.map((addr, idx) => (
+                          <option key={idx} value={idx}>
+                            {`${addr.receiverName} - ${addr.street}, ${addr.ward}, ${addr.district}, ${addr.province}`}
+                          </option>
+                        ))
+                      ];
+                    })()}
+                  </select>
+
+                  {!showAddAddress ? (
+                    <button
+                      type="button"
+                      className="text-sm text-rose-500 hover:underline mb-2"
+                      onClick={() => setShowAddAddress(true)}
+                    >
+                      + Thêm địa chỉ mới
+                    </button>
+                  ) : (
+                    <AddAddressForm
+  onAdd={async (newAddr) => {
+    handleAddAddress(newAddr);
+    try {
+      const token = await getToken();
+      let updatedAddresses = addresses;
+      if (newAddr.isDefault) {
+        updatedAddresses = addresses.map(addr => ({ ...addr, isDefault: false }));
+      }
+      updatedAddresses = [...updatedAddresses, newAddr];
+      const res = await fetch(`http://localhost:9001/api/users/update_user/${user?.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ phone, addresses: updatedAddresses }),
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("API error:", res.status, errorText);
+        alert("Không thể thêm địa chỉ mới! " + errorText);
+        return;
+      }
+      const data = await res.json();
+      setAddresses(data.addresses || []);
+      const index = (data.addresses || []).length - 1;
+      setSelectedIndex(index);
+      setName(newAddr.receiverName);
+      setProvince(newAddr.province);
+      setDistrict(newAddr.district);
+      setWard(newAddr.ward);
+      setAddress(newAddr.street);
+      setShowAddAddress(false);
+    } catch (err) {
+      console.error("Thêm địa chỉ lỗi:", err);
+      alert("Không thể thêm địa chỉ mới!");
+    }
+  }}
+  onCancel={() => setShowAddAddress(false)}
+  showCancel
+/>
+
+
+                  )}
+                </>
+              )}
+
+
+
+              <div className="flex items-center gap-2 mb-2">
+                <input type="checkbox" checked={sms} onChange={e => setSms(e.target.checked)} />
+                <label className="text-sm">Tôi muốn gửi thiệp và lời chúc qua SMS</label>
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <input type="checkbox" checked={sms} onChange={e => setSms(e.target.checked)} id="sms" />
-                <label htmlFor="sms" className="text-sm">Tôi muốn gửi thiệp và lời chúc qua SMS</label>
+                <input type="checkbox" checked={invoice} onChange={e => setInvoice(e.target.checked)} />
+                <label className="text-sm">Xuất hóa đơn công ty</label>
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <input type="checkbox" checked={invoice} onChange={e => setInvoice(e.target.checked)} id="invoice" />
-                <label htmlFor="invoice" className="text-sm">Xuất hóa đơn công ty (Không áp dụng phiếu quà tặng điện tử)</label>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} id="agree" required />
-                <label htmlFor="agree" className="text-sm">Tôi đồng ý cho T&C Jewelry thu thập, xử lý dữ liệu cá nhân của tôi theo quy định và theo quy định của pháp luật</label>
+                <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} required />
+                <label className="text-sm">Đồng ý xử lý dữ liệu cá nhân</label>
               </div>
             </div>
+
             <div className="bg-white dark:bg-[#18181b] rounded-xl shadow p-4">
               <h2 className="font-semibold mb-2">Phương thức thanh toán</h2>
               <div className="flex flex-col gap-2">

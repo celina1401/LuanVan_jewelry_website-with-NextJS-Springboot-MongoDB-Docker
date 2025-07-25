@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
 import { over } from "stompjs";
 import { Message } from "@/lib/type";
+import { useUser } from "@clerk/nextjs"; 
 
 let stompClient: any = null;
 
@@ -11,6 +12,8 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const { user } = useUser();
+  const adminId = user?.id ?? "admin"; // Lấy ID thật từ Clerk
 
   // ✅ Load localStorage + fetch history
   useEffect(() => {
@@ -53,26 +56,13 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
     const client = over(socket);
     stompClient = client;
 
-    client.connect({ userId: "admin" }, () => {
+    client.connect({  userId: adminId }, () => {
       console.log("✅ WebSocket connected (Admin)");
 
-      // // Nhận tin nhắn từ user đang chat
-      // client.subscribe("/topic/admin", (message: any) => {
-      //   const msg: Message = JSON.parse(message.body);
-
-      //   // Chỉ xử lý nếu là tin nhắn từ đúng user
-      //   if (msg.sender === userId && msg.role === "user") {
-      //     setMessages((prev) => {
-      //       const updated = [...prev, msg];
-      //       localStorage.setItem(`chat_admin_${userId}`, JSON.stringify(updated));
-      //       return updated;
-      //     });
-      //   }
-      // });
 
       client.subscribe("/topic/admin", (message: any) => {
         const msg: Message = JSON.parse(message.body);
-      
+
         // Chỉ xử lý nếu là tin nhắn từ đúng user
         if (msg.sender === userId && msg.role === "user") {
           setMessages((prev) => {
@@ -81,14 +71,14 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
               (m) => m.timestamp === msg.timestamp && m.content === msg.content
             );
             if (alreadyExists) return prev;
-      
+
             const updated = [...prev, msg];
             localStorage.setItem(`chat_admin_${userId}`, JSON.stringify(updated));
             return updated;
           });
         }
       });
-      
+
 
     });
 
@@ -131,11 +121,10 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
           return (
             <div key={idx} className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[70%] px-3 py-2 rounded-lg text-sm shadow ${
-                  isSentByMe
+                className={`max-w-[70%] px-3 py-2 rounded-lg text-sm shadow ${isSentByMe
                     ? "bg-blue-500 text-white"
                     : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
-                }`}
+                  }`}
               >
                 <div className="font-semibold mb-1">{isSentByMe ? "Admin" : "Khách"}</div>
                 <div>{msg.content}</div>
