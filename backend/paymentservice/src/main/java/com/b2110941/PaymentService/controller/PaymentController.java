@@ -69,32 +69,87 @@ public class PaymentController {
         return ResponseEntity.ok(Collections.singletonMap("url", paymentUrl));
     }
 
+    // @GetMapping("/callback")
+    // public ResponseEntity<Map<String, String>> handleVnpayCallback(@RequestParam Map<String, String> allParams) {
+    //     String receivedHash = allParams.remove("vnp_SecureHash");
+    //     String hashSecret = "12HVTJSE6ERSJT8BRJRMQIMEF6B9RNXY"; // Đúng secret key cấu hình trên merchant portal
+
+    //     List<String> sortedKeys = new ArrayList<>(allParams.keySet());
+    //     Collections.sort(sortedKeys);
+    //     StringBuilder hashData = new StringBuilder();
+    //     for (String key : sortedKeys) {
+    //         String value = allParams.get(key);
+    //         if (hashData.length() > 0)
+    //             hashData.append('&');
+    //         hashData.append(key).append('=').append(value);
+    //     }
+
+    //     String generatedHash = encryption.hmacSHA512(hashSecret, hashData.toString());
+    //     Map<String, String> response = new HashMap<>();
+    //     if (generatedHash.equals(receivedHash)) {
+    //         String status = allParams.get("vnp_ResponseCode");
+    //         if ("00".equals(status)) {
+    //             response.put("status", "success");
+    //             response.put("message", "Thanh toán thành công! Cảm ơn bạn đã mua sắm tại T&C Jewelry.");
+    //         } else {
+    //             response.put("status", "fail");
+    //             response.put("message", "Thanh toán thất bại. Vui lòng thử lại hoặc liên hệ hỗ trợ.");
+    //         }
+    //         return ResponseEntity.ok(response);
+    //     } else {
+    //         response.put("status", "fail");
+    //         response.put("message", "Giao dịch không hợp lệ.");
+    //         return ResponseEntity.badRequest().body(response);
+    //     }
+    // }
+
     @GetMapping("/callback")
-    public ResponseEntity<String> handleVnpayCallback(@RequestParam Map<String, String> allParams) {
-        String receivedHash = allParams.remove("vnp_SecureHash");
-        String hashSecret = "VNP_HASH_SECRET";
+public ResponseEntity<Map<String, String>> handleVnpayCallback(@RequestParam Map<String, String> allParams) {
+    String receivedHash = allParams.remove("vnp_SecureHash");
+    allParams.remove("vnp_SecureHashType");
 
-        List<String> sortedKeys = new ArrayList<>(allParams.keySet());
-        Collections.sort(sortedKeys);
-        StringBuilder hashData = new StringBuilder();
-        for (String key : sortedKeys) {
-            String value = allParams.get(key);
-            if (hashData.length() > 0)
-                hashData.append('&');
-            hashData.append(key).append('=').append(value);
+    // ✅ Decode tham số (giải mã dấu + thành khoảng trắng, %3A thành :)
+    try {
+        for (Map.Entry<String, String> entry : allParams.entrySet()) {
+            allParams.put(entry.getKey(), java.net.URLDecoder.decode(entry.getValue(), StandardCharsets.UTF_8));
         }
-
-        String generatedHash = encryption.hmacSHA512(hashSecret, hashData.toString());
-        if (generatedHash.equals(receivedHash)) {
-            // ✅ Checksum hợp lệ => xử lý đơn hàng
-            String orderId = allParams.get("vnp_TxnRef");
-            String status = allParams.get("vnp_ResponseCode"); // 00 là thành công
-            // TODO: cập nhật trạng thái đơn hàng trong DB
-
-            return ResponseEntity.ok("Giao dịch hợp lệ");
-        } else {
-            return ResponseEntity.badRequest().body("Giao dịch không hợp lệ");
-        }
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().body(Map.of(
+            "status", "fail",
+            "message", "Lỗi giải mã tham số callback."
+        ));
     }
+
+    String hashSecret = "12HVTJSE6ERSJT8BRJRMQIMEF6B9RNXY";
+
+    List<String> sortedKeys = new ArrayList<>(allParams.keySet());
+    Collections.sort(sortedKeys);
+    StringBuilder hashData = new StringBuilder();
+    for (String key : sortedKeys) {
+        String value = allParams.get(key);
+        if (hashData.length() > 0)
+            hashData.append('&');
+        hashData.append(key).append('=').append(value);
+    }
+
+    String generatedHash = encryption.hmacSHA512(hashSecret, hashData.toString());
+
+    Map<String, String> response = new HashMap<>();
+    if (generatedHash.toUpperCase().equals(receivedHash)) {
+        String status = allParams.get("vnp_ResponseCode");
+        if ("00".equals(status)) {
+            response.put("status", "success");
+            response.put("message", "Thanh toán thành công! Cảm ơn bạn đã mua sắm tại T&C Jewelry.");
+        } else {
+            response.put("status", "fail");
+            response.put("message", "Thanh toán thất bại. Vui lòng thử lại hoặc liên hệ hỗ trợ.");
+        }
+        return ResponseEntity.ok(response);
+    } else {
+        response.put("status", "fail");
+        response.put("message", "Giao dịch không hợp lệ.");
+        return ResponseEntity.badRequest().body(response);
+    }
+}
 
 }

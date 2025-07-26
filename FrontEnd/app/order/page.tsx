@@ -55,6 +55,12 @@ export default function OrderPage() {
         });
         const data = await res.json();
         setPhone(data.phone || "");
+        setEmail(data.email || "");
+        setDob(data.dob || "");
+        setGender(data.gender || "female");
+        setName(
+          data.username 
+        );
         const addrList = data.addresses || [];
         setAddresses(addrList);
         const defaultAddr = addrList.find((a: any) => a.isDefault);

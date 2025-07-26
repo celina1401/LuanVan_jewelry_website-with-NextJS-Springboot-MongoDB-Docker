@@ -1,0 +1,106 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { PaymentStatusCard, PaymentStatus } from "@/app/components/payment/PaymentStatusCard";
+import { LoadingSpinner } from "@/app/components/payment/LoadingSpinner";
+import { ErrorBoundary, ApiErrorDisplay } from "@/app/components/payment/ErrorBoundary";
+
+export default function PaymentCallback() {
+  const params = useSearchParams();
+  const [status, setStatus] = useState<PaymentStatus>("pending");
+  const [orderId, setOrderId] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const processPaymentResult = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get payment parameters
+        const responseCode = params.get("vnp_ResponseCode");
+        const orderIdParam = params.get("vnp_TxnRef");
+        const amountParam = params.get("vnp_Amount");
+        
+        // Set order details
+        if (orderIdParam) {
+          setOrderId(orderIdParam);
+        }
+        
+        if (amountParam) {
+          // Convert from VND (smallest unit) to VND
+          const amountInVND = parseInt(amountParam) / 100;
+          setAmount(new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+          }).format(amountInVND));
+        }
+
+        // Determine payment status
+        if (responseCode === "00") {
+          setStatus("success");
+        } else if (responseCode === "24") {
+          setStatus("cancelled");
+        } else {
+          setStatus("failed");
+        }
+
+        // Simulate API call to update order status
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (err) {
+        setError("Có lỗi xảy ra khi xử lý kết quả thanh toán");
+        setStatus("failed");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    processPaymentResult();
+  }, [params]);
+
+  const handleRetry = () => {
+    // Redirect back to payment page or order page
+    window.location.href = "/order";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <LoadingSpinner 
+          size="lg" 
+          text="Đang xử lý kết quả thanh toán..." 
+          fullScreen={false}
+        />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <ApiErrorDisplay 
+          error={error} 
+          onRetry={handleRetry}
+          className="max-w-md"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <PaymentStatusCard
+          status={status}
+          orderId={orderId}
+          amount={amount}
+          onRetry={handleRetry}
+          showActions={true}
+        />
+      </div>
+    </ErrorBoundary>
+  );
+}
