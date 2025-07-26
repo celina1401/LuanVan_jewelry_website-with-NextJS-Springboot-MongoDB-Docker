@@ -124,25 +124,7 @@ export default function UsersPageClient() {
           </div>
         </div>
       </div>
-      {/* Nút mở chat */}
-      <button
-        className="fixed bottom-8 right-8 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg z-50"
-        onClick={() => setShowChat(true)}
-      >
-        Hỗ trợ khách hàng
-      </button>
-      {/* Popup chat */}
-      {showChat && (
-        <div className="fixed bottom-24 right-8 w-[500px] max-w-full bg-white rounded-xl shadow-2xl border z-50">
-          <div className="flex justify-between items-center p-2 border-b">
-            <span className="font-bold">Chat khách hàng</span>
-            <button onClick={() => setShowChat(false)} className="text-xl font-bold px-2">×</button>
-          </div>
-          <div className="p-2">
-            <AdminChat />
-          </div>
-        </div>
-      )}
+      
       {showAdd && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-[#111113] p-8 rounded-2xl shadow-2xl w-full max-w-lg border-2 border-rose-400 relative text-white">

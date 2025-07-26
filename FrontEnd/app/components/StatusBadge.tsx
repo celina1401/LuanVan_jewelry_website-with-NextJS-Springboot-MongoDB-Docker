@@ -3,13 +3,13 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-export type StatusType = 
-  | "success" 
-  | "error" 
-  | "warning" 
-  | "info" 
-  | "pending" 
-  | "active" 
+export type StatusType =
+  | "success"
+  | "error"
+  | "warning"
+  | "info"
+  | "pending"
+  | "active"
   | "inactive"
   | "processing"
   | "completed"
@@ -43,32 +43,32 @@ export function StatusBadge({
         return {
           label: label || "Thành công",
           color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-          outlineColor: "border-green-200 text-green-700 dark:border-green-700 dark:text-green-300",
+          outlineColor: "border border-green-200 text-green-700 dark:border-green-700 dark:text-green-300",
         };
       case "error":
         return {
           label: label || "Lỗi",
           color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-          outlineColor: "border-red-200 text-red-700 dark:border-red-700 dark:text-red-300",
+          outlineColor: "border border-red-200 text-red-700 dark:border-red-700 dark:text-red-300",
         };
       case "warning":
         return {
           label: label || "Cảnh báo",
           color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-          outlineColor: "border-yellow-200 text-yellow-700 dark:border-yellow-700 dark:text-yellow-300",
+          outlineColor: "border border-yellow-200 text-yellow-700 dark:border-yellow-700 dark:text-yellow-300",
         };
       case "info":
         return {
           label: label || "Thông tin",
           color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-          outlineColor: "border-blue-200 text-blue-700 dark:border-blue-700 dark:text-blue-300",
+          outlineColor: "border border-blue-200 text-blue-700 dark:border-blue-700 dark:text-blue-300",
         };
       case "pending":
       case "processing":
         return {
           label: label || "Đang xử lý",
           color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-          outlineColor: "border-purple-200 text-purple-700 dark:border-purple-700 dark:text-purple-300",
+          outlineColor: "border border-purple-200 text-purple-700 dark:border-purple-700 dark:text-purple-300",
         };
       case "active":
       case "confirmed":
@@ -76,32 +76,32 @@ export function StatusBadge({
         return {
           label: label || "Hoạt động",
           color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-          outlineColor: "border-emerald-200 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300",
+          outlineColor: "border border-emerald-200 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300",
         };
       case "inactive":
       case "draft":
         return {
           label: label || "Không hoạt động",
           color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-          outlineColor: "border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-300",
+          outlineColor: "border border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-300",
         };
       case "cancelled":
         return {
           label: label || "Đã hủy",
           color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-          outlineColor: "border-orange-200 text-orange-700 dark:border-orange-700 dark:text-orange-300",
+          outlineColor: "border border-orange-200 text-orange-700 dark:border-orange-700 dark:text-orange-300",
         };
       case "shipped":
         return {
           label: label || "Đang giao",
           color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-          outlineColor: "border-indigo-200 text-indigo-700 dark:border-indigo-700 dark:text-indigo-300",
+          outlineColor: "border border-indigo-200 text-indigo-700 dark:border-indigo-700 dark:text-indigo-300",
         };
       default:
         return {
           label: label || "Không xác định",
           color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-          outlineColor: "border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-300",
+          outlineColor: "border border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-300",
         };
     }
   };
@@ -127,39 +127,36 @@ export function StatusBadge({
   );
 }
 
-// Specialized status badges
-export function OrderStatusBadge({ 
-  status, 
-  ...props 
-}: Omit<StatusBadgeProps, "status"> & { 
-  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled" 
-}) {
-  return <StatusBadge status={status} {...props} />;
+// === Specialized Badge Components ===
+
+type OrderStatusBadgeProps = Omit<StatusBadgeProps, "status"> & {
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+};
+
+export function OrderStatusBadge(props: OrderStatusBadgeProps) {
+  return <StatusBadge {...props} />;
 }
 
-export function PaymentStatusBadge({ 
-  status, 
-  ...props 
-}: Omit<StatusBadgeProps, "status"> & { 
-  status: "pending" | "success" | "failed" | "cancelled" 
-}) {
-  return <StatusBadge status={status} {...props} />;
+type PaymentStatusBadgeProps = Omit<StatusBadgeProps, "status"> & {
+  status: "pending" | "success" | "failed" | "cancelled";
+};
+
+// export function PaymentStatusBadge(props: PaymentStatusBadgeProps) {
+//   return <StatusBadge {...props} />;
+// }
+
+type UserStatusBadgeProps = Omit<StatusBadgeProps, "status"> & {
+  status: "active" | "inactive";
+};
+
+export function UserStatusBadge(props: UserStatusBadgeProps) {
+  return <StatusBadge {...props} />;
 }
 
-export function UserStatusBadge({ 
-  status, 
-  ...props 
-}: Omit<StatusBadgeProps, "status"> & { 
-  status: "active" | "inactive" 
-}) {
-  return <StatusBadge status={status} {...props} />;
-}
+type ProductStatusBadgeProps = Omit<StatusBadgeProps, "status"> & {
+  status: "draft" | "published" | "inactive";
+};
 
-export function ProductStatusBadge({ 
-  status, 
-  ...props 
-}: Omit<StatusBadgeProps, "status"> & { 
-  status: "draft" | "published" | "inactive" 
-}) {
-  return <StatusBadge status={status} {...props} />;
-} 
+export function ProductStatusBadge(props: ProductStatusBadgeProps) {
+  return <StatusBadge {...props} />;
+}

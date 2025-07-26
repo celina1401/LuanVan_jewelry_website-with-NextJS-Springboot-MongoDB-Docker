@@ -137,7 +137,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
             if (data.pricePerChi) {
               prices[product.id] = data.pricePerChi * product.weight + (product.wage || 0);
             }
-          } catch { }
+          } catch {}
         }
       }));
       setProductGoldPrices(prices);
@@ -150,27 +150,24 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
       .filter((product) => {
         // Gender filtering
         const matchGender = gender === "all" || product.gender === gender;
-
+        
         // Category filtering - use the original category value from backend
         const matchCategory = category === "all" || product.category === category;
-
+        
         // Price range filtering
         let matchPrice = true;
         if (priceRange !== "all") {
+          const [min, max] = priceRange.split("-").map(Number);
           const productPrice = productGoldPrices[product.id] ?? product.price;
-
-          if (priceRange.includes("-")) {
-            const [minStr, maxStr] = priceRange.split("-");
-            const min = parseInt(minStr);
-            const max = parseInt(maxStr);
+          
+          if (max) {
             matchPrice = productPrice >= min && productPrice <= max;
-          } else if (priceRange.endsWith("+")) {
-            const min = parseInt(priceRange.replace("+", ""));
+          } else {
+            // Handle "5000000+" case
             matchPrice = productPrice >= min;
           }
         }
-
-
+        
         return matchGender && matchCategory && matchPrice;
       })
       .sort((a, b) => {
@@ -190,7 +187,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
     if (sortBy === "favorite") {
       filtered = filtered.filter(product => favorites.includes(product.id as number));
     }
-
+    
     return filtered;
   }, [products, category, priceRange, sortBy, favorites, gender, productGoldPrices]);
 
@@ -250,10 +247,11 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`w-4 h-4 ${i < Math.floor(product.rating)
+                      className={`w-4 h-4 ${
+                        i < Math.floor(product.rating)
                           ? "text-yellow-400"
                           : "text-gray-300"
-                        }`}
+                      }`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -270,7 +268,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
               </p>
             </CardContent>
             <CardFooter className="p-4 pt-0">
-              <Button
+              <Button 
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
