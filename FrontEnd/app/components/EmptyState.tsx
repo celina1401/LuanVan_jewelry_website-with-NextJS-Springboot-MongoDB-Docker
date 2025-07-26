@@ -43,56 +43,56 @@ export function EmptyState({
       case "products":
         return {
           icon: <Package className="h-12 w-12 text-gray-400" />,
-          title: "Không có sản phẩm nào",
-          description: "Hiện tại không có sản phẩm nào trong danh mục này.",
-          actionLabel: "Xem tất cả sản phẩm",
-          actionHref: "/products",
+          title: title || "Không tìm thấy sản phẩm",
+          description: description || "Vui lòng điều chỉnh bộ lọc để tìm sản phẩm phù hợp.",
+          actionLabel: actionLabel || "Xem tất cả sản phẩm",
+          actionHref: actionHref || "/products",
         };
       case "cart":
         return {
           icon: <ShoppingCart className="h-12 w-12 text-gray-400" />,
-          title: "Giỏ hàng trống",
-          description: "Bạn chưa có sản phẩm nào trong giỏ hàng.",
-          actionLabel: "Tiếp tục mua sắm",
-          actionHref: "/products",
+          title: title || "Giỏ hàng trống",
+          description: description || "Bạn chưa có sản phẩm nào trong giỏ hàng.",
+          actionLabel: actionLabel || "Tiếp tục mua sắm",
+          actionHref: actionHref || "/products",
         };
       case "orders":
         return {
           icon: <FileText className="h-12 w-12 text-gray-400" />,
-          title: "Chưa có đơn hàng nào",
-          description: "Bạn chưa có đơn hàng nào. Hãy bắt đầu mua sắm!",
-          actionLabel: "Mua sắm ngay",
-          actionHref: "/products",
+          title: title || "Chưa có đơn hàng nào",
+          description: description || "Bạn chưa có đơn hàng nào. Hãy bắt đầu mua sắm!",
+          actionLabel: actionLabel || "Mua sắm ngay",
+          actionHref: actionHref || "/products",
         };
       case "favorites":
         return {
           icon: <Heart className="h-12 w-12 text-gray-400" />,
-          title: "Chưa có sản phẩm yêu thích",
-          description: "Bạn chưa thêm sản phẩm nào vào danh sách yêu thích.",
-          actionLabel: "Khám phá sản phẩm",
-          actionHref: "/products",
+          title: title || "Chưa có sản phẩm yêu thích",
+          description: description || "Bạn chưa thêm sản phẩm nào vào danh sách yêu thích.",
+          actionLabel: actionLabel || "Khám phá sản phẩm",
+          actionHref: actionHref || "/products",
         };
       case "search":
         return {
           icon: <Search className="h-12 w-12 text-gray-400" />,
-          title: "Không tìm thấy kết quả",
-          description: "Không có sản phẩm nào phù hợp với từ khóa tìm kiếm của bạn.",
-          actionLabel: "Thử từ khóa khác",
-          actionHref: "/products",
+          title: title || "Không tìm thấy kết quả",
+          description: description || "Không có sản phẩm nào phù hợp với từ khóa tìm kiếm của bạn.",
+          actionLabel: actionLabel || "Thử từ khóa khác",
+          actionHref: actionHref || "/products",
         };
       case "reports":
         return {
           icon: <BarChart3 className="h-12 w-12 text-gray-400" />,
-          title: "Chưa có báo cáo nào",
-          description: "Hiện tại chưa có dữ liệu báo cáo để hiển thị.",
-          actionLabel: "Tạo báo cáo mới",
+          title: title || "Chưa có báo cáo nào",
+          description: description || "Hiện tại chưa có dữ liệu báo cáo để hiển thị.",
+          actionLabel: actionLabel || "Tạo báo cáo mới",
         };
       case "users":
         return {
           icon: <Users className="h-12 w-12 text-gray-400" />,
-          title: "Chưa có người dùng nào",
-          description: "Hiện tại chưa có người dùng nào trong hệ thống.",
-          actionLabel: "Thêm người dùng",
+          title: title || "Chưa có người dùng nào",
+          description: description || "Hiện tại chưa có người dùng nào trong hệ thống.",
+          actionLabel: actionLabel || "Thêm người dùng",
         };
       default:
         return {

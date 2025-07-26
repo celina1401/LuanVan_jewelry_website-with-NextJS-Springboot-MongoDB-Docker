@@ -7,21 +7,22 @@ import { ProductFilters } from "../../components/ui/product-filters"
 import { ProductSort } from "../../components/ui/product-sort"
 import { translateProductTag } from "@/lib/utils";
 
+// Define categories with both English (for filtering) and Vietnamese (for display)
 const categories = [
-  translateProductTag("all"),
-  translateProductTag("ring"),
-  translateProductTag("necklace"),
-  translateProductTag("earring"),
-  translateProductTag("bracelet"),
-  "Đồng hồ"
+  { value: "all", label: "Tất cả" },
+  { value: "ring", label: "Nhẫn" },
+  { value: "necklace", label: "Dây chuyền" },
+  { value: "earring", label: "Bông tai" },
+  { value: "bracelet", label: "Vòng tay" },
+  { value: "watch", label: "Đồng hồ" }
 ]
 
 const priceRanges = [
   { label: "Tất cả mức giá", value: "all" },
-  { label: "Dưới 1.000.000₫", value: "0-1000" },
-  { label: "1.000.000₫ - 2.000.000₫", value: "1000-2000" },
-  { label: "2.000.000₫ - 5.000.000₫", value: "2000-5000" },
-  { label: "Trên 5.000.000₫", value: "5000+" }
+  { label: "Dưới 1.000.000₫", value: "0-1000000" },
+  { label: "1.000.000₫ - 2.000.000₫", value: "1000000-2000000" },
+  { label: "2.000.000₫ - 5.000.000₫", value: "2000000-5000000" },
+  { label: "Trên 5.000.000₫", value: "5000000+" }
 ]
 
 const sortOptions = [
@@ -33,7 +34,7 @@ const sortOptions = [
 ]
 
 export default function ProductsPage() {
-  const [selectedCategory, setSelectedCategory] = React.useState("Tất cả")
+  const [selectedCategory, setSelectedCategory] = React.useState("all")
   const [selectedPriceRange, setSelectedPriceRange] = React.useState("all")
   const [sortBy, setSortBy] = React.useState("popular")
   const [isFilterOpen, setIsFilterOpen] = React.useState(false)

@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { PaymentStatusCard, PaymentStatus } from "@/app/components/payment/PaymentStatusCard";
-import { LoadingSpinner } from "@/app/components/payment/LoadingSpinner";
-import { ErrorBoundary, ApiErrorDisplay } from "@/app/components/payment/ErrorBoundary";
+import { PaymentStatusCard, PaymentStatus, LoadingSpinner, ErrorBoundary, ApiErrorDisplay } from "@/lib";
 
 export default function PaymentCallback() {
   const params = useSearchParams();

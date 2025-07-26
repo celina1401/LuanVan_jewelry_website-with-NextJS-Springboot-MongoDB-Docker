@@ -1,6 +1,6 @@
 // Payment and Order Components
-export { PaymentStatusCard, type PaymentStatus } from "./PaymentStatusCard";
-export { OrderSummaryCard, type OrderSummary, type OrderItem } from "./OrderSummaryCard";
+export { PaymentStatusCard, type PaymentStatus } from "../app/components/PaymentStatusCard";
+export { OrderSummaryCard, type OrderSummary, type OrderItem } from "../app/components/OrderSummaryCard";
 
 // Loading Components
 export { 
@@ -8,7 +8,7 @@ export {
   InlineLoadingSpinner, 
   ButtonLoadingSpinner, 
   PageLoadingSpinner 
-} from "./LoadingSpinner";
+} from "../app/components/LoadingSpinner";
 
 // Error Handling Components
 export { 
@@ -16,7 +16,7 @@ export {
   DefaultErrorFallback, 
   useErrorHandler, 
   ApiErrorDisplay 
-} from "./ErrorBoundary";
+} from "../app/components/ErrorBoundary";
 
 // Empty State Components
 export { 
@@ -28,7 +28,7 @@ export {
   SearchEmptyState,
   ReportsEmptyState,
   UsersEmptyState
-} from "./EmptyState";
+} from "../app/components/EmptyState";
 
 // Page Header Components
 export { 
@@ -37,7 +37,7 @@ export {
   OrdersPageHeader,
   UsersPageHeader,
   ReportsPageHeader
-} from "./PageHeader";
+} from "../app/components/PageHeader";
 
 // Status Badge Components
 export { 
@@ -47,10 +47,10 @@ export {
   PaymentStatusBadge,
   UserStatusBadge,
   ProductStatusBadge
-} from "./StatusBadge";
+} from "../app/components/StatusBadge";
 
 // Re-export existing components for convenience
-export { Navbar } from "../../../components/navbar";
-export { ThemeToggle } from "../../../components/theme-toggle";
-export { ThemeProvider } from "../../../components/theme-provider";
-export { VietMapAddressPicker } from "../../../components/VietMapAddressPicker"; 
+export { Navbar } from "../components/navbar";
+export { ThemeToggle } from "../components/theme-toggle";
+export { ThemeProvider } from "../components/theme-provider";
+export { default as VietMapAddressPicker } from "../components/VietMapAddressPicker";

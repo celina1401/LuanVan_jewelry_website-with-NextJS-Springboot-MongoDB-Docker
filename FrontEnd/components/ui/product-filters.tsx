@@ -5,10 +5,14 @@ import { Button } from "./button"
 import { Card, CardContent, CardHeader, CardTitle } from "./card"
 import { RadioGroup, RadioGroupItem } from "./radio-group"
 import { Label } from "./label"
-import { translateProductTag } from "../../lib/utils";
+
+interface Category {
+  value: string;
+  label: string;
+}
 
 interface ProductFiltersProps {
-  categories: string[]
+  categories: Category[]
   priceRanges: { label: string; value: string }[]
   selectedCategory: string
   selectedPriceRange: string
@@ -41,9 +45,9 @@ export function ProductFilters({
             className="space-y-2"
           >
             {categories.map((category) => (
-              <div key={category} className="flex items-center space-x-2">
-                <RadioGroupItem value={category} id={category} />
-                <Label htmlFor={category}>{translateProductTag(category)}</Label>
+              <div key={category.value} className="flex items-center space-x-2">
+                <RadioGroupItem value={category.value} id={category.value} />
+                <Label htmlFor={category.value}>{category.label}</Label>
               </div>
             ))}
           </RadioGroup>
@@ -100,8 +104,9 @@ export function ProductFilters({
         variant="outline"
         className="w-full"
         onClick={() => {
-          onCategoryChange("Tất cả")
+          onCategoryChange("all")
           onPriceRangeChange("all")
+          onGenderChange("all")
         }}
       >
         Xóa bộ lọc

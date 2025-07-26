@@ -204,6 +204,21 @@ export function GoldPriceChart() {
   // Nếu muốn lọc nhiều loại vàng, cần fetch nhiều endpoint và map thành mảng. Ở đây chỉ có 1 loại XAU/USD.
   const filteredGoldTypes = goldData ? [goldData] : [];
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const price = payload[0].value;
+      const time = new Date(label).toLocaleString();
+      return (
+        <div className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 p-3 rounded-md shadow-md border border-zinc-200 dark:border-zinc-700">
+          <p className="text-sm font-semibold">Thời gian: {time}</p>
+          <p className="text-sm">Giá: <span className="font-bold text-yellow-500">{price.toLocaleString()} USD</span></p>
+        </div>
+      );
+    }
+    return null;
+  };
+  
+
   return (
     <div className="flex flex-col md:flex-row gap-6 md:items-stretch">
       {/* Chart */}
@@ -232,7 +247,7 @@ export function GoldPriceChart() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="timestamp" tickFormatter={v => new Date(v).toLocaleTimeString()} minTickGap={40} />
                 <YAxis domain={['auto', 'auto']} />
-                <Tooltip labelFormatter={v => new Date(v).toLocaleString()} />
+                <Tooltip content={<CustomTooltip />} />
                 <Line type="monotone" dataKey="price" stroke="#FFD700" dot={false} />
               </LineChart>
             </ResponsiveContainer>
