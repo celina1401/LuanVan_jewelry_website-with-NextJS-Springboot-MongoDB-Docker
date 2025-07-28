@@ -5,6 +5,7 @@ import AdminChatDetail from "@/app/components/chatbox/AdminChatDetail";
 
 interface ChatSummary {
   userId: string;
+  username: string;
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
@@ -71,7 +72,7 @@ export default function AdminMessagePage() {
                   }`}
                 >
                   <div>
-                    <div className="font-semibold">👤 {chat.userId}</div>
+                    <div className="font-semibold">👤 {chat.username}</div>
                     <div className="text-sm text-gray-500 mt-1 truncate">{chat.lastMessage}</div>
                     <div className="text-xs text-gray-400">
                       {new Date(chat.timestamp).toLocaleString()}
@@ -91,7 +92,7 @@ export default function AdminMessagePage() {
           {selectedUserId ? (
             <>
               <div className="font-semibold mb-2 text-lg text-primary">
-                💬 Đang trò chuyện với: {selectedUserId}
+                💬 Đang trò chuyện với: {inbox.find(c => c.userId === selectedUserId)?.username || selectedUserId}
               </div>
               <AdminChatDetail userId={selectedUserId} />
             </>

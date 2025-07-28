@@ -4,10 +4,29 @@ server:
 spring:
   application:
     name: orderservice
+    
+  data:
+    mongodb:
+      uri: mongodb://mongodb:27017/jewelry_db
 
 eureka:
   client:
     service-url:
       defaultZone: http://discoveryserver:8761/eureka
     register-with-eureka: true
-    fetch-registry: true 
+    fetch-registry: true
+
+# Service URLs for integration
+user:
+  service:
+    url: http://localhost:9001
+
+payment:
+  service:
+    url: http://localhost:9006
+
+# Logging configuration
+logging:
+  level:
+    com.b2110941.OrderService: DEBUG
+    org.springframework.web: DEBUG 

@@ -219,6 +219,8 @@ interface CartItem {
     weight?: number
     wage?: number
     goldAge?: string
+    category?: string
+    brand?: string
   }
 }
 
@@ -258,6 +260,8 @@ async function fetchCartWithProductDetails(userId: string) {
         wage: product?.wage,
         goldAge: product?.goldAge,
         color: product?.color,
+        category: product?.category,
+        brand: product?.brand,
       }
     }
   })

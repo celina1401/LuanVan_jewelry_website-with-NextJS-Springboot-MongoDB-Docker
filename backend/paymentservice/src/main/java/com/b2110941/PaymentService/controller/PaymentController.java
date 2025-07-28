@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.b2110941.PaymentService.authorization.Encryption;
 
@@ -25,6 +26,9 @@ public class PaymentController {
 
     @Autowired
     private Encryption encryption;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @GetMapping("/vnpay")
     public ResponseEntity<?> createPaymentUrl(@RequestParam long amount, @RequestParam String orderId) {
@@ -140,6 +144,17 @@ public ResponseEntity<Map<String, String>> handleVnpayCallback(@RequestParam Map
         if ("00".equals(status)) {
             response.put("status", "success");
             response.put("message", "Thanh toán thành công! Cảm ơn bạn đã mua sắm tại T&C Jewelry.");
+
+            try {
+                String callbackUrl = "http://localhost:9003/api/orders/payment/callback"
+                    + "?orderId=" + allParams.get("vnp_TxnRef")
+                    + "&transactionId=" + allParams.get("vnp_TransactionNo")
+                    + "&status=Đã thanh toán";
+            
+                restTemplate.postForEntity(callbackUrl, null, Void.class);
+            } catch (Exception e) {
+                System.err.println("Lỗi khi callback về OrderService: " + e.getMessage());
+            }
         } else {
             response.put("status", "fail");
             response.put("message", "Thanh toán thất bại. Vui lòng thử lại hoặc liên hệ hỗ trợ.");

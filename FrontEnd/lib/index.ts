@@ -44,7 +44,7 @@ export {
   StatusBadge, 
   type StatusType,
   OrderStatusBadge,
-  PaymentStatusBadge,
+  // PaymentStatusBadge,
   UserStatusBadge,
   ProductStatusBadge
 } from "../app/components/StatusBadge";

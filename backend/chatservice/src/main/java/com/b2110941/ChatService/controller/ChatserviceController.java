@@ -70,21 +70,13 @@ public class ChatserviceController {
             }
 
             // Gửi tin nhắn đến đúng topic
-            // if ("admin".equals(role)) {
-            //     messagingTemplate.convertAndSend("/topic/user/" + message.getReceiver(), message);
-            // } else {
-            //     messagingTemplate.convertAndSend("/topic/admin", message);
-            // }
-
-            // Gửi tin nhắn đến đúng topic
-if ("admin".equals(role)) {
-    messagingTemplate.convertAndSend("/topic/user/" + message.getReceiver(), message);
-} else {
-    // ✅ Thêm type để admin client biết là tin mới => reload inbox
-    message.setType("new-message");
-    messagingTemplate.convertAndSend("/topic/admin", message);
-}
-
+            if ("admin".equals(role)) {
+                messagingTemplate.convertAndSend("/topic/user/" + message.getReceiver(), message);
+            } else {
+                // ✅ Thêm type để admin client biết là tin mới => reload inbox
+                message.setType("new-message");
+                messagingTemplate.convertAndSend("/topic/admin", message);
+            }
 
         } catch (Exception e) {
             System.err.println("❌ Lỗi xử lý tin nhắn: " + e.getMessage());
@@ -137,6 +129,9 @@ if ("admin".equals(role)) {
             for (ChatSummary summary : summaries) {
                 long unread = chatLogRepository.countBySenderAndReceiverAndReadIsFalse(summary.getUserId(), "admin");
                 summary.setUnreadCount(unread);
+                // Lấy full name từ user service
+                String username = userServiceClient.getUserFullName(summary.getUserId());
+                summary.setUsername(username != null ? username : summary.getUserId());
             }
             return ResponseEntity.ok(summaries);
         } catch (Exception e) {
@@ -144,45 +139,23 @@ if ("admin".equals(role)) {
         }
     }
 
-    //     @PostMapping("/markAsRead/{userId}")
-    //     public ResponseEntity<?> markAsRead(@PathVariable String userId) {
-    //         try {
-    //             List<ChatLog> unread = chatLogRepository.findBySenderAndReceiverAndReadIsFalse(userId, "admin");
-    //             if (!unread.isEmpty()) {
-    //                 unread.forEach(log -> log.setRead(true));
-    //                 chatLogRepository.saveAll(unread);
-    //             }
-
-    //             ChatMessage signal = new ChatMessage();
-    // signal.setReceiver(userId);
-    // signal.setType("read-update");
-    // messagingTemplate.convertAndSend("/topic/admin", signal);
-
-
-    //             return ResponseEntity.ok().build();
-    //         } catch (Exception e) {
-    //             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    //         }
-    //     }
-
     @PostMapping("/markAsRead/{userId}")
     public ResponseEntity<?> markAsRead(@PathVariable String userId) {
         List<ChatLog> unread = chatLogRepository.findBySenderAndReceiverAndReadIsFalse(userId, "admin");
         System.out.println("🔍 Tin chưa đọc từ user " + userId + ": " + unread.size());
-    
+
         if (!unread.isEmpty()) {
             unread.forEach(log -> log.setRead(true));
             chatLogRepository.saveAll(unread);
         }
-    
+
         ChatMessage signal = new ChatMessage();
         signal.setReceiver(userId);
         signal.setType("read-update");
         messagingTemplate.convertAndSend("/topic/admin", signal);
-    
+
         return ResponseEntity.ok().build();
     }
-    
 
     @EventListener
     public void handleConnect(SessionConnectEvent event) {

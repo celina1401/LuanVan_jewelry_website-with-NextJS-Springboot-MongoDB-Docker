@@ -160,25 +160,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Chat admin tích hợp */}
-        {/* <div className="mt-12 bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-          <h3 className="text-xl font-semibold mb-4 text-primary">Trò chuyện với người dùng</h3>
-          <div className="flex border rounded-lg overflow-hidden min-h-[400px]">
-            <div className="w-1/3 border-r dark:border-gray-700">
-              <AdminChatInbox onSelect={(userId) => setSelectedUserId(userId)} />
-            </div>
-            <div className="flex-1">
-              {selectedUserId ? (
-                <AdminChatDetail userId={selectedUserId} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400 py-20">
-                  Chọn một người dùng để bắt đầu chat
-                </div>
-              )}
-            </div>
-          </div> */}
-        {/* </div> */}
       </main>
     </div>
   );

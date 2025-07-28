@@ -45,8 +45,30 @@ export default function PaymentCallback() {
           setStatus("failed");
         }
 
-        // Simulate API call to update order status
         await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Update order payment status
+        // if (orderIdParam) {
+        //   try {
+        //     const paymentStatus = responseCode === "00" ? "Đã thanh toán" : "Thất bại";
+        //     const updateResponse = await fetch(`http://localhost:9003/api/orders/${orderIdParam}/update`, {
+        //       method: 'PUT',
+        //       headers: {
+        //         'Content-Type': 'application/json',
+        //       },
+        //       body: JSON.stringify({
+        //         paymentStatus: paymentStatus,
+        //         transactionId: params.get("vnp_TransactionNo") || undefined
+        //       }),
+        //     });
+            
+        //     if (!updateResponse.ok) {
+        //       console.error('Failed to update order payment status');
+        //     }
+        //   } catch (error) {
+        //     console.error('Error updating order payment status:', error);
+        //   }
+        // }
         
       } catch (err) {
         setError("Có lỗi xảy ra khi xử lý kết quả thanh toán");

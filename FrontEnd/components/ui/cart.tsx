@@ -23,6 +23,8 @@ export function Cart() {
           weight?: number
           wage?: number
           goldAge?: string
+          category?: string
+          brand?: string
         } || {}
 
         const { weight, wage = 0, goldAge } = metadata

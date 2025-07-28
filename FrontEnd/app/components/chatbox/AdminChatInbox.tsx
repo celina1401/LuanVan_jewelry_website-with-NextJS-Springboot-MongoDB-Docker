@@ -6,6 +6,7 @@ import { over } from "stompjs";
 
 interface ChatSummary {
   userId: string;
+  username: string;
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
@@ -104,7 +105,7 @@ export default function AdminChatInbox({ onSelect }: Props) {
             className="cursor-pointer px-4 py-3 border-b hover:bg-gray-100 dark:hover:bg-gray-800 flex justify-between items-center"
           >
             <div>
-              <div className="font-semibold">👤 {chat.userId}</div>
+              <div className="font-semibold">👤 {chat.username}</div>
               <div className="text-sm text-gray-500 mt-1 truncate">
                 {chat.lastMessage}
               </div>

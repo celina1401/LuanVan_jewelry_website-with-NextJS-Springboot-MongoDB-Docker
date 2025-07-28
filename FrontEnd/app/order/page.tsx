@@ -59,7 +59,7 @@ export default function OrderPage() {
         setDob(data.dob || "");
         setGender(data.gender || "female");
         setName(
-          data.username 
+          data.username
         );
         const addrList = data.addresses || [];
         setAddresses(addrList);
@@ -118,18 +118,155 @@ export default function OrderPage() {
 
     const orderId = `ORD${Date.now()}`; // mã đơn hàng ngẫu nhiên
 
+    // if (payment === "vnpay") {
+    //   try {
+    //     const res = await fetch(`http://localhost:9006/api/payment/vnpay?orderId=${orderId}&amount=${finalTotal}`);
+    //     const data = await res.json();
+    //     if (data.url) {
+    //       window.location.href = data.url;
+    //       return;
+    //     }
+    //   } catch (err) {
+    //     alert("Không thể kết nối VNPAY");
+    //     return;
+    //   }
+    // } 
     if (payment === "vnpay") {
       try {
-        const res = await fetch(`http://localhost:9006/api/payment/vnpay?orderId=${orderId}&amount=${finalTotal}`);
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
+        const token = await getToken();
+    
+        // Bước 1: Gửi đơn hàng lên OrderService
+        const orderRes = await fetch("http://localhost:9003/api/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: user?.id,
+            customerName: name,
+            customerPhone: phone,
+            customerEmail: email,
+            receiverName: name,
+            street: address,
+            ward,
+            district,
+            province,
+            items: items.map((item) => ({
+              productId: item.id,
+              productName: item.name,
+              productImage: item.image,
+              quantity: item.quantity,
+              price: dynamicPrices[item.id] ?? item.price,
+              totalPrice: (dynamicPrices[item.id] ?? item.price) * item.quantity,
+              weight: item.metadata?.weight,
+              goldAge: item.metadata?.goldAge,
+              wage: item.metadata?.wage,
+              category: item.metadata?.category,
+              brand: item.metadata?.brand,
+            })),
+            subtotal: finalTotal,
+            shippingFee: shipping,
+            discount,
+            total: finalTotal,
+            paymentMethod: "VNPAY",
+            paymentStatus: "Chờ thanh toán",
+            note,
+            smsNotification: sms,
+            invoiceRequest: invoice,
+            promoCode: promo,
+          }),
+        });
+    
+        if (!orderRes.ok) {
+          const text = await orderRes.text();
+          alert("Lỗi khi tạo đơn hàng: " + text);
           return;
         }
+    
+        const savedOrder = await orderRes.json();
+        const createdOrderId = savedOrder.id; // Hoặc orderNumber nếu bạn dùng
+    
+        // Bước 2: Lấy URL thanh toán từ PaymentService
+        const res = await fetch(
+          `http://localhost:9006/api/payment/vnpay?orderId=${createdOrderId}&amount=${finalTotal}`
+        );
+        const data = await res.json();
+    
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert("Không nhận được URL VNPay");
+        }
+    
+        return;
       } catch (err) {
-        alert("Không thể kết nối VNPAY");
+        console.error("VNPay error:", err);
+        alert("Không thể kết nối VNPay");
         return;
       }
+    }
+    
+    else {
+      if (payment === "cod") {
+        try {
+          const token = await getToken();
+          const res = await fetch("http://localhost:9003/api/orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              userId: user?.id,
+              customerName: name,
+              customerPhone: phone,
+              customerEmail: email,
+              receiverName: name,
+              street: address,
+              ward,
+              district,
+              province,
+              items: items.map((item) => ({
+                productId: item.id,
+                productName: item.name,
+                productImage: item.image,
+                quantity: item.quantity,
+                price: dynamicPrices[item.id] ?? item.price,
+                totalPrice: (dynamicPrices[item.id] ?? item.price) * item.quantity,
+                weight: item.metadata?.weight,
+                goldAge: item.metadata?.goldAge,
+                wage: item.metadata?.wage,
+                category: item.metadata?.category,
+                brand: item.metadata?.brand,
+              })),
+              subtotal: finalTotal,
+              shippingFee: shipping,
+              discount,
+              total: finalTotal,
+              paymentMethod: "COD",
+              paymentStatus: "Chưa thanh toán",
+              note,
+              smsNotification: sms,
+              invoiceRequest: invoice,
+              promoCode: promo,
+            }),
+          });
+
+          if (res.ok) {
+            setSuccess(true);
+            clearCart();
+          } else {
+            const text = await res.text();
+            alert("Lỗi khi tạo đơn hàng: " + text);
+          }
+        } catch (err) {
+          console.error("Lỗi tạo đơn hàng COD:", err);
+          alert("Không thể kết nối server để đặt hàng COD.");
+        }
+        return;
+      }
+
     }
 
     // Xử lý COD như cũ
@@ -268,47 +405,47 @@ export default function OrderPage() {
                     </button>
                   ) : (
                     <AddAddressForm
-  onAdd={async (newAddr) => {
-    handleAddAddress(newAddr);
-    try {
-      const token = await getToken();
-      let updatedAddresses = addresses;
-      if (newAddr.isDefault) {
-        updatedAddresses = addresses.map(addr => ({ ...addr, isDefault: false }));
-      }
-      updatedAddresses = [...updatedAddresses, newAddr];
-      const res = await fetch(`http://localhost:9001/api/users/update_user/${user?.id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ phone, addresses: updatedAddresses }),
-      });
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("API error:", res.status, errorText);
-        alert("Không thể thêm địa chỉ mới! " + errorText);
-        return;
-      }
-      const data = await res.json();
-      setAddresses(data.addresses || []);
-      const index = (data.addresses || []).length - 1;
-      setSelectedIndex(index);
-      setName(newAddr.receiverName);
-      setProvince(newAddr.province);
-      setDistrict(newAddr.district);
-      setWard(newAddr.ward);
-      setAddress(newAddr.street);
-      setShowAddAddress(false);
-    } catch (err) {
-      console.error("Thêm địa chỉ lỗi:", err);
-      alert("Không thể thêm địa chỉ mới!");
-    }
-  }}
-  onCancel={() => setShowAddAddress(false)}
-  showCancel
-/>
+                      onAdd={async (newAddr) => {
+                        handleAddAddress(newAddr);
+                        try {
+                          const token = await getToken();
+                          let updatedAddresses = addresses;
+                          if (newAddr.isDefault) {
+                            updatedAddresses = addresses.map(addr => ({ ...addr, isDefault: false }));
+                          }
+                          updatedAddresses = [...updatedAddresses, newAddr];
+                          const res = await fetch(`http://localhost:9001/api/users/update_user/${user?.id}`, {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({ phone, addresses: updatedAddresses }),
+                          });
+                          if (!res.ok) {
+                            const errorText = await res.text();
+                            console.error("API error:", res.status, errorText);
+                            alert("Không thể thêm địa chỉ mới! " + errorText);
+                            return;
+                          }
+                          const data = await res.json();
+                          setAddresses(data.addresses || []);
+                          const index = (data.addresses || []).length - 1;
+                          setSelectedIndex(index);
+                          setName(newAddr.receiverName);
+                          setProvince(newAddr.province);
+                          setDistrict(newAddr.district);
+                          setWard(newAddr.ward);
+                          setAddress(newAddr.street);
+                          setShowAddAddress(false);
+                        } catch (err) {
+                          console.error("Thêm địa chỉ lỗi:", err);
+                          alert("Không thể thêm địa chỉ mới!");
+                        }
+                      }}
+                      onCancel={() => setShowAddAddress(false)}
+                      showCancel
+                    />
 
 
                   )}

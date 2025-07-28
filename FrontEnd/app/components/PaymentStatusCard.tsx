@@ -13,7 +13,10 @@ interface PaymentStatusCardProps {
   message?: string;
   orderId?: string;
   amount?: string;
+  orderDetails?: any;
   onRetry?: () => void;
+  onViewOrder?: () => void;
+  onContinueShopping?: () => void;
   showActions?: boolean;
 }
 
@@ -23,7 +26,10 @@ export function PaymentStatusCard({
   message,
   orderId,
   amount,
+  orderDetails,
   onRetry,
+  onViewOrder,
+  onContinueShopping,
   showActions = true,
 }: PaymentStatusCardProps) {
   const getStatusConfig = () => {
@@ -103,6 +109,35 @@ export function PaymentStatusCard({
           </div>
         )}
 
+        {/* Display additional order details if available */}
+        {orderDetails && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 space-y-2">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Chi tiết đơn hàng:
+            </h4>
+            {orderDetails.customerInfo?.name && (
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Khách hàng:</span> {orderDetails.customerInfo.name}
+              </p>
+            )}
+            {orderDetails.paymentMethod && (
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Phương thức:</span> {orderDetails.paymentMethod}
+              </p>
+            )}
+            {orderDetails.orderStatus && (
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Trạng thái:</span> {orderDetails.orderStatus}
+              </p>
+            )}
+            {orderDetails.paymentStatus && (
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium">Thanh toán:</span> {orderDetails.paymentStatus}
+              </p>
+            )}
+          </div>
+        )}
+
         {showActions && (
           <div className="flex flex-col gap-3 pt-4">
             {status === "failed" && onRetry && (
@@ -114,21 +149,50 @@ export function PaymentStatusCard({
               </Button>
             )}
             
+            {status === "cancelled" && onRetry && (
+              <Button 
+                onClick={onRetry}
+                className="w-full bg-orange-500 hover:bg-orange-600"
+              >
+                Quay lại thanh toán
+              </Button>
+            )}
+            
             <div className="flex gap-3">
-              <Button asChild variant="outline" className="flex-1">
-                <Link href="/dashboard/orders">
+              {onViewOrder ? (
+                <Button 
+                  onClick={onViewOrder}
+                  variant="outline" 
+                  className="flex-1"
+                >
                   Xem đơn hàng
-                </Link>
-              </Button>
-              <Button asChild className="flex-1">
-                <Link href="/products">
+                </Button>
+              ) : (
+                <Button asChild variant="outline" className="flex-1">
+                  <Link href="/dashboard/orders">
+                    Xem đơn hàng
+                  </Link>
+                </Button>
+              )}
+              
+              {onContinueShopping ? (
+                <Button 
+                  onClick={onContinueShopping}
+                  className="flex-1"
+                >
                   Tiếp tục mua sắm
-                </Link>
-              </Button>
+                </Button>
+              ) : (
+                <Button asChild className="flex-1">
+                  <Link href="/products">
+                    Tiếp tục mua sắm
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         )}
       </CardContent>
     </Card>
   );
-} 
+}

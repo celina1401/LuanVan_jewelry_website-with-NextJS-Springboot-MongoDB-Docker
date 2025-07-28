@@ -8,10 +8,9 @@ import java.util.Date;
 @AllArgsConstructor
 public class ChatSummary {
     private String userId;
+    private String username;
     private String lastMessage;
     private Date timestamp;
     private long unreadCount; // nhớ đúng kiểu `long`
 
-    // Nếu không dùng @AllArgsConstructor, thêm thủ công:
-    // public ChatSummary(String userId, String lastMessage, Date timestamp, long unreadCount) { ... }
 }

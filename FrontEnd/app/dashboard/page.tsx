@@ -204,6 +204,8 @@ export default function DashboardPage() {
   const [deleteClerkLoading, setDeleteClerkLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(addresses.length === 0);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   // ✅ Đồng bộ và load user từ backend sau khi đăng nhập
   useEffect(() => {
@@ -256,6 +258,28 @@ export default function DashboardPage() {
 
     fetchUserData();
   }, [user, getToken]);
+
+  // Fetch user orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!user) return;
+      
+      try {
+        setOrdersLoading(true);
+        const response = await fetch(`/api/orders?userId=${user.id}`);
+        if (response.ok) {
+          const ordersData = await response.json();
+          setOrders(ordersData);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setOrdersLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [user]);
 
   useEffect(() => {
     if (addresses.length === 0) setShowAddForm(true);
@@ -399,6 +423,53 @@ export default function DashboardPage() {
                 >
                   {deleteClerkLoading ? "Đang xóa..." : "Xóa tài khoản vĩnh viễn"}
                 </button>
+              </div>
+
+              {/* Orders Section */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">Lịch sử đơn hàng</h3>
+                {ordersLoading ? (
+                  <div className="text-center py-4">Đang tải đơn hàng...</div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500">Chưa có đơn hàng nào</div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {orders.map((order) => (
+                      <div key={order.id} className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-semibold">#{order.orderNumber}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-rose-500">
+                              {order.total?.toLocaleString()}₫
+                            </p>
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              order.orderStatus === 'Đã giao' ? 'bg-green-100 text-green-800' :
+                              order.orderStatus === 'Chờ xử lý' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.orderStatus}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          <p>Thanh toán: {order.paymentMethod === 'cod' ? 'Tiền mặt' : 'VNPAY'}</p>
+                          <p>Giao hàng: {order.shippingStatus}</p>
+                        </div>
+                        <button 
+                          onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                          className="mt-2 text-sm text-blue-600 hover:underline"
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Modal cập nhật */}

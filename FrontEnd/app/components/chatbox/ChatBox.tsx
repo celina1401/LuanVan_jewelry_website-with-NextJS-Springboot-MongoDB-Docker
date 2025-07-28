@@ -26,26 +26,75 @@ export default function ChatBox() {
   useEffect(() => {
     if (role === "admin" || !open || !userId) return;
 
-    // ✅ Load từ localStorage nếu có
+    const welcomeMsg: Message = {
+      sender: "admin",
+      receiver: userId,
+      role: "admin",
+      content: "Chào bạn, T&C có thể giúp gì cho bạn?",
+      timestamp: new Date().toISOString(),
+    };
+    const thankMsg: Message = {
+      sender: "admin",
+      receiver: userId,
+      role: "admin",
+      content: "Cảm ơn bạn đã quan tâm đến T&C Jewelry, mình sẽ tranh thủ trả lời bạn sớm nhất có thể!!",
+      timestamp: new Date(Date.now() + 1000).toISOString(),
+    };
+
     const saved = localStorage.getItem(localKey);
     if (saved) {
-      setMessages(JSON.parse(saved));
+      let msgs: Message[] = JSON.parse(saved);
+      // Nếu chưa từng chat (chỉ có tin nhắn chào hoặc rỗng), đảm bảo có đủ 2 tin nhắn auto
+      if (msgs.length === 0 || (msgs.length === 1 && msgs[0].sender === "admin")) {
+        msgs = [welcomeMsg, thankMsg];
+        setMessages(msgs);
+        localStorage.setItem(localKey, JSON.stringify(msgs));
+        // Gửi cả 2 tin nhắn lên backend nếu chưa có
+        fetch("http://localhost:9007/api/chat/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(welcomeMsg),
+        }).catch(() => {});
+        fetch("http://localhost:9007/api/chat/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(thankMsg),
+        }).catch(() => {});
+      } else {
+        setMessages(msgs);
+      }
+    } else {
+      // Nếu chưa có lịch sử, chỉ hiển thị tin nhắn chào từ admin
+      setMessages([welcomeMsg]);
+      localStorage.setItem(localKey, JSON.stringify([welcomeMsg]));
+      // Gửi tin nhắn chào lên backend để lưu vào lịch sử
+      fetch("http://localhost:9007/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(welcomeMsg),
+      }).catch(() => {});
     }
 
     const fetchHistory = async () => {
       try {
         const res = await fetch(`http://localhost:9007/api/chat/filter/${userId}`);
         const data = await res.json();
-    
-        const sorted = data.sort((a: Message, b: Message) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-    
-        setMessages(sorted);
-        localStorage.setItem(`chat_admin_${userId}`, JSON.stringify(sorted));
+        if (data && data.length > 0) {
+          let sorted = data.sort((a: Message, b: Message) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+          // Nếu là lần đầu chat, merge 2 tin nhắn auto vào đầu mảng nếu chưa có
+          const hasWelcome = sorted.some((m: Message) => m.content === welcomeMsg.content && m.sender === "admin");
+          const hasThank = sorted.some((m: Message) => m.content === thankMsg.content && m.sender === "admin");
+          if (!hasWelcome) sorted = [welcomeMsg, ...sorted];
+          if (!hasThank) sorted = [sorted[0], thankMsg, ...sorted.slice(1)];
+          setMessages(sorted);
+          localStorage.setItem(localKey, JSON.stringify(sorted));
+        }
+        // Nếu không có lịch sử, giữ nguyên tin nhắn chào
       } catch (err) {
         console.error("❌ Lỗi khi tải lịch sử admin:", err);
-        setMessages([]);
+        // Không setMessages([]) ở đây!
       }
     };
     
@@ -101,6 +150,26 @@ export default function ChatBox() {
     e.preventDefault();
     if (role === "admin" || !input.trim() || !stompClient || !stompClient.connected) return;
 
+    const welcomeMsg: Message = {
+      sender: "admin",
+      receiver: userId,
+      role: "admin",
+      content: "Chào bạn, T&C có thể giúp gì cho bạn?",
+      timestamp: new Date().toISOString(),
+    };
+    const thankMsg: Message = {
+      sender: "admin",
+      receiver: userId,
+      role: "admin",
+      content: "Cảm ơn bạn đã quan tâm đến T&C Jewelry, mình sẽ tranh thủ trả lời bạn sớm nhất có thể!!",
+      timestamp: new Date(Date.now() + 1000).toISOString(),
+    };
+
+    let updated = [...messages];
+    // Nếu thiếu tin nhắn chào, thêm lại vào đầu mảng
+    if (!updated.some((m: Message) => m.content === welcomeMsg.content && m.sender === "admin")) {
+      updated = [welcomeMsg, ...updated];
+    }
     const msg: Message = {
       sender,
       receiver: receiverId,
@@ -108,9 +177,19 @@ export default function ChatBox() {
       content: input,
       timestamp: new Date().toISOString(),
     };
-
     stompClient.send("/app/chat", { userId }, JSON.stringify(msg));
-    const updated = [...messages, msg];
+    updated = [...updated, msg];
+    // Nếu là tin nhắn đầu tiên từ client (sau tin nhắn chào admin), gửi tin nhắn cảm ơn từ admin
+    const clientMessages = updated.filter((m: Message) => m.sender === sender);
+    if (clientMessages.length === 1 && !updated.some((m: Message) => m.content === thankMsg.content && m.sender === "admin")) {
+      updated = [...updated, thankMsg];
+      // Gửi tin nhắn cảm ơn này lên backend để lưu vào lịch sử
+      fetch("http://localhost:9007/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(thankMsg),
+      }).catch(() => {});
+    }
     setMessages(updated);
     localStorage.setItem(localKey, JSON.stringify(updated)); // ✅ Lưu khi gửi
     setInput("");

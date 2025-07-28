@@ -5,7 +5,7 @@ import AdminChat from '../../../components/ui/chat';
 export default function UsersPageClient() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showChat, setShowChat] = useState(false);
+  // const [showChat, setShowChat] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newUser, setNewUser] = useState({
     firstName: "",
