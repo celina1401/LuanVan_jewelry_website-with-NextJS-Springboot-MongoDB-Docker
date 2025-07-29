@@ -26,27 +26,70 @@ interface Order {
     customer: string;
     status: string;
     payment: string;
-    shipping: string;
-    cod: string;
+    shippingStatus: string;
+    method: string;
     total: number;
     channel: string;
     createdAt: string;
 }
 
 function getShippingStatus(order: string) {
-    if (order === "Đã giao") return "success";
-    if (order === "Hủy") return "error";
+    if (order === "Đã giao hàng") return "success";
+    if (order === "Giao hàng thất bại") return "error";
     if (order === "Chưa giao hàng") return "warning";
     return "info";
 }
 
+function getPaymentBadgeClass(method: string): string {
+    switch (method.toUpperCase()) {
+        case "VNPAY":
+            return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200";
+        case "COD":
+            return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+        default:
+            return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+    }
+}
+
+function getOrderStatusColor(status: string): string {
+    switch (status) {
+        case "Chưa xử lý":
+            return "bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-200";
+        case "Đã nhận đơn":
+            return "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
+        case "Đang đóng gói":
+            return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200";
+        case "Chờ giao hàng":
+            return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+        default:
+            return "bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-200";
+    }
+}
+
+
+function getOrderStatusBadge(status: string): "success" | "warning" | "error" | "info" {
+    switch (status) {
+        case "Đã nhận đơn":
+            return "info";
+        case "Đang đóng gói":
+            return "warning";
+        case "Chờ giao hàng":
+            return "success";
+        case "Chưa xử lý":
+            return "info";
+        default:
+            return "info";
+    }
+}
+
+
 function getShippingTriggerClass(status: string): string {
     switch (status) {
-        case "Đã giao":
+        case "Đã giao hàng":
             return "bg-green-100 dark:bg-green-900 ";
         case "Chưa giao hàng":
             return "bg-yellow-100 dark:bg-yellow-900 ";
-        case "Hủy":
+        case "Giao hàng thất bại":
             return "bg-red-100 dark:bg-red-900 ";
         case "Đang giao":
             return "bg-blue-100 dark:bg-blue-900 ";
@@ -68,20 +111,37 @@ export default function AdminOrdersPage() {
             try {
                 setLoading(true);
                 setError(null);
-                await new Promise((res) => setTimeout(res, 800));
-                setOrders([
-                    { id: "M103578", customer: "Lan", status: "Tự giao", payment: "Chờ xử lý", shipping: "Đã giao", cod: "Đã nhận", total: 1150000, channel: "Web", createdAt: "2022-04-01T16:31:00" },
-                    { id: "M103577", customer: "TRÂM ĐẶNG", status: "Hủy", payment: "Chờ xử lý", shipping: "Hủy", cod: "Chưa nhận", total: 1150000, channel: "Web", createdAt: "2022-04-01T16:30:00" },
-                    { id: "M103576", customer: "fff", status: "Tự giao", payment: "Chờ xử lý", shipping: "Đã giao", cod: "Đã nhận", total: 1150000, channel: "Web", createdAt: "2022-04-01T16:29:00" },
-                    { id: "M103575", customer: "Khánh", status: "Tự giao", payment: "Thanh toán một phần", shipping: "Đã giao", cod: "Đã nhận", total: 600000, channel: "Web", createdAt: "2022-04-01T15:40:00" },
-                    { id: "M103571", customer: "H", status: "Chờ xử lý", payment: "Chờ xử lý", shipping: "Chưa giao hàng", cod: "Chưa nhận", total: 900000, channel: "Web", createdAt: "2022-04-01T10:48:00" },
-                ]);
+
+                const res = await fetch("http://localhost:9003/api/orders");
+
+                if (!res.ok) {
+                    throw new Error("Lỗi khi gọi API lấy đơn hàng");
+                }
+
+                const data = await res.json();
+
+                const mappedOrders: Order[] = data.map((order: any) => ({
+                    id: order.orderNumber,
+                    customer: order.receiverName || "Không rõ",
+                    status: order.orderStatus === "Chờ xử lý" ? "Chưa xử lý" : order.orderStatus,
+                    payment: order.paymentStatus,
+                    shippingStatus: order.shippingStatus || "Chưa giao hàng", // ✅ fix ở đây
+                    method: order.paymentMethod,
+                    total: order.total,
+                    channel: order.channel,
+                    createdAt: order.createdAt,
+                }));
+
+
+                setOrders(mappedOrders);
             } catch (err) {
+                console.error(err);
                 setError("Không thể tải danh sách đơn hàng.");
             } finally {
                 setLoading(false);
             }
         }
+
         fetchOrders();
     }, [tab, search, filters]);
 
@@ -144,7 +204,7 @@ export default function AdminOrdersPage() {
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trạng thái đơn hàng</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Thanh toán</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Giao hàng</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">COD</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Phương thức thanh toán</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng tiền</th>
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Thao tác</th>
                                 </tr>
@@ -155,24 +215,107 @@ export default function AdminOrdersPage() {
                                         <td className="px-4 py-2 font-mono text-sm text-blue-600 hover:underline cursor-pointer">#{order.id}</td>
                                         <td className="px-4 py-2 text-sm">{new Date(order.createdAt).toLocaleString("vi-VN")}</td>
                                         <td className="px-4 py-2 text-sm text-black dark:text-white">{order.customer}</td>
-                                        <td className="px-4 py-2">
-                                            <StatusBadge status={order.status === "Hủy" ? "error" : order.status === "Tự giao" ? "info" : order.status === "Chờ xử lý" ? "pending" : "success"} label={order.status} size="sm" className="truncate" />
+                                        <td className="px-4 py-2 min-w-[160px]">
+                                            <Select
+                                                onValueChange={async (value) => {
+                                                    setOrders((prev) =>
+                                                        prev.map((o, i) => (i === idx ? { ...o, status: value } : o))
+                                                    );
+
+                                                    try {
+                                                        const res = await fetch(`http://localhost:9003/api/orders/${order.id}/status?orderStatus=${encodeURIComponent(value)}`, {
+                                                            method: 'PUT',
+                                                        });
+
+                                                        if (!res.ok) {
+                                                            console.error('❌ Lỗi khi cập nhật trạng thái đơn hàng');
+                                                        } else {
+                                                            console.log('✅ Đã cập nhật trạng thái đơn hàng');
+                                                        }
+                                                    } catch (err) {
+                                                        console.error('❌ Lỗi network khi cập nhật trạng thái đơn hàng:', err);
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger
+                                                    className={cn(
+                                                        "w-full h-8 rounded-md px-2",
+                                                        getOrderStatusColor(order.status), // 💡 Nền theo trạng thái
+                                                        "border border-gray-300 dark:border-zinc-600 shadow-sm",
+                                                        "focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+                                                    )}
+                                                >
+                                                    <div className="w-full flex items-center justify-between gap-2 truncate">
+                                                        <StatusBadge
+                                                            status="info"
+                                                            label={order.status}
+                                                            size="sm"
+                                                            className="truncate bg-transparent shadow-none"
+                                                        />
+                                                    </div>
+                                                </SelectTrigger>
+
+                                                <SelectContent className="rounded-md shadow-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 z-50">
+                                                    {[
+                                                        "Chưa xử lý",
+                                                        "Đã nhận đơn",
+                                                        "Đang đóng gói",
+                                                        "Chờ giao hàng",
+                                                    ].map((status) => (
+                                                        <SelectItem
+                                                            key={status}
+                                                            value={status}
+                                                            className="text-sm px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+                                                        >
+                                                            <StatusBadge
+                                                                status={getOrderStatusBadge(status)}
+                                                                label={status}
+                                                                size="sm"
+                                                                className="truncate"
+                                                            />
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+
+                                            </Select>
                                         </td>
+
                                         <td className="px-4 py-2">
                                             <StatusBadge status={order.payment === "Chờ xử lý" ? "pending" : order.payment === "Thanh toán một phần" ? "warning" : "success"} label={order.payment} size="sm" className="truncate" />
                                         </td>
                                         <td className="px-4 py-2 min-w-[140px]">
-                                            <Select value={order.shipping} onValueChange={(value) => setOrders((prev) => prev.map((o, i) => (i === idx ? { ...o, shipping: value } : o)))}>
-                                                <SelectTrigger className={cn("w-full h-8 rounded-md px-2", getShippingTriggerClass(order.shipping), "border border-gray-300 dark:border-zinc-600 shadow-sm", "focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors")}>                                                
+                                            <Select
+                                                onValueChange={async (value) => {
+                                                    setOrders((prev) =>
+                                                        prev.map((o, i) => (i === idx ? { ...o, shippingStatus: value } : o))
+                                                    );
+
+                                                    try {
+                                                        const res = await fetch(`http://localhost:9003/api/orders/${order.id}/shipping?shippingStatus=${encodeURIComponent(value)}`, {
+                                                            method: 'PUT',
+                                                        });
+
+                                                        if (!res.ok) {
+                                                            console.error('❌ Lỗi khi cập nhật trạng thái giao hàng');
+                                                        } else {
+                                                            console.log('✅ Đã cập nhật trạng thái giao hàng');
+                                                        }
+                                                    } catch (err) {
+                                                        console.error('❌ Lỗi network khi cập nhật giao hàng:', err);
+                                                    }
+                                                }}
+                                            >
+
+                                                <SelectTrigger className={cn("w-full h-8 rounded-md px-2", getShippingTriggerClass(order.shippingStatus), "border border-gray-300 dark:border-zinc-600 shadow-sm", "focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors")}>
                                                     <div className="w-full flex items-center justify-between gap-2 truncate">
-                                                        <StatusBadge status={getShippingStatus(order.shipping)} label={order.shipping} size="sm" className="truncate" />
+                                                        <StatusBadge status={getShippingStatus(order.shippingStatus)} label={order.shippingStatus} size="sm" className="truncate" />
                                                     </div>
                                                 </SelectTrigger>
                                                 <SelectContent className="rounded-md shadow-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 z-50">
                                                     {[
-                                                        "Đã giao",
+                                                        "Đã giao hàng",
                                                         "Chưa giao hàng",
-                                                        "Hủy",
+                                                        "Giao hàng thất bại",
                                                         "Đang giao"
                                                     ].map((status) => (
                                                         <SelectItem key={status} value={status} className="text-sm px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
@@ -183,9 +326,12 @@ export default function AdminOrdersPage() {
                                             </Select>
                                         </td>
                                         <td className="px-4 py-2">
-                                            <StatusBadge status={order.cod === "Đã nhận" ? "success" : order.cod === "Chưa nhận" ? "warning" : "info"} label={order.cod} size="sm" className="truncate" />
+                                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPaymentBadgeClass(order.method)}`}>
+                                                {order.method === "COD" ? "Tiền mặt" : order.method}
+                                            </span>
                                         </td>
-                                        <td className="px-4 py-2 text-right font-semibold text-rose-500">
+
+                                        <td className="px-4 py-2 text-right text-sm text-rose-500 font-medium">
                                             {order.total.toLocaleString()}₫
                                         </td>
                                         <td className="px-4 py-2">

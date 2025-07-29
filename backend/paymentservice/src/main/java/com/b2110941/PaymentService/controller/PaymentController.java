@@ -134,19 +134,3 @@ public class PaymentController {
     }
 
 }
-
-
-
-
-
-
-// try {
-//     paymentService.notifyOrderService(
-//         allParams.get("vnp_TxnRef"),
-//         allParams.get("vnp_TransactionNo"),
-//         "Đã thanh toán"
-//     );
-
-// } catch (Exception e) {
-//     System.err.println("Lỗi khi gọi notifyOrderService: " + e.getMessage());
-// }

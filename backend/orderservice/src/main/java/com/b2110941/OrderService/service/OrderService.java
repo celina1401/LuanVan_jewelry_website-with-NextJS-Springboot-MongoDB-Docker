@@ -157,23 +157,44 @@ public class OrderService {
         throw new RuntimeException("Order not found with id: " + orderId);
     }
 
-    public OrderResponse updateShippingStatus(String orderId, String shippingStatus) {
-        Optional<Order> orderOpt = orderRepository.findById(orderId);
+    // public OrderResponse updateShippingStatus(String orderId, String shippingStatus) {
+    //     Optional<Order> orderOpt = orderRepository.findById(orderId);
+    //     if (orderOpt.isPresent()) {
+    //         Order order = orderOpt.get();
+    //         order.setShippingStatus(shippingStatus);
+    //         order.setUpdatedAt(LocalDateTime.now());
+            
+    //         if ("Đã giao".equals(shippingStatus)) {
+    //             order.setShippedAt(LocalDateTime.now());
+    //             order.setDeliveredAt(LocalDateTime.now());
+    //         }
+            
+    //         Order savedOrder = orderRepository.save(order);
+    //         return convertToOrderResponse(savedOrder);
+    //     }
+    //     throw new RuntimeException("Order not found with id: " + orderId);
+    // }
+
+    public OrderResponse updateShippingStatus(String orderNumber, String shippingStatus) {
+        Optional<Order> orderOpt = orderRepository.findByOrderNumber(orderNumber); // ✅ Đổi từ findById → findByOrderNumber
+    
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
             order.setShippingStatus(shippingStatus);
             order.setUpdatedAt(LocalDateTime.now());
-            
+    
             if ("Đã giao".equals(shippingStatus)) {
                 order.setShippedAt(LocalDateTime.now());
                 order.setDeliveredAt(LocalDateTime.now());
             }
-            
+    
             Order savedOrder = orderRepository.save(order);
             return convertToOrderResponse(savedOrder);
         }
-        throw new RuntimeException("Order not found with id: " + orderId);
+    
+        throw new RuntimeException("Order not found with order number: " + orderNumber);
     }
+    
 
     public OrderResponse updatePaymentStatus(String orderNumber, String paymentStatus, String transactionId) {
         // Optional<Order> orderOpt = orderRepository.findById(orderId);

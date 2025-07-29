@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -46,6 +47,24 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+//     @PutMapping("/{orderId}")
+// public ResponseEntity<OrderResponse> updateOrder(
+//         @PathVariable String orderNumber,
+//         @RequestBody Map<String, Object> updates) {
+//     try {
+//         OrderResponse updatedOrder = orderService.updateShippingStatus(orderNumber, updates);
+//         return ResponseEntity.ok(updatedOrder);
+//     } catch (RuntimeException e) {
+//         log.error("Order not found: {}", orderId);
+//         return ResponseEntity.notFound().build();
+//     } catch (Exception e) {
+//         log.error("Error updating order: ", e);
+//         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//     }
+// }
+
+
 
     @GetMapping("/number/{orderNumber}")
     public ResponseEntity<OrderResponse> getOrderByOrderNumber(@PathVariable String orderNumber) {
@@ -99,21 +118,38 @@ public class OrderController {
         }
     }
 
-    @PutMapping("/{orderId}/shipping")
-    public ResponseEntity<OrderResponse> updateShippingStatus(
-            @PathVariable String orderId,
-            @RequestParam String shippingStatus) {
-        try {
-            OrderResponse order = orderService.updateShippingStatus(orderId, shippingStatus);
-            return ResponseEntity.ok(order);
-        } catch (RuntimeException e) {
-            log.error("Order not found: {}", orderId);
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            log.error("Error updating shipping status: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    // @PutMapping("/{orderId}/shipping")
+    // public ResponseEntity<OrderResponse> updateShippingStatus(
+    //         @PathVariable String orderId,
+    //         @RequestParam String shippingStatus) {
+    //     try {
+    //         OrderResponse order = orderService.updateShippingStatus(orderId, shippingStatus);
+    //         return ResponseEntity.ok(order);
+    //     } catch (RuntimeException e) {
+    //         log.error("Order not found: {}", orderId);
+    //         return ResponseEntity.notFound().build();
+    //     } catch (Exception e) {
+    //         log.error("Error updating shipping status: ", e);
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    //     }
+    // }
+
+    @PutMapping("/{orderNumber}/shipping")
+public ResponseEntity<OrderResponse> updateShippingStatus(
+        @PathVariable String orderNumber,
+        @RequestParam String shippingStatus) {
+    try {
+        OrderResponse order = orderService.updateShippingStatus(orderNumber, shippingStatus);
+        return ResponseEntity.ok(order);
+    } catch (RuntimeException e) {
+        log.error("Order not found: {}", orderNumber);
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        log.error("Error updating shipping status: ", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
+}
+
 
     @PutMapping("/{orderId}/payment")
     public ResponseEntity<OrderResponse> updatePaymentStatus(

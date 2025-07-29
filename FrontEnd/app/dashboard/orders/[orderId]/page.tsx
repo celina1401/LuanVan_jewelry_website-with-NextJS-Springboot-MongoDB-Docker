@@ -125,16 +125,31 @@ export default function OrderDetailPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      // Trạng thái đơn hàng
+      case "Chưa xử lý":
+        return "text-red-700 bg-red-100 dark:bg-red-900";
       case "Đã giao":
-        return "text-green-600 bg-green-100 dark:bg-green-900";
+        return "text-green-700 bg-green-100 dark:bg-green-900";
       case "Đang giao":
-        return "text-blue-600 bg-blue-100 dark:bg-blue-900";
+        return "text-blue-700 bg-blue-100 dark:bg-blue-900";
       case "Chờ xử lý":
-        return "text-yellow-600 bg-yellow-100 dark:bg-yellow-900";
+        return "text-yellow-700 bg-yellow-100 dark:bg-yellow-900";
+  
+      // Trạng thái giao hàng
+      case "Giao hàng thành công":
+        return "text-green-700 bg-green-100 dark:bg-green-900";
+      case "Đang giao":
+        return "text-blue-700 bg-blue-100 dark:bg-blue-900";
+      case "Chưa giao hàng":
+        return "text-yellow-700 bg-yellow-100 dark:bg-yellow-900";
+      case "Giao hàng thất bại":
+        return "text-red-700 bg-red-100 dark:bg-red-900";
+  
       default:
-        return "text-gray-600 bg-gray-100 dark:bg-gray-800";
+        return "text-gray-700 bg-gray-100 dark:bg-gray-800";
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
