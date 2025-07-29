@@ -55,6 +55,7 @@ interface Order {
   paidAt?: string;
   shippedAt?: string;
   deliveredAt?: string;
+  cancelReason?: string;
 }
 
 export default function OrderDetailPage() {
@@ -207,6 +208,11 @@ export default function OrderDetailPage() {
                       {order.paymentStatus}
                     </span>
                   </div>
+                  {order.orderStatus === "Đã hủy" && order.cancelReason && (
+                    <div className="text-sm text-gray-500 italic">
+                      Lý do hủy: {order.cancelReason}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -342,6 +348,27 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+      {order.orderStatus === "Chưa xử lý" && (
+  <Button
+    variant="destructive"
+    onClick={() => {
+      const reason = prompt("Nhập lý do hủy đơn:");
+      if (reason) {
+        fetch(`http://localhost:9003/api/orders/${order.id}/cancel`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason }),
+        })       
+        
+        .then(() => window.location.reload());
+      }
+    }}
+  >
+    Hủy đơn hàng
+  </Button>
+)}
     </div>
   );
 } 

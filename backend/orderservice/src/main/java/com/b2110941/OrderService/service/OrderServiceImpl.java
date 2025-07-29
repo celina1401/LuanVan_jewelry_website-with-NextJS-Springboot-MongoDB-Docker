@@ -10,8 +10,6 @@ import com.b2110941.OrderService.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -27,8 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OrderService {
-
+public class OrderServiceImpl implements IOrderService {
     private final OrderRepository orderRepository;
     private final RestTemplate restTemplate;
 
@@ -38,6 +35,7 @@ public class OrderService {
     @Value("${payment.service.url:http://localhost:9004}")
     private String paymentServiceUrl;
 
+    @Override
     public OrderResponse createOrder(CreateOrderRequest request) {
         try {
             // Generate order number
@@ -108,6 +106,7 @@ public class OrderService {
         }
     }
 
+    @Override
     public OrderResponse getOrderById(String orderId) {
         Optional<Order> order = orderRepository.findById(orderId);
         if (order.isPresent()) {
@@ -116,6 +115,7 @@ public class OrderService {
         throw new RuntimeException("Order not found with id: " + orderId);
     }
 
+    @Override
     public OrderResponse getOrderByOrderNumber(String orderNumber) {
         Optional<Order> order = orderRepository.findByOrderNumber(orderNumber);
         if (order.isPresent()) {
@@ -124,6 +124,7 @@ public class OrderService {
         throw new RuntimeException("Order not found with order number: " + orderNumber);
     }
 
+    @Override
     public List<OrderResponse> getOrdersByUserId(String userId) {
         List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
         return orders.stream()
@@ -131,6 +132,7 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public List<OrderResponse> getAllOrders() {
         List<Order> orders = orderRepository.findAll();
         return orders.stream()
@@ -138,8 +140,8 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public OrderResponse updateOrderStatus(String orderId, String orderStatus) {
-        // Optional<Order> orderOpt = orderRepository.findById(orderId);
         Optional<Order> orderOpt = orderRepository.findByOrderNumber(orderId);
 
         if (orderOpt.isPresent()) {
@@ -157,9 +159,9 @@ public class OrderService {
         throw new RuntimeException("Order not found with id: " + orderId);
     }
 
-
+    @Override
     public OrderResponse updateShippingStatus(String orderNumber, String shippingStatus) {
-        Optional<Order> orderOpt = orderRepository.findByOrderNumber(orderNumber); // ✅ Đổi từ findById → findByOrderNumber
+        Optional<Order> orderOpt = orderRepository.findByOrderNumber(orderNumber);
     
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
@@ -177,10 +179,9 @@ public class OrderService {
     
         throw new RuntimeException("Order not found with order number: " + orderNumber);
     }
-    
 
+    @Override
     public OrderResponse updatePaymentStatus(String orderNumber, String paymentStatus, String transactionId) {
-        // Optional<Order> orderOpt = orderRepository.findById(orderId);
         Optional<Order> orderOpt = orderRepository.findByOrderNumber(orderNumber);
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
@@ -198,12 +199,38 @@ public class OrderService {
         throw new RuntimeException("Order not found with id: " + orderNumber);
     }
 
+    @Override
     public void deleteOrder(String orderId) {
         if (orderRepository.existsById(orderId)) {
             orderRepository.deleteById(orderId);
         } else {
             throw new RuntimeException("Order not found with id: " + orderId);
         }
+    }
+
+    @Override
+    public OrderResponse cancelOrder(String orderId, String reason) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+
+        if (orderOpt.isPresent()) {
+            Order order = orderOpt.get();
+
+            if (!"Chưa xử lý".equalsIgnoreCase(order.getOrderStatus())) {
+                throw new IllegalStateException("Chỉ được hủy đơn hàng khi trạng thái là 'Chưa xử lý'");
+            }
+
+            order.setOrderStatus("Đã hủy");
+            order.setUpdatedAt(LocalDateTime.now());
+
+            String updatedNote = order.getNote() != null ? order.getNote() + " | " : "";
+            updatedNote += (reason != null ? "Lý do hủy: " + reason : "Lý do hủy: Không có lý do");
+            order.setNote(updatedNote);
+
+            Order savedOrder = orderRepository.save(order);
+            return convertToOrderResponse(savedOrder);
+        }
+
+        throw new RuntimeException("Order not found with id: " + orderId);
     }
 
     private String generateOrderNumber() {
@@ -314,29 +341,4 @@ public class OrderService {
             orderRepository.save(order);
         }
     }
-    
-    public OrderResponse cancelOrder(String orderId, String reason) {
-        Optional<Order> orderOpt = orderRepository.findById(orderId);
-    
-        if (orderOpt.isPresent()) {
-            Order order = orderOpt.get();
-    
-            if (!"Chưa xử lý".equalsIgnoreCase(order.getOrderStatus())) {
-                throw new IllegalStateException("Chỉ được hủy đơn hàng khi trạng thái là 'Chưa xử lý'");
-            }
-    
-            order.setOrderStatus("Đã hủy");
-            order.setUpdatedAt(LocalDateTime.now());
-    
-            String updatedNote = (order.getNote() != null ? order.getNote() + " | " : "") + "Lý do hủy: " + reason;
-            order.setNote(updatedNote);
-    
-            Order savedOrder = orderRepository.save(order);
-            return convertToOrderResponse(savedOrder); // ✅ map thủ công
-        }
-    
-        throw new RuntimeException("Order not found with id: " + orderId);
-    }
-    
-
-} 
+}

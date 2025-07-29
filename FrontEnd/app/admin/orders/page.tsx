@@ -61,10 +61,14 @@ function getOrderStatusColor(status: string): string {
             return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200";
         case "Chờ giao hàng":
             return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+        case "Đã hủy":
+            return "bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-100 font-semibold border border-red-300 dark:border-red-600"; // ✅ đậm hơn
         default:
             return "bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-200";
     }
 }
+
+
 
 
 function getOrderStatusBadge(status: string): "success" | "warning" | "error" | "info" {
@@ -77,10 +81,13 @@ function getOrderStatusBadge(status: string): "success" | "warning" | "error" | 
             return "success";
         case "Chưa xử lý":
             return "info";
+        case "Đã hủy":
+            return "error"; // ✅ dùng badge màu đỏ
         default:
             return "info";
     }
 }
+
 
 
 function getShippingTriggerClass(status: string): string {
@@ -217,6 +224,7 @@ export default function AdminOrdersPage() {
                                         <td className="px-4 py-2 text-sm text-black dark:text-white">{order.customer}</td>
                                         <td className="px-4 py-2 min-w-[160px]">
                                             <Select
+                                                disabled={order.status === "Đã hủy"}
                                                 onValueChange={async (value) => {
                                                     setOrders((prev) =>
                                                         prev.map((o, i) => (i === idx ? { ...o, status: value } : o))

@@ -48,24 +48,6 @@ public class OrderController {
         }
     }
 
-//     @PutMapping("/{orderId}")
-// public ResponseEntity<OrderResponse> updateOrder(
-//         @PathVariable String orderNumber,
-//         @RequestBody Map<String, Object> updates) {
-//     try {
-//         OrderResponse updatedOrder = orderService.updateShippingStatus(orderNumber, updates);
-//         return ResponseEntity.ok(updatedOrder);
-//     } catch (RuntimeException e) {
-//         log.error("Order not found: {}", orderId);
-//         return ResponseEntity.notFound().build();
-//     } catch (Exception e) {
-//         log.error("Error updating order: ", e);
-//         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//     }
-// }
-
-
-
     @GetMapping("/number/{orderNumber}")
     public ResponseEntity<OrderResponse> getOrderByOrderNumber(@PathVariable String orderNumber) {
         try {
@@ -118,38 +100,21 @@ public class OrderController {
         }
     }
 
-    // @PutMapping("/{orderId}/shipping")
-    // public ResponseEntity<OrderResponse> updateShippingStatus(
-    //         @PathVariable String orderId,
-    //         @RequestParam String shippingStatus) {
-    //     try {
-    //         OrderResponse order = orderService.updateShippingStatus(orderId, shippingStatus);
-    //         return ResponseEntity.ok(order);
-    //     } catch (RuntimeException e) {
-    //         log.error("Order not found: {}", orderId);
-    //         return ResponseEntity.notFound().build();
-    //     } catch (Exception e) {
-    //         log.error("Error updating shipping status: ", e);
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    //     }
-    // }
-
     @PutMapping("/{orderNumber}/shipping")
-public ResponseEntity<OrderResponse> updateShippingStatus(
-        @PathVariable String orderNumber,
-        @RequestParam String shippingStatus) {
-    try {
-        OrderResponse order = orderService.updateShippingStatus(orderNumber, shippingStatus);
-        return ResponseEntity.ok(order);
-    } catch (RuntimeException e) {
-        log.error("Order not found: {}", orderNumber);
-        return ResponseEntity.notFound().build();
-    } catch (Exception e) {
-        log.error("Error updating shipping status: ", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    public ResponseEntity<OrderResponse> updateShippingStatus(
+            @PathVariable String orderNumber,
+            @RequestParam String shippingStatus) {
+        try {
+            OrderResponse order = orderService.updateShippingStatus(orderNumber, shippingStatus);
+            return ResponseEntity.ok(order);
+        } catch (RuntimeException e) {
+            log.error("Order not found: {}", orderNumber);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error updating shipping status: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
-}
-
 
     @PutMapping("/{orderId}/payment")
     public ResponseEntity<OrderResponse> updatePaymentStatus(
@@ -167,40 +132,23 @@ public ResponseEntity<OrderResponse> updateShippingStatus(
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-// @PutMapping("/payment/callback")
-// public ResponseEntity<OrderResponse> updatePaymentStatusCallback(
-//         @RequestParam String orderNumber,
-//         @RequestParam String paymentStatus,
-//         @RequestParam(required = false) String transactionId) {
-//     log.info("🔔 Nhận callback payment: orderNumber={}, paymentStatus={}, transactionId={}", 
-//              orderNumber, paymentStatus, transactionId);
-//     try {
-//         OrderResponse order = orderService.updatePaymentStatus(orderNumber, paymentStatus, transactionId);
-//         log.info("✅ Cập nhật trạng thái thanh toán thành công cho order: {}", orderNumber);
-//         return ResponseEntity.ok(order);
-//     } catch (Exception e) {
-//         log.error("❌ Lỗi cập nhật trạng thái thanh toán callback:", e);
-//         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//     }
-// }
 
-@PutMapping("/payment/callback")
-public ResponseEntity<OrderResponse> updatePaymentStatusCallback(
-    @RequestParam String orderNumber,
-    @RequestParam String paymentStatus,
-    @RequestParam(required = false) String transactionId) {
-    log.info("🔔 Nhận callback payment: orderNumber={}, paymentStatus={}, transactionId={}", 
-             orderNumber, paymentStatus, transactionId);
-    try {
-        OrderResponse order = orderService.updatePaymentStatus(orderNumber, paymentStatus, transactionId);
-        log.info("✅ Cập nhật trạng thái thanh toán thành công cho order: {}", orderNumber);
-        return ResponseEntity.ok(order);
-    } catch (Exception e) {
-        log.error("❌ Lỗi cập nhật trạng thái thanh toán callback:", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    @PutMapping("/payment/callback")
+    public ResponseEntity<OrderResponse> updatePaymentStatusCallback(
+            @RequestParam String orderNumber,
+            @RequestParam String paymentStatus,
+            @RequestParam(required = false) String transactionId) {
+        log.info("🔔 Nhận callback payment: orderNumber={}, paymentStatus={}, transactionId={}",
+                orderNumber, paymentStatus, transactionId);
+        try {
+            OrderResponse order = orderService.updatePaymentStatus(orderNumber, paymentStatus, transactionId);
+            log.info("✅ Cập nhật trạng thái thanh toán thành công cho order: {}", orderNumber);
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            log.error("❌ Lỗi cập nhật trạng thái thanh toán callback:", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
-}
-
 
     @DeleteMapping("/{orderId}")
     public ResponseEntity<Void> deleteOrder(@PathVariable String orderId) {
@@ -216,11 +164,22 @@ public ResponseEntity<OrderResponse> updatePaymentStatusCallback(
         }
     }
 
-    // // Health check endpoint
-    // @GetMapping("/health")
-    // public ResponseEntity<String> health() {
-    //     return ResponseEntity.ok("Order Service is running");
-    // }
+    @PutMapping("/{orderId}/cancel")
+public ResponseEntity<OrderResponse> cancelOrder(
+        @PathVariable String orderId,
+        @RequestBody Map<String, String> body) {
+    try {
+        String reason = body.get("reason");
+        OrderResponse order = orderService.cancelOrder(orderId, reason);
+        return ResponseEntity.ok(order);
+    } catch (RuntimeException e) {
+        log.error("Order not found: {}", orderId);
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        log.error("Error canceling order: ", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
 
-    
-} 
+
+}
