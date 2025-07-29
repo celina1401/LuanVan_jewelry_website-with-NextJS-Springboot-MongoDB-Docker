@@ -185,7 +185,7 @@ export default function OrderPage() {
         }
     
         const savedOrder = await orderRes.json();
-        const createdOrderId = savedOrder.id; // Hoặc orderNumber nếu bạn dùng
+        const createdOrderId = savedOrder.orderNumber; // Hoặc orderNumber nếu bạn dùng
     
         // Bước 2: Lấy URL thanh toán từ PaymentService
         const res = await fetch(

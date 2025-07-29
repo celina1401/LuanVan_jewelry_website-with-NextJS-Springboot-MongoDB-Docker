@@ -16,7 +16,7 @@ export default function HistoryPage() {
     setLoading(true);
     setError("");
     getToken().then(token => {
-      fetch(`http://localhost:9002/api/orders/user/${user.id}`, {
+      fetch(`http://localhost:9003/api/orders/user/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => res.json())
@@ -44,26 +44,27 @@ export default function HistoryPage() {
         <div>Chưa có giao dịch nào.</div>
       ) : (
         <div className="rounded-lg border overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-gray-800">
-                <th className="px-4 py-2">Mã đơn</th>
-                <th className="px-4 py-2">Ngày</th>
-                <th className="px-4 py-2">Tổng tiền</th>
-                <th className="px-4 py-2">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order: any) => (
-                <tr key={order.id} className="border-b">
-                  <td className="px-4 py-2 text-center">{order.id}</td>
-                  <td className="px-4 py-2 text-center">{order.date || order.createdAt}</td>
-                  <td className="px-4 py-2 text-center">{order.total || order.amount}</td>
-                  <td className="px-4 py-2 text-center">{order.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <table className="w-full text-base text-left text-gray-700 dark:text-gray-200 border rounded-lg overflow-hidden">
+  <thead className="text-base text-white bg-slate-800 dark:bg-slate-800">
+    <tr>
+      <th className="px-6 py-4 font-medium">Mã đơn</th>
+      <th className="px-6 py-4 font-medium">Ngày đặt</th>
+      <th className="px-6 py-4 font-medium">Tổng tiền</th>
+      <th className="px-6 py-4 font-medium">Trạng thái</th>
+    </tr>
+  </thead>
+  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 text-base">
+    {orders.map((order: any) => (
+      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">#{order.orderNumber}</td>
+        <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</td>
+        <td className="px-6 py-4">{Number(order.total || order.amount).toLocaleString()}₫</td>
+        <td className="px-6 py-4">{order.status || order.paymentStatus}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
         </div>
       )}
     </div>

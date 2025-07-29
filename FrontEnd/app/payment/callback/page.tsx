@@ -16,17 +16,17 @@ export default function PaymentCallback() {
     const processPaymentResult = async () => {
       try {
         setIsLoading(true);
-        
+
         // Get payment parameters
         const responseCode = params.get("vnp_ResponseCode");
         const orderIdParam = params.get("vnp_TxnRef");
         const amountParam = params.get("vnp_Amount");
-        
+
         // Set order details
         if (orderIdParam) {
           setOrderId(orderIdParam);
         }
-        
+
         if (amountParam) {
           // Convert from VND (smallest unit) to VND
           const amountInVND = parseInt(amountParam) / 100;
@@ -48,28 +48,31 @@ export default function PaymentCallback() {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Update order payment status
-        // if (orderIdParam) {
-        //   try {
-        //     const paymentStatus = responseCode === "00" ? "Đã thanh toán" : "Thất bại";
-        //     const updateResponse = await fetch(`http://localhost:9003/api/orders/${orderIdParam}/update`, {
-        //       method: 'PUT',
-        //       headers: {
-        //         'Content-Type': 'application/json',
-        //       },
-        //       body: JSON.stringify({
-        //         paymentStatus: paymentStatus,
-        //         transactionId: params.get("vnp_TransactionNo") || undefined
-        //       }),
-        //     });
-            
-        //     if (!updateResponse.ok) {
-        //       console.error('Failed to update order payment status');
-        //     }
-        //   } catch (error) {
-        //     console.error('Error updating order payment status:', error);
-        //   }
-        // }
-        
+
+        if (orderIdParam) {
+          try {
+            const paymentStatus = responseCode === "00" ? "Đã thanh toán" : "Thất bại";
+            const transactionId = params.get("vnp_TransactionNo") || "";
+
+            const queryParams = new URLSearchParams({
+              orderNumber: orderIdParam,
+              paymentStatus,
+              transactionId,
+            });
+
+            const updateResponse = await fetch(`http://localhost:9003/api/orders/payment/callback?${queryParams.toString()}`, {
+              method: 'PUT',
+            });
+
+            if (!updateResponse.ok) {
+              console.error('❌ Gọi callback backend thất bại');
+            }
+          } catch (error) {
+            console.error('❌ Lỗi gọi callback backend:', error);
+          }
+        }
+
+
       } catch (err) {
         setError("Có lỗi xảy ra khi xử lý kết quả thanh toán");
         setStatus("failed");
@@ -89,9 +92,9 @@ export default function PaymentCallback() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <LoadingSpinner 
-          size="lg" 
-          text="Đang xử lý kết quả thanh toán..." 
+        <LoadingSpinner
+          size="lg"
+          text="Đang xử lý kết quả thanh toán..."
           fullScreen={false}
         />
       </div>
@@ -101,8 +104,8 @@ export default function PaymentCallback() {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <ApiErrorDisplay 
-          error={error} 
+        <ApiErrorDisplay
+          error={error}
           onRetry={handleRetry}
           className="max-w-md"
         />

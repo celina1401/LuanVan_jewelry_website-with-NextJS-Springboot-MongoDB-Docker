@@ -139,7 +139,9 @@ public class OrderService {
     }
 
     public OrderResponse updateOrderStatus(String orderId, String orderStatus) {
-        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        // Optional<Order> orderOpt = orderRepository.findById(orderId);
+        Optional<Order> orderOpt = orderRepository.findByOrderNumber(orderId);
+
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
             order.setOrderStatus(orderStatus);
@@ -173,8 +175,9 @@ public class OrderService {
         throw new RuntimeException("Order not found with id: " + orderId);
     }
 
-    public OrderResponse updatePaymentStatus(String orderId, String paymentStatus, String transactionId) {
-        Optional<Order> orderOpt = orderRepository.findById(orderId);
+    public OrderResponse updatePaymentStatus(String orderNumber, String paymentStatus, String transactionId) {
+        // Optional<Order> orderOpt = orderRepository.findById(orderId);
+        Optional<Order> orderOpt = orderRepository.findByOrderNumber(orderNumber);
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
             order.setPaymentStatus(paymentStatus);
@@ -188,7 +191,7 @@ public class OrderService {
             Order savedOrder = orderRepository.save(order);
             return convertToOrderResponse(savedOrder);
         }
-        throw new RuntimeException("Order not found with id: " + orderId);
+        throw new RuntimeException("Order not found with id: " + orderNumber);
     }
 
     public void deleteOrder(String orderId) {
@@ -292,7 +295,7 @@ public class OrderService {
         try {
             String url = paymentServiceUrl + "/api/payment/vnpay"
                        + "?amount=" + order.getTotal().longValue()
-                       + "&orderId=" + order.getId();
+                       + "&orderId=" + order.getOrderNumber();
     
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, null, Map.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

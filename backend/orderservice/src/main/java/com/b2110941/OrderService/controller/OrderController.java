@@ -131,6 +131,40 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+// @PutMapping("/payment/callback")
+// public ResponseEntity<OrderResponse> updatePaymentStatusCallback(
+//         @RequestParam String orderNumber,
+//         @RequestParam String paymentStatus,
+//         @RequestParam(required = false) String transactionId) {
+//     log.info("🔔 Nhận callback payment: orderNumber={}, paymentStatus={}, transactionId={}", 
+//              orderNumber, paymentStatus, transactionId);
+//     try {
+//         OrderResponse order = orderService.updatePaymentStatus(orderNumber, paymentStatus, transactionId);
+//         log.info("✅ Cập nhật trạng thái thanh toán thành công cho order: {}", orderNumber);
+//         return ResponseEntity.ok(order);
+//     } catch (Exception e) {
+//         log.error("❌ Lỗi cập nhật trạng thái thanh toán callback:", e);
+//         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//     }
+// }
+
+@PutMapping("/payment/callback")
+public ResponseEntity<OrderResponse> updatePaymentStatusCallback(
+    @RequestParam String orderNumber,
+    @RequestParam String paymentStatus,
+    @RequestParam(required = false) String transactionId) {
+    log.info("🔔 Nhận callback payment: orderNumber={}, paymentStatus={}, transactionId={}", 
+             orderNumber, paymentStatus, transactionId);
+    try {
+        OrderResponse order = orderService.updatePaymentStatus(orderNumber, paymentStatus, transactionId);
+        log.info("✅ Cập nhật trạng thái thanh toán thành công cho order: {}", orderNumber);
+        return ResponseEntity.ok(order);
+    } catch (Exception e) {
+        log.error("❌ Lỗi cập nhật trạng thái thanh toán callback:", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
 
     @DeleteMapping("/{orderId}")
     public ResponseEntity<Void> deleteOrder(@PathVariable String orderId) {
@@ -146,9 +180,11 @@ public class OrderController {
         }
     }
 
-    // Health check endpoint
-    @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Order Service is running");
-    }
+    // // Health check endpoint
+    // @GetMapping("/health")
+    // public ResponseEntity<String> health() {
+    //     return ResponseEntity.ok("Order Service is running");
+    // }
+
+    
 } 

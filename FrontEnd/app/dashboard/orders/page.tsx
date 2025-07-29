@@ -168,24 +168,24 @@ export default function OrdersPage() {
               //   </div>
               // </div>
               <div key={order.id} className="grid grid-cols-5 gap-4 items-center border-b p-4">
-  <div className="truncate break-all min-w-[120px]">#{order.orderNumber}</div>
-  <div className="whitespace-nowrap">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</div>
-  <div>{order.total.toLocaleString()}₫</div>
-  <div>
-    <Badge
-      variant={getStatusInfo(order.orderStatus).color as any}
-      className="flex items-center gap-1 px-2 py-1 text-sm"
-    >
-      {getStatusInfo(order.orderStatus).icon}
-      {getStatusInfo(order.orderStatus).label}
-    </Badge>
-  </div>
-  <div>
-    <Link href={`/dashboard/orders/${order.id}`} className="text-blue-600 hover:underline">
-      Xem chi tiết
-    </Link>
-  </div>
-</div>
+                <div className="truncate break-all min-w-[120px]">#{order.orderNumber}</div>
+                <div className="whitespace-nowrap">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</div>
+                <div>{order.total.toLocaleString()}₫</div>
+                <div>
+                  <Badge
+                    variant={getStatusInfo(order.orderStatus).color as any}
+                    className="flex items-center gap-1 px-2 py-1 text-sm"
+                  >
+                    {getStatusInfo(order.orderStatus).icon}
+                    {getStatusInfo(order.orderStatus).label}
+                  </Badge>
+                </div>
+                <div>
+                  <Link href={`/dashboard/orders/${order.id}`} className="text-blue-600 hover:underline">
+                    Xem chi tiết
+                  </Link>
+                </div>
+              </div>
 
             ))
           )}

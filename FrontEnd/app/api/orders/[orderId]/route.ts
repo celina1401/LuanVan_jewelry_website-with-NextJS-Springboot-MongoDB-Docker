@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:9003';
+const ORDER_SERVICE_URL = 'http://localhost:9003';
 
 export async function GET(
   request: NextRequest,
