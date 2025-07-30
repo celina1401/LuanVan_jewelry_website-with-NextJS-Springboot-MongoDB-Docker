@@ -177,7 +177,7 @@ export default function AdminOrdersPage() {
                     id: order.id, // orderId thực
                     orderNumber: order.orderNumber, // mã đơn hàng
                     customer: order.receiverName || "Không rõ",
-                    status: order.orderStatus === "Chờ xử lý" ? "Chưa xử lý" : order.orderStatus,
+                    status: order.orderStatus === "Chưa xử lý" ? "Chưa xử lý" : order.orderStatus,
                     payment: order.paymentStatus,
                     shippingStatus: order.shippingStatus || "Chưa giao hàng",
                     method: order.paymentMethod,
@@ -362,7 +362,21 @@ export default function AdminOrdersPage() {
                                             </td>
 
                                             <td className="px-4 py-2">
-                                                <StatusBadge status={order.payment === "Chờ xử lý" ? "pending" : order.payment === "Thanh toán một phần" ? "warning" : "success"} label={order.payment} size="sm" className="truncate" />
+                                            <StatusBadge
+  status={
+    order.payment === "Lỗi thanh toán"
+      ? "error"
+      : order.payment === "Chờ xử lý"
+      ? "pending"
+      : order.payment === "Thanh toán một phần"
+      ? "warning"
+      : "success"
+  }
+  label={order.payment}
+  size="sm"
+  className="truncate"
+/>
+
                                             </td>
                                             <td className="px-4 py-2 min-w-[140px]">
                                                 <Select
