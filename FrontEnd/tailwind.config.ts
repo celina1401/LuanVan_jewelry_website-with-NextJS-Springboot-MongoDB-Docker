@@ -70,6 +70,14 @@ const config: Config = {
             height: 'var(--radix-accordion-content-height)',
           },
         },
+        'progress': {
+          '0%': {
+            transform: 'scaleX(1)',
+          },
+          '100%': {
+            transform: 'scaleX(0)',
+          },
+        },
         'accordion-up': {
           from: {
             height: 'var(--radix-accordion-content-height)',
@@ -82,7 +90,11 @@ const config: Config = {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'progress': 'progress 3s ease-out',
+        'toastProgress': 'toastProgress 3s linear forwards',
       },
+
+
     },
   },
   plugins: [require('tailwindcss-animate')],

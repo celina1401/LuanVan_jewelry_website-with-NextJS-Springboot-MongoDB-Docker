@@ -33,6 +33,22 @@ export default function HistoryPage() {
 
   if (!user) return <div className="p-8 text-center">Vui lòng đăng nhập để xem lịch sử giao dịch.</div>;
 
+  function getStatusBadge(status: string) {
+    switch (status) {
+      case "Đã thanh toán":
+        return <span className="inline-block px-3 py-1 text-sm font-medium bg-green-500 text-white rounded-full">Đã thanh toán</span>;
+      case "Lỗi thanh toán":
+        return <span className="inline-block px-3 py-1 text-sm font-medium bg-red-500 text-white rounded-full">Lỗi thanh toán</span>;
+      case "Chờ xử lý":
+        return <span className="inline-block px-3 py-1 text-sm font-medium bg-yellow-400 text-black rounded-full">Chờ xử lý</span>;
+      case "Đã hủy":
+        return <span className="inline-block px-3 py-1 text-sm font-medium bg-gray-400 text-white rounded-full">Đã hủy</span>;
+      default:
+        return <span className="inline-block px-3 py-1 text-sm font-medium bg-gray-200 text-gray-800 rounded-full">{status}</span>;
+    }
+  }
+  
+
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Lịch sử giao dịch</h1>
@@ -59,7 +75,7 @@ export default function HistoryPage() {
         <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">#{order.orderNumber}</td>
         <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</td>
         <td className="px-6 py-4">{Number(order.total || order.amount).toLocaleString()}₫</td>
-        <td className="px-6 py-4">{order.status || order.paymentStatus}</td>
+        <td className="px-6 py-4">{getStatusBadge(order.status || order.paymentStatus)}</td> 
       </tr>
     ))}
   </tbody>

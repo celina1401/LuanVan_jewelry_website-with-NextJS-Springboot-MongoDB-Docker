@@ -35,7 +35,7 @@ interface GoldPriceHistory {
 const GOLD_API_KEY = "goldapi-758mlsmdmwtv5i-io"; // <-- Điền API Key tại đây
 // API dự phòng:
 
-
+// goldapi-5p9h9smdppd1qi-io         - Vicao
 
 
 

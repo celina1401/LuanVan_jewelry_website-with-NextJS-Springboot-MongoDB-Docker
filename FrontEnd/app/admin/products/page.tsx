@@ -447,25 +447,6 @@ export default function ProductPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <h1 className="text-4xl font-extrabold tracking-tight text-primary">Quản lý sản phẩm</h1>
         <div className="flex gap-2">
-          {/* Nút debug để test ảnh */}
-          {/* <button
-            onClick={async () => {
-              try {
-                const res = await fetch('http://localhost:9004/api/products/list-uploads');
-                if (res.ok) {
-                  const files = await res.json();
-                  console.log('Uploads files:', files);
-                  alert('Files in uploads: ' + JSON.stringify(files));
-                }
-              } catch (error) {
-                console.error('Debug error:', error);
-                alert('Debug error: ' + error);
-              }
-            }}
-            className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm"
-          >
-            Debug Uploads
-          </button> */}
         </div>
         <Dialog open={showAdd} onOpenChange={setShowAdd} modal>
           <DialogTrigger asChild>
@@ -486,7 +467,7 @@ export default function ProductPage() {
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full"
                 />
               </div>
 

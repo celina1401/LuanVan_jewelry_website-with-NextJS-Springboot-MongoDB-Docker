@@ -128,28 +128,33 @@ export default function OrderDetailPage() {
     switch (status) {
       // Trạng thái đơn hàng
       case "Chưa xử lý":
-        return "text-red-700 bg-red-100 dark:bg-red-900";
+        return "text-gray-800 bg-gray-200 dark:text-gray-100 dark:bg-zinc-800";
+      case "Đã nhận đơn":
+        return "text-blue-800 bg-blue-200 dark:text-blue-100 dark:bg-blue-900";
+      case "Đang đóng gói":
+        return "text-yellow-800 bg-yellow-200 dark:text-yellow-100 dark:bg-yellow-900";
+      case "Chờ giao hàng":
+        return "text-green-800 bg-green-200 dark:text-green-100 dark:bg-green-900";
+      case "Đã hủy":
+        return "text-white bg-red-500 dark:bg-red-600"; // ✅ Màu đậm, chữ trắng
       case "Đã giao":
-        return "text-green-700 bg-green-100 dark:bg-green-900";
-      case "Đang giao":
-        return "text-blue-700 bg-blue-100 dark:bg-blue-900";
-      case "Chờ xử lý":
-        return "text-yellow-700 bg-yellow-100 dark:bg-yellow-900";
+        return "text-emerald-700 bg-emerald-100 dark:text-emerald-100 dark:bg-emerald-900";
   
       // Trạng thái giao hàng
       case "Giao hàng thành công":
-        return "text-green-700 bg-green-100 dark:bg-green-900";
+        return "text-emerald-700 bg-emerald-100 dark:text-emerald-100 dark:bg-emerald-900";
       case "Đang giao":
-        return "text-blue-700 bg-blue-100 dark:bg-blue-900";
+        return "text-blue-700 bg-blue-100 dark:text-blue-100 dark:bg-blue-900";
       case "Chưa giao hàng":
-        return "text-yellow-700 bg-yellow-100 dark:bg-yellow-900";
+        return "text-yellow-700 bg-yellow-100 dark:text-yellow-100 dark:bg-yellow-900";
       case "Giao hàng thất bại":
-        return "text-red-700 bg-red-100 dark:bg-red-900";
+        return "text-red-700 bg-red-100 dark:text-red-100 dark:bg-red-900";
   
       default:
-        return "text-gray-700 bg-gray-100 dark:bg-gray-800";
+        return "text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-gray-800";
     }
   };
+  
   
 
   return (
