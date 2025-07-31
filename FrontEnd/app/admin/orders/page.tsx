@@ -271,7 +271,7 @@ export default function AdminOrdersPage() {
                             <OrdersEmptyState />
                         ) : (
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className=" bg-gray-50 dark:bg-[#23232b]">
+                                <thead className=" bg-gradient-to-r from-rose-100/80 to-rose-200/80 dark:from-[#23232b] dark:to-[#18181b] border-b">
                                     <tr>
                                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 dark:text-white">Mã</th>
                                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 dark:text-white">Ngày tạo</th>
@@ -362,20 +362,20 @@ export default function AdminOrdersPage() {
                                             </td>
 
                                             <td className="px-4 py-2">
-                                            <StatusBadge
-  status={
-    order.payment === "Lỗi thanh toán"
-      ? "error"
-      : order.payment === "Chờ xử lý"
-      ? "pending"
-      : order.payment === "Thanh toán một phần"
-      ? "warning"
-      : "success"
-  }
-  label={order.payment}
-  size="sm"
-  className="truncate"
-/>
+                                                <StatusBadge
+                                                    status={
+                                                        order.payment === "Lỗi thanh toán"
+                                                            ? "error"
+                                                            : order.payment === "Chờ xử lý"
+                                                                ? "pending"
+                                                                : order.payment === "Thanh toán một phần"
+                                                                    ? "warning"
+                                                                    : "success"
+                                                    }
+                                                    label={order.payment}
+                                                    size="sm"
+                                                    className="truncate"
+                                                />
 
                                             </td>
                                             <td className="px-4 py-2 min-w-[140px]">

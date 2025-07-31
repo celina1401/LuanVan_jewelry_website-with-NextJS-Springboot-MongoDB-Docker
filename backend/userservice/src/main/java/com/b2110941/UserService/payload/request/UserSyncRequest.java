@@ -9,6 +9,7 @@ public class UserSyncRequest {
     private String lastName;
     private String imageUrl;
     private String provider;
+    private Integer purchaseCount;
 
     // Getters & Setters
     public String getUserId() {
@@ -74,4 +75,13 @@ public class UserSyncRequest {
     public void setProvider(String provider) {
         this.provider = provider;
     }
+
+    public Integer getPurchaseCount() {
+        return purchaseCount;
+    }
+
+    public void setPurchaseCount(Integer purchaseCount) {
+        this.purchaseCount = purchaseCount;
+    }
+
 }

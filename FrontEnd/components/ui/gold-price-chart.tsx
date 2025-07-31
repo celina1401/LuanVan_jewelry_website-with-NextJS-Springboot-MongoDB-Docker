@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState } from 'react';
+import dayjs from "dayjs";
 
 import { Card, CardContent, CardHeader, CardTitle } from "./card"
 import {
@@ -50,8 +51,12 @@ export function GoldPriceChart() {
   const [error, setError] = React.useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = React.useState<string>("");
   const [exchangeRate, setExchangeRate] = React.useState(25000); // Tỷ giá USD/VND mặc định
-  const [history, setHistory] = React.useState<Array<{price: number, timestamp: string}>>([]);
+  const [history, setHistory] = React.useState<Array<{ price: number, timestamp: string }>>([]);
   const [filterMode, setFilterMode] = useState<'day' | 'week' | 'month'>('day');
+
+  const today = new Date();
+  const weekNumber = getWeekNumber(today);
+  const formattedToday = formatToday();
 
   // Hệ số quy đổi các tuổi vàng
   const goldRatios = [
@@ -188,7 +193,7 @@ export function GoldPriceChart() {
           const data = await res.json();
           if (Array.isArray(data)) setHistory(data);
         }
-      } catch {}
+      } catch { }
     }
     fetchHistory();
     // Cập nhật mỗi 5s để chart realtime
@@ -200,9 +205,27 @@ export function GoldPriceChart() {
   const now = Date.now();
   let filteredHistory = history;
   if (filterMode === 'day') {
-    filteredHistory = history.filter(h => now - new Date(h.timestamp).getTime() <= 24 * 60 * 60 * 1000);
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    filteredHistory = history.filter(h => {
+      const ts = new Date(h.timestamp).getTime();
+      return ts >= startOfDay.getTime() && ts <= endOfDay.getTime();
+    });
   } else if (filterMode === 'week') {
-    filteredHistory = history.filter(h => now - new Date(h.timestamp).getTime() <= 7 * 24 * 60 * 60 * 1000);
+    const oneWeekData = history.filter(h => now - new Date(h.timestamp).getTime() <= 7 * 24 * 60 * 60 * 1000);
+
+    // Nhóm theo thứ
+    const seen = new Set<string>();
+    filteredHistory = oneWeekData.filter(h => {
+      const day = dayjs(h.timestamp).format("dddd"); // "Monday", "Tuesday", ...
+      if (seen.has(day)) return false;
+      seen.add(day);
+      return true;
+    });
   } else if (filterMode === 'month') {
     filteredHistory = history.filter(h => now - new Date(h.timestamp).getTime() <= 30 * 24 * 60 * 60 * 1000);
   }
@@ -223,20 +246,45 @@ export function GoldPriceChart() {
     }
     return null;
   };
-  
+
+  function getWeekNumber(date: Date): number {
+    const firstJan = new Date(date.getFullYear(), 0, 1);
+    const days = Math.floor((+date - +firstJan) / (24 * 60 * 60 * 1000));
+    return Math.ceil((firstJan.getDay() + 1 + days) / 7);
+  }
+
+  function formatToday(): string {
+    return new Date().toLocaleDateString("vi-VN", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  let filterInfoText = "";
+  if (filterMode === "day") {
+    filterInfoText = `Hôm nay: ${formatToday()}`;
+  } else if (filterMode === "week") {
+    filterInfoText = `Tuần ${getWeekNumber(today)} năm ${today.getFullYear()}`;
+  } else if (filterMode === "month") {
+    filterInfoText = `Tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+  }
+
 
   return (
     <div className="flex flex-col md:flex-row gap-6 md:items-stretch">
       {/* Chart */}
       <div className="w-full md:w-1/2 flex flex-col min-h-0">
-        <Card className="flex flex-col h-full min-h-0 max-h-[400px] rounded-xl shadow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
+        <Card className="flex flex-col h-full min-h-0 max-h-[600px] rounded-xl shadow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
           <CardHeader>
-            <CardTitle className="text-zinc-900 dark:text-zinc-100">Lịch sử giá vàng (USD/oz)</CardTitle>
+            <CardTitle className="mb-2 text-zinc-900 dark:text-zinc-100">Lịch sử giá vàng (USD/oz)</CardTitle>
             <div className="mt-4 flex gap-4">
               <button
                 className={`px-4 py-2 rounded-lg transition font-bold shadow-sm focus:outline-none ${filterMode === 'day' ? 'bg-yellow-400 text-black' : 'bg-zinc-100 text-black hover:bg-yellow-100'}`}
                 onClick={() => setFilterMode('day')}
-              >Theo ngày</button>
+
+              >Hôm nay</button>
               <button
                 className={`px-4 py-2 rounded-lg transition font-bold shadow-sm focus:outline-none ${filterMode === 'week' ? 'bg-yellow-400 text-black' : 'bg-zinc-100 text-black hover:bg-yellow-100'}`}
                 onClick={() => setFilterMode('week')}
@@ -245,13 +293,41 @@ export function GoldPriceChart() {
                 className={`px-4 py-2 rounded-lg transition font-bold shadow-sm focus:outline-none ${filterMode === 'month' ? 'bg-yellow-400 text-black' : 'bg-zinc-100 text-black hover:bg-yellow-100'}`}
                 onClick={() => setFilterMode('month')}
               >Theo tháng</button>
+
             </div>
+
           </CardHeader>
+          <div className="ml-6 text-left text-sm text-muted-foreground dark:text-zinc-400">
+
+            {filterInfoText}
+          </div>
           <CardContent className="flex-1 h-full p-4">
             <ResponsiveContainer width="100%" height="100%">
+
               <LineChart data={filteredHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="timestamp" tickFormatter={v => new Date(v).toLocaleTimeString()} minTickGap={40} />
+                {/* <XAxis dataKey="timestamp" tickFormatter={v => new Date(v).toLocaleTimeString()} minTickGap={40} /> */}
+                <XAxis
+                  dataKey="timestamp"
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    if (filterMode === "week") {
+                      const d = date.getDay(); // 0 = CN
+                      return d === 0 ? "CN" : `Th ${d + 1}`;
+                    }
+                    if (filterMode === "month") {
+                      return `${date.getDate()}/${date.getMonth() + 1}`;
+                    }
+                    // Mặc định: theo ngày → hiển thị giờ phút
+                    return date.toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+
+                    });
+                  }}
+                />
+
+
                 <YAxis domain={['auto', 'auto']} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line type="monotone" dataKey="price" stroke="#FFD700" dot={false} />
@@ -289,38 +365,38 @@ export function GoldPriceChart() {
           </CardHeader>
           <CardContent className="p-4">
             <div className="flex flex-col">
-               <div className="overflow-y-auto max-h-[400px]">
-                 <Table className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-                <TableHeader>
-                  <TableRow className="border-b border-zinc-200 dark:border-zinc-700">
-                    <TableHead className="text-left font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tuổi vàng</TableHead>
-                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tỷ lệ</TableHead>
-                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/gram (VNĐ)</TableHead>
-                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/chỉ (VNĐ)</TableHead>
-                    <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/lượng (VNĐ)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={5}>Đang tải...</TableCell></TableRow>
-                  ) : error ? (
-                    <TableRow><TableCell colSpan={5} className="text-red-500">{error}</TableCell></TableRow>
-                  ) : goldData && goldData.length > 0 ? (
-                    goldData.filter((g: any) => g.label.toLowerCase().includes(searchTerm.toLowerCase())).map((g: any) => (
-                      <TableRow key={g.label}>
-                        <TableCell className="font-medium py-2 text-zinc-900 dark:text-zinc-100">{g.label}</TableCell>
-                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.ratio}</TableCell>
-                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerGram.toLocaleString()}</TableCell>
-                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerChi.toLocaleString()}</TableCell>
-                        <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerLuong.toLocaleString()}</TableCell>
+              <div className="overflow-y-auto max-h-[400px]">
+                <Table className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                  <TableHeader>
+                    <TableRow className="border-b border-zinc-200 dark:border-zinc-700">
+                      <TableHead className="text-left font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tuổi vàng</TableHead>
+                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tỷ lệ</TableHead>
+                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/gram (VNĐ)</TableHead>
+                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/chỉ (VNĐ)</TableHead>
+                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/lượng (VNĐ)</TableHead>
                     </TableRow>
-                    ))
-                  ) : (
-                    <TableRow><TableCell colSpan={5}>Không có dữ liệu</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
-               </div>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow><TableCell colSpan={5}>Đang tải...</TableCell></TableRow>
+                    ) : error ? (
+                      <TableRow><TableCell colSpan={5} className="text-red-500">{error}</TableCell></TableRow>
+                    ) : goldData && goldData.length > 0 ? (
+                      goldData.filter((g: any) => g.label.toLowerCase().includes(searchTerm.toLowerCase())).map((g: any) => (
+                        <TableRow key={g.label}>
+                          <TableCell className="font-medium py-2 text-zinc-900 dark:text-zinc-100">{g.label}</TableCell>
+                          <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.ratio}</TableCell>
+                          <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerGram.toLocaleString()}</TableCell>
+                          <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerChi.toLocaleString()}</TableCell>
+                          <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerLuong.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow><TableCell colSpan={5}>Không có dữ liệu</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
             <div className="mt-4 text-sm text-muted-foreground dark:text-zinc-400">
               <p>Cập nhật lần cuối: {lastUpdated}</p>

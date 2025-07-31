@@ -215,20 +215,6 @@ export default function DashboardPage() {
       try {
         const token = await getToken();
 
-        // // 🟢 Sync user về backend nếu chưa có
-        // await fetch("http://localhost:9001/api/users/sync_user", {
-        //   method: "POST",
-        //   headers: {
-        //     Authorization: `Bearer ${token}`,
-        //     "Content-Type": "application/json",
-        //   },
-        //   body: JSON.stringify({
-        //     userId: user.id,
-        //     username: user.username,
-        //     email: user.emailAddresses[0]?.emailAddress,
-        //   }),
-        // });
-
         // 🟢 Lấy thông tin đầy đủ từ backend
         const res = await fetch(`http://localhost:9001/api/users/users/${user.id}`, {
           headers: {
