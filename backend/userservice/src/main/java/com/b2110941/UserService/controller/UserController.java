@@ -28,8 +28,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.ZoneId;
-import java.time.Clock;
 
 // --- Hỗ trợ tạo multipart body cho HttpClient ---
 class MultipartBodyPublisher {
@@ -94,10 +92,8 @@ public class UserController {
             result.put("provider", user.getProvider());
             result.put("avatarUrl", user.getAvatarUrl()); // custom
             result.put("imageUrl", user.getImageUrl()); // từ Clerk
-            // result.put("createdAt", user.getCreatedAt());
-            // result.put("updatedAt", user.getUpdatedAt());
-            result.put("createdAt", user.getCreatedAt().format(java.time.format.DateTimeFormatter.ISO_DATE_TIME));
-            result.put("updatedAt", user.getUpdatedAt().format(java.time.format.DateTimeFormatter.ISO_DATE_TIME));
+            result.put("createdAt", user.getCreatedAt());
+            result.put("updatedAt", user.getUpdatedAt());
             return ResponseEntity.ok(result);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
@@ -143,14 +139,7 @@ public class UserController {
                 user.setAddresses(addresses);
             }
 
-            if (payload.containsKey("purchaseCount")) {
-                Number cnt = (Number) payload.get("purchaseCount");
-                user.setPurchaseCount(cnt.intValue());
-            }
-
-            // user.setUpdatedAt(LocalDateTime.now());
-            user.setUpdatedAt(
-                    LocalDateTime.now(Clock.system(ZoneId.of("Asia/Ho_Chi_Minh"))));
+            user.setUpdatedAt(LocalDateTime.now());
 
             UserEntity savedUser = userRepository.save(user);
             System.out.println("[UserController] ✅ Đã cập nhật user: " + savedUser.getUserId());
@@ -212,8 +201,7 @@ public class UserController {
                     if (contentType == null) {
                         contentType = "image/png";
                     }
-                    List<String> allowedTypes = List.of("image/png", "image/x-png", "image/jpeg", "image/jpg",
-                            "image/webp");
+                    List<String> allowedTypes = List.of("image/png", "image/x-png", "image/jpeg", "image/jpg", "image/webp");
                     if (!allowedTypes.contains(contentType)) {
                         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                                 .body("Chỉ hỗ trợ ảnh PNG, JPEG, JPG, hoặc WebP");

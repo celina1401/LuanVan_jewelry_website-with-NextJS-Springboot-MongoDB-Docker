@@ -9,9 +9,6 @@ import java.util.Set;
 import java.util.List;
 import com.b2110941.UserService.entity.Address;
 
-import lombok.Data;
-
-@Data
 @Document(collection = "users")
 public class UserEntity {
 
@@ -33,7 +30,8 @@ public class UserEntity {
     private List<Address> addresses;
     private String avatarUrl;
     private byte[] avatarImage;
-    private Integer purchaseCount;
+    // private String purchaseCount;
+
 
     // Getters & Setters
 
@@ -144,7 +142,6 @@ public class UserEntity {
     public List<Address> getAddresses() {
         return addresses;
     }
-
     public void setAddresses(List<Address> addresses) {
         this.addresses = addresses;
     }
@@ -160,17 +157,7 @@ public class UserEntity {
     public byte[] getAvatarImage() {
         return avatarImage;
     }
-
     public void setAvatarImage(byte[] avatarImage) {
         this.avatarImage = avatarImage;
     }
-
-    public Integer getPurchaseCount() {
-        return purchaseCount;
-    }
-
-    public void setPurchaseCount(Integer purchaseCount) {
-        this.purchaseCount = purchaseCount;
-    }
-
 }

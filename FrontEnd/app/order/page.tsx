@@ -53,7 +53,10 @@ export default function OrderPage() {
         const res = await fetch(`http://localhost:9001/api/users/users/${user.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
+        const text = await res.text();  // Use .text() to see the raw response
+        console.log(text);
+        // const data = await res.json();
+        const data = JSON.parse(text); 
         setPhone(data.phone || "");
         setEmail(data.email || "");
         setDob(data.dob || "");
@@ -118,23 +121,10 @@ export default function OrderPage() {
 
     const orderId = `ORD${Date.now()}`; // mã đơn hàng ngẫu nhiên
 
-    // if (payment === "vnpay") {
-    //   try {
-    //     const res = await fetch(`http://localhost:9006/api/payment/vnpay?orderId=${orderId}&amount=${finalTotal}`);
-    //     const data = await res.json();
-    //     if (data.url) {
-    //       window.location.href = data.url;
-    //       return;
-    //     }
-    //   } catch (err) {
-    //     alert("Không thể kết nối VNPAY");
-    //     return;
-    //   }
-    // } 
     if (payment === "vnpay") {
       try {
         const token = await getToken();
-    
+
         // Bước 1: Gửi đơn hàng lên OrderService
         const orderRes = await fetch("http://localhost:9003/api/orders", {
           method: "POST",
@@ -177,28 +167,28 @@ export default function OrderPage() {
             promoCode: promo,
           }),
         });
-    
+
         if (!orderRes.ok) {
           const text = await orderRes.text();
           alert("Lỗi khi tạo đơn hàng: " + text);
           return;
         }
-    
+
         const savedOrder = await orderRes.json();
         const createdOrderId = savedOrder.orderNumber; // Hoặc orderNumber nếu bạn dùng
-    
+
         // Bước 2: Lấy URL thanh toán từ PaymentService
         const res = await fetch(
           `http://localhost:9006/api/payment/vnpay?orderId=${createdOrderId}&amount=${finalTotal}`
         );
         const data = await res.json();
-    
+
         if (data.url) {
           window.location.href = data.url;
         } else {
           alert("Không nhận được URL VNPay");
         }
-    
+
         return;
       } catch (err) {
         console.error("VNPay error:", err);
@@ -206,7 +196,7 @@ export default function OrderPage() {
         return;
       }
     }
-    
+
     else {
       if (payment === "cod") {
         try {

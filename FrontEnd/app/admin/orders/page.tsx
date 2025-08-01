@@ -387,7 +387,7 @@ export default function AdminOrdersPage() {
                                                         );
 
                                                         try {
-                                                            const res = await fetch(`http://localhost:9003/api/orders/${order.id}/shipping?shippingStatus=${encodeURIComponent(value)}`, {
+                                                            const res = await fetch(`http://localhost:9003/api/orders/${order.orderNumber}/shipping?shippingStatus=${encodeURIComponent(value)}`, {
                                                                 method: 'PUT',
                                                             });
 
