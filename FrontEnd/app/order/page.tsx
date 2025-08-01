@@ -8,9 +8,6 @@ import { useUser, useAuth } from "@clerk/nextjs";
 import AddAddressForm, { Address } from "@/app/components/AddAddressForm";
 
 
-const provinces = ["Hồ Chí Minh", "Hà Nội", "Đà Nẵng"];
-const districts = ["Quận 1", "Quận 2", "Quận 3"];
-const wards = ["Phường A", "Phường B", "Phường C"];
 const paymentMethods = [
   { label: "Thanh toán tiền mặt khi nhận hàng (COD)", value: "cod" },
   { label: "Thanh toán VNPAY", value: "vnpay" },

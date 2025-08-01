@@ -545,7 +545,8 @@ const { user } = useUser();
                             </p>
                             <span className={`text-xs px-2 py-1 rounded ${
                               order.orderStatus === 'Đã giao' ? 'bg-green-100 text-green-800' :
-                              order.orderStatus === 'Chờ xử lý' ? 'bg-yellow-100 text-yellow-800' :
+                              order.orderStatus === 'Chưa xử lý' ? 'bg-yellow-100 text-yellow-800' :
+                              order.orderStatus === 'Đã hủy' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {order.orderStatus}

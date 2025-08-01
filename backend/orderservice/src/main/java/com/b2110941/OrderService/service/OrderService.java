@@ -73,10 +73,10 @@ public class OrderService {
             
             // Payment information
             order.setPaymentMethod(request.getPaymentMethod());
-            order.setPaymentStatus("Chờ xử lý");
+            order.setPaymentStatus("Chưa xử lý");
             
             // Order status
-            order.setOrderStatus("Chờ xử lý");
+            order.setOrderStatus("Chưa xử lý");
             order.setShippingStatus("Chưa giao hàng");
             order.setCodStatus("Chưa nhận");
             
