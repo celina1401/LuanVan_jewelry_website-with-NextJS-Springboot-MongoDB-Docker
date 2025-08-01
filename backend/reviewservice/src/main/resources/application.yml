@@ -1,0 +1,21 @@
+server:
+  port: 9008
+
+spring:
+  application:
+    name: reviewservice
+
+  data:
+    mongodb:
+      uri: mongodb://mongodb:27017/jewelry_db
+      database: jewelry_db
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discoveryserver:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+
+  instance:
+    prefer-ip-address: true
