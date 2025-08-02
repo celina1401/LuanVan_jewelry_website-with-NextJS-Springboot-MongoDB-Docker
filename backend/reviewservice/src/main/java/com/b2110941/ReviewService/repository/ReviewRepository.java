@@ -12,4 +12,9 @@ public interface ReviewRepository extends MongoRepository<Review, String> {
     List<Review> findByUserIdAndIsActiveTrue(String userId);
     List<Review> findByProductIdAndUserIdAndIsActiveTrue(String productId, String userId);
     long countByProductIdAndIsActiveTrue(String productId);
+    List<Review> findByProductId(String productId);
+    
+    // For client view - only show active and not hidden reviews
+    List<Review> findByProductIdAndIsActiveTrueAndIsHiddenFalse(String productId);
+    long countByProductIdAndIsActiveTrueAndIsHiddenFalse(String productId);
 } 

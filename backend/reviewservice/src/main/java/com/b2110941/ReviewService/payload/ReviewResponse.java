@@ -1,5 +1,6 @@
 package com.b2110941.ReviewService.payload;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,5 +21,8 @@ public class ReviewResponse {
     private List<String> images;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    @JsonProperty("isActive")
     private boolean isActive;
+    @JsonProperty("isHidden")
+    private boolean isHidden;
 } 

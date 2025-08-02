@@ -18,6 +18,8 @@ public class ReviewService {
     private ReviewRepository reviewRepository;
 
     public ReviewResponse createReview(ReviewRequest request) {
+        System.out.println("==> [ReviewService] Creating new review for product: " + request.getProductId());
+        
         Review review = new Review();
         review.setProductId(request.getProductId());
         review.setUserId(request.getUserId());
@@ -28,13 +30,57 @@ public class ReviewService {
         review.setCreatedAt(LocalDateTime.now());
         review.setUpdatedAt(LocalDateTime.now());
         review.setActive(true);
+        review.setHidden(false); // New reviews are not hidden by default
+        
+        System.out.println("==> [ReviewService] Review before save - isActive: " + review.isActive() + ", isHidden: " + review.isHidden());
         
         Review savedReview = reviewRepository.save(review);
-        return convertToResponse(savedReview);
+        
+        System.out.println("==> [ReviewService] Review after save - isActive: " + savedReview.isActive() + ", isHidden: " + savedReview.isHidden());
+        
+        ReviewResponse response = convertToResponse(savedReview);
+        System.out.println("==> [ReviewService] Response - isActive: " + response.isActive() + ", isHidden: " + response.isHidden());
+        
+        return response;
+    }
+
+    // Method to migrate existing reviews to have proper default values
+    public void migrateExistingReviews() {
+        System.out.println("==> [ReviewService] Starting migration of existing reviews...");
+        List<Review> allReviews = reviewRepository.findAll();
+        int migratedCount = 0;
+        
+        for (Review review : allReviews) {
+            boolean needsUpdate = false;
+            
+            // Set default values for new fields
+            // Since boolean fields default to false, we need to check if they were explicitly set
+            // For existing reviews, we'll assume they should be active and not hidden
+            review.setHidden(false);
+            review.setActive(true);
+            needsUpdate = true;
+            
+            if (needsUpdate) {
+                reviewRepository.save(review);
+                migratedCount++;
+            }
+        }
+        
+        System.out.println("==> [ReviewService] Migration completed. Updated " + migratedCount + " reviews.");
     }
 
     public List<ReviewResponse> getReviewsByProduct(String productId) {
-        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrue(productId);
+        // For client view - only show active and not hidden reviews
+        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrueAndIsHiddenFalse(productId);
+        return reviews.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ReviewResponse> getAllReviewsByProduct(String productId) {
+        System.out.println("==> [ReviewService] Getting ALL reviews (including inactive) for product: " + productId);
+        List<Review> reviews = reviewRepository.findByProductId(productId);
+        System.out.println("==> [ReviewService] Total reviews found: " + reviews.size());
         return reviews.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
@@ -60,6 +106,31 @@ public class ReviewService {
         return convertToResponse(updatedReview);
     }
 
+    // Hide review from clients (soft delete)
+    public ReviewResponse hideReview(String reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        
+        review.setHidden(true);
+        review.setUpdatedAt(LocalDateTime.now());
+        
+        Review updatedReview = reviewRepository.save(review);
+        return convertToResponse(updatedReview);
+    }
+
+    // Unhide review for clients
+    public ReviewResponse unhideReview(String reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        
+        review.setHidden(false);
+        review.setUpdatedAt(LocalDateTime.now());
+        
+        Review updatedReview = reviewRepository.save(review);
+        return convertToResponse(updatedReview);
+    }
+
+    // Permanently delete review from database
     public void deleteReview(String reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new RuntimeException("Review not found"));
@@ -70,11 +141,13 @@ public class ReviewService {
     }
 
     public long getReviewCountByProduct(String productId) {
-        return reviewRepository.countByProductIdAndIsActiveTrue(productId);
+        // For client view - only count active and not hidden reviews
+        return reviewRepository.countByProductIdAndIsActiveTrueAndIsHiddenFalse(productId);
     }
 
     public double getAverageRatingByProduct(String productId) {
-        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrue(productId);
+        // For client view - only calculate from active and not hidden reviews
+        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrueAndIsHiddenFalse(productId);
         if (reviews.isEmpty()) {
             return 0.0;
         }
@@ -85,7 +158,8 @@ public class ReviewService {
     }
 
     public List<Integer> getRatingDistributionByProduct(String productId) {
-        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrue(productId);
+        // For client view - only calculate from active and not hidden reviews
+        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrueAndIsHiddenFalse(productId);
         List<Integer> distribution = reviews.stream()
                 .map(Review::getRating)
                 .collect(Collectors.toList());
@@ -117,7 +191,8 @@ public class ReviewService {
                 review.getImages(),
                 review.getCreatedAt(),
                 review.getUpdatedAt(),
-                review.isActive()
+                review.isActive(),
+                review.isHidden()
         );
     }
 } 

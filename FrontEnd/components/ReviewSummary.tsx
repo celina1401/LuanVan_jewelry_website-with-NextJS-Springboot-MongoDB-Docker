@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface ReviewSummaryProps {
   productId: string;
+  onReviewAdded?: () => void; // Callback để cập nhật rating
 }
 
 interface ReviewStats {
@@ -16,13 +17,44 @@ interface ReviewStats {
   };
 }
 
-export default function ReviewSummary({ productId }: ReviewSummaryProps) {
+export default function ReviewSummary({ productId, onReviewAdded }: ReviewSummaryProps) {
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchReviewStats();
   }, [productId]);
+
+  // Thêm effect để lắng nghe khi có review mới
+  useEffect(() => {
+    if (onReviewAdded) {
+      // Fetch lại stats khi có review mới
+      fetchReviewStats();
+    }
+  }, [onReviewAdded]);
+
+  // Thêm state để trigger cập nhật
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+
+  // Effect để lắng nghe callback từ parent
+  useEffect(() => {
+    if (onReviewAdded) {
+      const handleUpdate = () => {
+        setUpdateTrigger(prev => prev + 1);
+      };
+      
+      // Tạo một custom event listener
+      window.addEventListener('reviewAdded', handleUpdate);
+      return () => window.removeEventListener('reviewAdded', handleUpdate);
+    }
+  }, [onReviewAdded]);
+
+  // Effect để fetch lại khi có update
+  useEffect(() => {
+    if (updateTrigger > 0) {
+      fetchReviewStats();
+    }
+  }, [updateTrigger]);
 
   const fetchReviewStats = async () => {
     try {

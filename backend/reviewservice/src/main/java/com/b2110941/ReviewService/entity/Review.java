@@ -24,5 +24,6 @@ public class Review {
     private List<String> images;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private boolean isActive;
+    private boolean isActive = true; // Default to active
+    private boolean isHidden = false; // Default to not hidden
 } 

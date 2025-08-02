@@ -22,7 +22,7 @@ interface Product {
   category: string;
   rating: number;
   reviews: number;
-  ratings?: number[]; // mảng điểm đánh giá
+  // ratings?: number[]; // mảng điểm đánh giá
   isNew?: boolean;
   gender?: string;
   goldAge?: string;
@@ -62,12 +62,12 @@ function useFavorites() {
   return { favorites, toggleFavorite, isFavorite };
 }
 
-// Hàm tính điểm đánh giá trung bình từ mảng ratings
-function calculateAverageRating(ratings: number[] = []) {
-  if (!ratings || ratings.length === 0) return 5.0;
-  const total = ratings.reduce((sum, r) => sum + r, 0);
-  return total / ratings.length;
-}
+// // Hàm tính điểm đánh giá trung bình từ mảng ratings
+// function calculateAverageRating(ratings: number[] = []) {
+//   if (!ratings || ratings.length === 0) return 5.0;
+//   const total = ratings.reduce((sum, r) => sum + r, 0);
+//   return total / ratings.length;
+// }
 
 // Hook lấy giá vàng động (theo chỉ) cho từng loại tuổi vàng
 function useCurrentGoldPricePerChi(age: string | undefined) {
@@ -102,15 +102,15 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
         console.log('Products from backend:', data);
         
         // Debug: Kiểm tra từng sản phẩm
-        data.forEach((product: any, index: number) => {
-          console.log(`[DEBUG] Product ${index + 1}:`, {
-            id: product.id,
-            name: product.name,
-            rating: product.rating,
-            reviews: product.reviews,
-            category: product.category
-          });
-        });
+        // data.forEach((product: any, index: number) => {
+        //   console.log(`[DEBUG] Product ${index + 1}:`, {
+        //     id: product.id,
+        //     name: product.name,
+        //     rating: product.rating,
+        //     reviews: product.reviews,
+        //     category: product.category
+        //   });
+        // });
         
         setProducts(data);
       } catch (err) {
@@ -263,7 +263,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
               <p className="text-sm text-muted-foreground mt-1">
                 {product.description}
               </p>
-              <div className="flex items-center mt-2">
+              {/* <div className="flex items-center mt-2">
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => {
                     // Sử dụng rating từ backend (đã được tính từ ReviewService)
@@ -321,7 +321,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                 <span className="text-sm text-muted-foreground ml-2">
                   {(product.rating || 0).toFixed(1)} ({product.reviews || 0})
                 </span>
-              </div>
+              </div> */}
               <p className="text-lg font-semibold mt-2 text-rose-500">
                 {totalPrice ? totalPrice.toLocaleString() + '₫' : '-'}
               </p>

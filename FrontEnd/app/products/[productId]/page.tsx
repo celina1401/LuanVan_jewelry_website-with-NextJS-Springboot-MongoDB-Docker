@@ -217,6 +217,21 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
+  // Function để cập nhật rating khi có review mới
+  const handleReviewAdded = async () => {
+    try {
+      // Fetch lại thông tin sản phẩm để cập nhật rating
+      const response = await fetch(`http://localhost:9004/api/products/profile/${productId}`);
+      if (response.ok) {
+        const updatedProduct = await response.json();
+        setProduct(updatedProduct);
+        console.log("[DEBUG] Rating updated after new review:", updatedProduct.rating);
+      }
+    } catch (error) {
+      console.error("[DEBUG] Error updating rating:", error);
+    }
+  };
+
   // Đảm bảo hook luôn được gọi ở đầu component
   const currentGoldPricePerChi = useCurrentGoldPricePerChi(product?.goldAge || product?.karat || "");
 
@@ -233,14 +248,14 @@ export default function ProductDetailPage() {
     fetch(`http://localhost:9004/api/products/profile/${productId}`)
       .then(res => res.json())
       .then((data: Product) => {
-        console.log('[DEBUG] Product data from backend:', data);
+        // console.log('[DEBUG] Product data from backend:', data);
         setProduct(data);
         setSelectedImg((data.images && data.images.length > 0) ? data.images[0] : "/images/no-image.png");
         setSelectedColor(data.colors?.[0] || "");
         setLoading(false);
       })
       .catch((error) => {
-        console.error('[DEBUG] Error fetching product:', error);
+        // console.error('[DEBUG] Error fetching product:', error);
         setProduct(null);
         setLoading(false);
       });
@@ -481,10 +496,10 @@ export default function ProductDetailPage() {
               </svg>
               Đánh giá & Bình luận
             </h2>
-            <ReviewSummary productId={productId} />
+            <ReviewSummary productId={productId} onReviewAdded={handleReviewAdded} />
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <ReviewSection productId={productId} />
+            <ReviewSection productId={productId} onReviewAdded={handleReviewAdded} />
           </div>
         </div>
         {/* Sản phẩm liên quan */}

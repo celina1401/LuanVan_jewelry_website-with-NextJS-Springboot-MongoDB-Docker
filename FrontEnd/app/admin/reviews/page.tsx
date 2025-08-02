@@ -18,6 +18,7 @@ interface Review {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  isHidden: boolean;
 }
 
 export default function AdminReviewsPage() {
@@ -44,6 +45,8 @@ export default function AdminReviewsPage() {
       const response = await fetch("http://localhost:9008/api/reviews");
       if (response.ok) {
         const data = await response.json();
+        console.log("Raw response from backend:", data);
+        console.log("First review data:", data[0]);
         setReviews(data);
       }
     } catch (error) {
@@ -59,7 +62,7 @@ export default function AdminReviewsPage() {
   };
 
   const deleteReview = async (reviewId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa bình luận này?")) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa vĩnh viễn bình luận này?")) return;
 
     try {
       const response = await fetch(`http://localhost:9008/api/reviews/${reviewId}`, {
@@ -69,7 +72,7 @@ export default function AdminReviewsPage() {
       if (response.ok) {
         toast({
           title: "Thành công",
-          description: "Đã xóa bình luận",
+          description: "Đã xóa vĩnh viễn bình luận",
         });
         fetchReviews();
       } else {
@@ -80,6 +83,56 @@ export default function AdminReviewsPage() {
       toast({
         title: "Lỗi",
         description: "Không thể xóa bình luận",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const hideReview = async (reviewId: string) => {
+    try {
+      const response = await fetch(`http://localhost:9008/api/reviews/${reviewId}/hide`, {
+        method: "PUT",
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Thành công",
+          description: "Đã ẩn bình luận khỏi khách hàng",
+        });
+        fetchReviews();
+      } else {
+        throw new Error("Failed to hide review");
+      }
+    } catch (error) {
+      console.error("Error hiding review:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể ẩn bình luận",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const unhideReview = async (reviewId: string) => {
+    try {
+      const response = await fetch(`http://localhost:9008/api/reviews/${reviewId}/unhide`, {
+        method: "PUT",
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Thành công",
+          description: "Đã hiển thị lại bình luận cho khách hàng",
+        });
+        fetchReviews();
+      } else {
+        throw new Error("Failed to unhide review");
+      }
+    } catch (error) {
+      console.error("Error unhiding review:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể hiển thị lại bình luận",
         variant: "destructive",
       });
     }
@@ -99,9 +152,8 @@ export default function AdminReviewsPage() {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`w-4 h-4 ${
-          i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-        }`}
+        className={`w-4 h-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+          }`}
       />
     ));
   };
@@ -147,26 +199,54 @@ export default function AdminReviewsPage() {
                         <div className="flex items-center gap-1">
                           {renderStars(review.rating)}
                         </div>
-                        <Badge variant={review.isActive ? "default" : "secondary"}>
-                          {review.isActive ? "Hoạt động" : "Đã xóa"}
-                        </Badge>
+                        <div className="flex gap-2">
+                          {(() => {
+                            console.log('Review status:', {
+                              id: review.id,
+                              userName: review.userName,
+                              isActive: review.isActive,
+                              isHidden: review.isHidden,
+                              status: !review.isActive ? 'DELETED' : (review.isHidden ? 'HIDDEN' : 'ACTIVE')
+                            });
+                            return null;
+                          })()}
+
+                          {!review.isActive ? (
+                            <Badge variant="destructive">Đã xóa vĩnh viễn</Badge>
+                          ) : review.isHidden ? (
+                            <Badge variant="secondary">Đã ẩn</Badge>
+                          ) : (
+                            <Badge variant="default">Hoạt động</Badge>
+                          )}
+                        </div>
                       </div>
-                      
+
                       <p className="text-gray-700 mb-2">{review.comment}</p>
-                      
+
                       {review.images && review.images.length > 0 && (
                         <div className="flex gap-2 mb-2">
-                          {review.images.map((image, index) => (
-                            <img
-                              key={index}
-                              src={image}
-                              alt={`Review image ${index + 1}`}
-                              className="w-16 h-16 object-cover rounded border"
-                            />
-                          ))}
+                          {review.images.map((image, index) => {
+                            // Convert relative URL to full backend URL
+                            const imageUrl = image.startsWith('/uploads/')
+                              ? `http://localhost:9008/api/reviews/image/${image.split('/').pop()}`
+                              : image;
+
+                            return (
+                              <img
+                                key={index}
+                                src={imageUrl}
+                                alt={`Review image ${index + 1}`}
+                                className="w-16 h-16 object-cover rounded border"
+                                onError={(e) => {
+                                  console.error('Failed to load image:', imageUrl);
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            );
+                          })}
                         </div>
                       )}
-                      
+
                       <div className="text-sm text-gray-500">
                         <div>Sản phẩm ID: {review.productId}</div>
                         <div>Người dùng ID: {review.userId}</div>
@@ -176,7 +256,7 @@ export default function AdminReviewsPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 ml-4">
                       <Button
                         variant="outline"
@@ -185,6 +265,18 @@ export default function AdminReviewsPage() {
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
+
+                      {/* Hide/Unhide button */}
+                      <Button
+                        variant={review.isHidden ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => review.isHidden ? unhideReview(review.id) : hideReview(review.id)}
+                        disabled={!review.isActive}
+                      >
+                        {review.isHidden ? "Hiện lại" : "Ẩn"}
+                      </Button>
+
+                      {/* Delete button - only for active reviews */}
                       <Button
                         variant="destructive"
                         size="sm"

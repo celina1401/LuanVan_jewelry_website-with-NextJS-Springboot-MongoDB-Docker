@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Send, Image as ImageIcon, MessageCircle, ThumbsUp } from "lucide-react";
+import { Star, Send, Image as ImageIcon, MessageCircle, ThumbsUp, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -21,13 +21,15 @@ interface Review {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  isHidden: boolean;
 }
 
 interface ReviewSectionProps {
   productId: string;
+  onReviewAdded?: () => void; // Callback để cập nhật rating
 }
 
-export default function ReviewSection({ productId }: ReviewSectionProps) {
+export default function ReviewSection({ productId, onReviewAdded }: ReviewSectionProps) {
   const { user } = useUser();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,7 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
   const [rating, setRating] = useState(5);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [allReviews, setAllReviews] = useState<Review[]>([]); // For debugging - all reviews including inactive
 
   useEffect(() => {
     fetchReviews();
@@ -43,13 +46,42 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
 
   const fetchReviews = async () => {
     try {
+      // console.log(`[DEBUG] Fetching reviews for product: ${productId}`);
+      
+      // Fetch active reviews (normal endpoint)
       const response = await fetch(`http://localhost:9008/api/reviews/product/${productId}`);
+      let activeReviews: Review[] = [];
       if (response.ok) {
         const data = await response.json();
+        // console.log(`[DEBUG] Received active reviews data:`, data);
+        activeReviews = data;
         setReviews(data);
+      } else {
+        // console.error(`[DEBUG] Error fetching active reviews: ${response.status} ${response.statusText}`);
+      }
+
+      // Fetch all reviews (including inactive) for debugging
+      const allResponse = await fetch(`http://localhost:9008/api/reviews/product/${productId}/all`);
+      if (allResponse.ok) {
+        const allData = await allResponse.json();
+        // console.log(`[DEBUG] Received ALL reviews data:`, allData);
+        
+        // Store all reviews for debugging
+        setAllReviews(allData);
+        
+        // Log inactive reviews for debugging
+        const inactiveReviews = allData.filter((review: Review) => review.isActive === false);
+        console.log(`${inactiveReviews.length} inactive reviews:`, inactiveReviews);
+        if (inactiveReviews.length > 0) {
+          // console.log(`[DEBUG] Found ${inactiveReviews.length} inactive reviews:`, inactiveReviews);
+        }
+        
+        // console.log(`[DEBUG] Active reviews count: ${activeReviews.length}/${allData.length}`);
+      } else {
+        // console.error(`[DEBUG] Error fetching all reviews: ${allResponse.status} ${allResponse.statusText}`);
       }
     } catch (error) {
-      console.error("Error fetching reviews:", error);
+      // console.error("[DEBUG] Error fetching reviews:", error);
     } finally {
       setLoading(false);
     }
@@ -86,9 +118,9 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
       const imageUrls: string[] = [];
       for (const file of selectedFiles) {
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("image", file);
   
-        const uploadResponse = await fetch("http://localhost:9008/api/products/upload", {
+        const uploadResponse = await fetch("http://localhost:9008/api/reviews/upload", {
           method: "POST",
           body: formData,
         });
@@ -129,6 +161,14 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
         setSelectedFiles([]);
         setShowReviewForm(false);
         fetchReviews();
+        
+        // Gọi callback để cập nhật rating
+        if (onReviewAdded) {
+          onReviewAdded();
+        }
+        
+        // Dispatch event để ReviewSummary cập nhật
+        window.dispatchEvent(new Event('reviewAdded'));
       } else {
         const errorText = await response.text();
         console.error("Error response:", errorText);
@@ -356,19 +396,30 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
                         {review.comment}
                       </p>
                       
-                      {review.images && review.images.length > 0 && (
-                        <div className="flex gap-2 overflow-x-auto pb-2">
-                          {review.images.map((image, index) => (
-                            <img
-                              key={index}
-                              src={image}
-                              alt={`Review image ${index + 1}`}
-                              className="w-20 h-20 object-cover rounded-lg border shadow-sm hover:scale-105 transition-transform cursor-pointer"
-                              onClick={() => window.open(image, '_blank')}
-                            />
-                          ))}
-                        </div>
-                      )}
+                                             {review.images && review.images.length > 0 && (
+                         <div className="flex gap-2 overflow-x-auto pb-2">
+                           {review.images.map((image, index) => {
+                             // Convert relative URL to full backend URL
+                             const imageUrl = image.startsWith('/uploads/') 
+                               ? `http://localhost:9008/api/reviews/image/${image.split('/').pop()}`
+                               : image;
+                             
+                             return (
+                               <img
+                                 key={index}
+                                 src={imageUrl}
+                                 alt={`Review image ${index + 1}`}
+                                 className="w-20 h-20 object-cover rounded-lg border shadow-sm hover:scale-105 transition-transform cursor-pointer"
+                                 onClick={() => window.open(imageUrl, '_blank')}
+                                 onError={(e) => {
+                                   console.error('Failed to load image:', imageUrl);
+                                   e.currentTarget.style.display = 'none';
+                                 }}
+                               />
+                             );
+                           })}
+                         </div>
+                       )}
                     </div>
                   </div>
                 </CardContent>
@@ -377,6 +428,57 @@ export default function ReviewSection({ productId }: ReviewSectionProps) {
           </div>
         )}
       </div>
+
+      {/* Debug Section - Show inactive reviews for admin debugging */}
+      {/* {allReviews.length > reviews.length && (
+        <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-800">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="w-5 h-5 text-orange-500" />
+            <h4 className="text-lg font-semibold text-orange-700 dark:text-orange-300">
+              Debug: Hidden/Deleted Reviews ({allReviews.length - reviews.length})
+            </h4>
+          </div>
+          <div className="space-y-3">
+            {allReviews
+              .filter((review) => !review.isActive || review.isHidden)
+              .map((review) => (
+                <div key={review.id} className="p-3 bg-white dark:bg-gray-700 rounded border border-orange-200 dark:border-orange-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        {review.userName}
+                      </span>
+                      <div className="flex gap-1">
+                        {!review.isActive && (
+                          <Badge variant="destructive" className="text-xs">
+                            DELETED
+                          </Badge>
+                        )}
+                        {review.isActive && review.isHidden && (
+                          <Badge variant="secondary" className="text-xs">
+                            HIDDEN
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(review.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-through">
+                    {review.comment}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    {renderStars(review.rating)}
+                    <span className="text-xs text-gray-500 ml-1">
+                      {getRatingText(review.rating)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )} */}
     </div>
   );
 } 

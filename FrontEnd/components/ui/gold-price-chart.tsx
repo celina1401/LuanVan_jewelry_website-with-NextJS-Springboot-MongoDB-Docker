@@ -37,7 +37,9 @@ const GOLD_API_KEY = "goldapi-758mlsmdmwtv5i-io"; // <-- Điền API Key tại �
 // API dự phòng:
 
 // goldapi-5p9h9smdppd1qi-io         - Vicao
-
+// goldapi-40qegsmdtz23aq-io        - CongTri
+// goldapi-k15ismdtz65qw-io         - GiaBao
+// goldapi-40qegsmdtz8uim-io        - BichTram
 
 
 const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
@@ -60,7 +62,7 @@ export function GoldPriceChart() {
 
   // Hệ số quy đổi các tuổi vàng
   const goldRatios = [
-    { label: '9999', ratio: 0.9999 },
+    // { label: '9999', ratio: 0.9999 },
     { label: '999', ratio: 0.999 },
     { label: '99', ratio: 0.99 },
     { label: '24k', ratio: 1.0 },
@@ -68,6 +70,7 @@ export function GoldPriceChart() {
     { label: '17k', ratio: 0.708 },
     { label: '16k', ratio: 0.666 },
     { label: '15k', ratio: 0.625 },
+    { label: '14k', ratio: 0.583 },
     { label: '10k', ratio: 0.416 },
   ];
 
