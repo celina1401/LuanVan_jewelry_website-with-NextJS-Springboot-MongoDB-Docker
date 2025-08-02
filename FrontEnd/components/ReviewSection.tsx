@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star, Send, Image as ImageIcon, MessageCircle, ThumbsUp, AlertCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
@@ -61,6 +61,9 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
     
     eventSource.onopen = () => {
       console.log('SSE connection established for product:', productId);
+      toast.success("Kết nối real-time thành công!", {
+        description: "Sẽ nhận thông báo khi admin trả lời"
+      });
     };
 
     eventSource.onmessage = (event) => {
@@ -84,18 +87,21 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
         );
         
         // Show notification to user
-        toast({
-          title: "Cập nhật",
-          description: "Admin đã trả lời bình luận mới!",
+        toast.success("Admin đã trả lời!", {
+          description: updatedReview.adminReply?.substring(0, 100) + (updatedReview.adminReply && updatedReview.adminReply.length > 100 ? '...' : '')
         });
       } catch (error) {
         console.error('Error parsing admin reply update:', error);
+        toast.error("Lỗi khi nhận trả lời từ admin");
       }
     });
 
     eventSource.onerror = (error) => {
       console.error('SSE connection error:', error);
       eventSource.close();
+      toast.error("Mất kết nối real-time", {
+        description: "Đang thử kết nối lại..."
+      });
     };
 
     // Store eventSource for cleanup
@@ -118,6 +124,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
         setReviews(data);
       } else {
         // console.error(`[DEBUG] Error fetching active reviews: ${response.status} ${response.statusText}`);
+        toast.error("Không thể tải bình luận");
       }
 
       // Fetch all reviews (including inactive) for debugging
@@ -142,6 +149,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
       }
     } catch (error) {
       // console.error("[DEBUG] Error fetching reviews:", error);
+      toast.error("Lỗi kết nối server");
     } finally {
       setLoading(false);
     }
@@ -150,25 +158,22 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setSelectedFiles(Array.from(e.target.files));
+      if (e.target.files.length > 0) {
+        toast.info(`Đã chọn ${e.target.files.length} ảnh`, {
+          description: "Bạn có thể xem preview bên dưới"
+        });
+      }
     }
   };
 
   const handleSubmitReview = async () => {
     if (!user) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng đăng nhập để bình luận",
-        variant: "destructive",
-      });
+      toast.error("Vui lòng đăng nhập để bình luận");
       return;
     }
   
     if (!comment.trim()) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập nội dung bình luận",
-        variant: "destructive",
-      });
+      toast.error("Vui lòng nhập nội dung bình luận");
       return;
     }
   
@@ -176,6 +181,12 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
     try {
       // Upload images first (if any)
       const imageUrls: string[] = [];
+      if (selectedFiles.length > 0) {
+        toast.info("Đang tải ảnh lên...", {
+          description: "Vui lòng chờ trong giây lát"
+        });
+      }
+      
       for (const file of selectedFiles) {
         const formData = new FormData();
         formData.append("image", file);
@@ -213,9 +224,8 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
   
       if (response.ok) {
         const newReview = await response.json();
-        toast({
-          title: "Thành công",
-          description: "Bình luận đã được gửi",
+        toast.success("Gửi bình luận thành công!", {
+          description: "Bình luận của bạn đã được đăng và admin sẽ được thông báo"
         });
         setComment("");
         setRating(5);
@@ -242,11 +252,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
       }
     } catch (error) {
       console.error("Error submitting review:", error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể gửi bình luận. Vui lòng thử lại.",
-        variant: "destructive",
-      });
+      toast.error("Không thể gửi bình luận. Vui lòng thử lại.");
     } finally {
       setSubmitting(false);
     }

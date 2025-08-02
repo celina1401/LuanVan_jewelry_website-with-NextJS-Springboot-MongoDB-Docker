@@ -37,12 +37,12 @@ const toastVariants = cva(
       variant: {
         default: 'border bg-white text-zinc-900 dark:bg-zinc-800 dark:text-white',
 
-        success: 'border-green-600 bg-green-300 text-black dark:bg-green-600 dark:text-white',
-        error: 'border-red-600 bg-red-500 text-white dark:bg-red-600 dark:text-white',
-        warning: 'border-yellow-500 bg-yellow-200 text-black dark:bg-yellow-300 dark:text-black',
-        info: 'border-blue-600 bg-blue-500 text-white dark:bg-blue-600 dark:text-white',
+        success: 'border-green-600 bg-green-50 text-green-900 dark:bg-green-900/20 dark:text-green-200 dark:border-green-700',
+        error: 'border-red-600 bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-200 dark:border-red-700',
+        warning: 'border-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-700',
+        info: 'border-blue-600 bg-blue-50 text-blue-900 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-700',
 
-        destructive: 'border-red-600 bg-red-500 text-white dark:bg-red-700 dark:text-white',
+        destructive: 'border-red-600 bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-200 dark:border-red-700',
       },
     },
     defaultVariants: {
@@ -68,10 +68,10 @@ const Toast = React.forwardRef<
       <div
   className={cn(
     "absolute bottom-0 left-0 h-1.5 w-full origin-left animate-progress rounded-b",
-    variant === "destructive" && "bg-red-700 shadow-[0_0_6px_rgba(0,0,0,0.4)]",
-    variant === "success" && "bg-green-700 shadow-[0_0_6px_rgba(0,0,0,0.4)]",
-    variant === "warning" && "bg-yellow-600 shadow-[0_0_6px_rgba(0,0,0,0.4)]",
-    variant === "info" && "bg-blue-700 shadow-[0_0_6px_rgba(0,0,0,0.4)]",
+    variant === "destructive" && "bg-red-600 shadow-[0_0_6px_rgba(239,68,68,0.4)]",
+    variant === "success" && "bg-green-600 shadow-[0_0_6px_rgba(34,197,94,0.4)]",
+    variant === "warning" && "bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.4)]",
+    variant === "info" && "bg-blue-600 shadow-[0_0_6px_rgba(59,130,246,0.4)]",
     (!variant || variant === "default") && "bg-primary/60"
   )}
 ></div>

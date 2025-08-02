@@ -99,3 +99,17 @@
 .card-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Toast Progress Animation */
+@keyframes progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.animate-progress {
+  animation: progress 3s linear forwards;
+}

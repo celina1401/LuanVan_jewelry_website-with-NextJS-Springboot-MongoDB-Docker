@@ -48,6 +48,9 @@ export default function AdminReviewsPage() {
     
     eventSource.onopen = () => {
       console.log('SSE connection established for admin');
+      toast.success("Kết nối real-time thành công!", {
+        description: "Sẽ nhận thông báo khi có bình luận mới"
+      });
     };
 
     eventSource.addEventListener('connect', (event) => {
@@ -62,10 +65,13 @@ export default function AdminReviewsPage() {
         // Add new review to the top of the list
         setReviews(prevReviews => [newReview, ...prevReviews]);
         
-        // Show notification
-        toast.success(`Bình luận mới từ ${newReview.userName}!`);
+        // Show notification with more details
+        toast.success("Bình luận mới!", {
+          description: `${newReview.userName} đã đánh giá ${newReview.rating}⭐ - "${newReview.comment.substring(0, 50)}${newReview.comment.length > 50 ? '...' : ''}"`
+        });
       } catch (error) {
         console.error('Error parsing new review:', error);
+        toast.error("Lỗi khi nhận bình luận mới");
       }
     });
 
@@ -80,6 +86,10 @@ export default function AdminReviewsPage() {
             review.id === updatedReview.id ? updatedReview : review
           )
         );
+        
+        toast.info("Cập nhật trả lời thành công!", {
+          description: "Trả lời đã được gửi tới khách hàng"
+        });
       } catch (error) {
         console.error('Error parsing admin reply update:', error);
       }
@@ -88,6 +98,9 @@ export default function AdminReviewsPage() {
     eventSource.onerror = (error) => {
       console.error('SSE connection error:', error);
       eventSource.close();
+      toast.error("Mất kết nối real-time", {
+        description: "Đang thử kết nối lại..."
+      });
     };
 
     // Store eventSource for cleanup
@@ -103,12 +116,13 @@ export default function AdminReviewsPage() {
       if (response.ok) {
         const data = await response.json();
         setReviews(data);
+        // toast.success(`Đã tải ${data.length} bình luận`);
       } else {
-        toast.error("Failed to fetch reviews");
+        toast.error("Không thể tải danh sách bình luận");
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      toast.error("Error fetching reviews");
+      toast.error("Lỗi kết nối server");
     } finally {
       setLoading(false);
     }
@@ -125,14 +139,16 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast.success("Đã xóa đánh giá thành công");
+        toast.success("Đã xóa đánh giá thành công!", {
+          description: "Đánh giá đã bị xóa vĩnh viễn"
+        });
         fetchReviews();
       } else {
-        toast.error("Failed to delete review");
+        toast.error("Không thể xóa đánh giá");
       }
     } catch (error) {
       console.error("Error deleting review:", error);
-      toast.error("Error deleting review");
+      toast.error("Lỗi khi xóa đánh giá");
     }
   };
 
@@ -143,14 +159,16 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast.success("Đã ẩn đánh giá thành công");
+        toast.success("Đã ẩn đánh giá thành công!", {
+          description: "Khách hàng sẽ không thấy đánh giá này"
+        });
         fetchReviews();
       } else {
-        toast.error("Failed to hide review");
+        toast.error("Không thể ẩn đánh giá");
       }
     } catch (error) {
       console.error("Error hiding review:", error);
-      toast.error("Error hiding review");
+      toast.error("Lỗi khi ẩn đánh giá");
     }
   };
 
@@ -161,14 +179,16 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast.success("Đã hiện lại đánh giá thành công");
+        toast.success("Đã hiện lại đánh giá thành công!", {
+          description: "Khách hàng có thể thấy đánh giá này"
+        });
         fetchReviews();
       } else {
-        toast.error("Failed to unhide review");
+        toast.error("Không thể hiện lại đánh giá");
       }
     } catch (error) {
       console.error("Error unhiding review:", error);
-      toast.error("Error unhiding review");
+      toast.error("Lỗi khi hiện lại đánh giá");
     }
   };
 
@@ -192,16 +212,18 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast.success("Đã thêm trả lời thành công");
+        toast.success("Đã thêm trả lời thành công!", {
+          description: "Khách hàng sẽ nhận được thông báo"
+        });
         setEditingReply(null);
         setReplyText("");
         fetchReviews();
       } else {
-        toast.error("Failed to add admin reply");
+        toast.error("Không thể thêm trả lời");
       }
     } catch (error) {
       console.error("Error adding admin reply:", error);
-      toast.error("Error adding admin reply");
+      toast.error("Lỗi khi thêm trả lời");
     }
   };
 
@@ -225,16 +247,18 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast.success("Đã cập nhật trả lời thành công");
+        toast.success("Đã cập nhật trả lời thành công!", {
+          description: "Nội dung trả lời đã được cập nhật"
+        });
         setEditingReply(null);
         setReplyText("");
         fetchReviews();
       } else {
-        toast.error("Failed to update admin reply");
+        toast.error("Không thể cập nhật trả lời");
       }
     } catch (error) {
       console.error("Error updating admin reply:", error);
-      toast.error("Error updating admin reply");
+      toast.error("Lỗi khi cập nhật trả lời");
     }
   };
 
@@ -249,25 +273,31 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast.success("Đã xóa trả lời thành công");
+        toast.success("Đã xóa trả lời thành công!", {
+          description: "Trả lời đã bị xóa khỏi bình luận"
+        });
         fetchReviews();
       } else {
-        toast.error("Failed to remove admin reply");
+        toast.error("Không thể xóa trả lời");
       }
     } catch (error) {
       console.error("Error removing admin reply:", error);
-      toast.error("Error removing admin reply");
+      toast.error("Lỗi khi xóa trả lời");
     }
   };
 
   const startEditingReply = (review: Review) => {
     setEditingReply(review.id);
     setReplyText(review.adminReply || "");
+    toast.info("Chế độ chỉnh sửa", {
+      description: "Bạn có thể chỉnh sửa trả lời hiện tại"
+    });
   };
 
   const cancelEditingReply = () => {
     setEditingReply(null);
     setReplyText("");
+    toast.info("Đã hủy chỉnh sửa");
   };
 
   const formatDate = (dateString: string) => {

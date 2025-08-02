@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
 import { FaRegHeart, FaTruck, FaSyncAlt, FaShieldAlt, FaComments } from "react-icons/fa";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useFavorites } from "@/hooks/use-favorites";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -213,7 +213,6 @@ export default function ProductDetailPage() {
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
-  const { toast } = useToast();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -283,10 +282,8 @@ export default function ProductDetailPage() {
 
   const addToCart = (product: Product) => {
     if (product.stockQuantity === 0) {
-      toast({
-        title: "Sản phẩm đã hết hàng!",
+      toast.error("Sản phẩm đã hết hàng!", {
         description: product.name,
-        variant: "destructive"
       });
       return;
     }
@@ -297,8 +294,7 @@ export default function ProductDetailPage() {
       image: getProductImageUrl(product),
       metadata: product.colors ? { color: selectedColor } : undefined,
     }, quantity);
-    toast({
-      title: "Đã thêm vào giỏ hàng!",
+    toast.success("Đã thêm vào giỏ hàng!", {
       description: product.name,
     });
   };
@@ -382,8 +378,8 @@ export default function ProductDetailPage() {
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">{product.name}</h1>
               <button
-                className={`text-2xl transition-colors ${mounted && isFavorite(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
-                onClick={() => toggleFavorite(product.id)}
+                className={`text-2xl transition-colors ${mounted && isFavorite(product.id.toString()) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                onClick={() => toggleFavorite(product.id.toString())}
               >
                 <FaRegHeart />
               </button>

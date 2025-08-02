@@ -85,4 +85,4 @@ db.collection.drop()
 db.users.find().pretty()
 show collections
 db.users.find().pretty()
-db.db.use
+db.db.users.find().pretty()
