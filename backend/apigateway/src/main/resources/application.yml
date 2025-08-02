@@ -44,9 +44,14 @@ spring:
             - Path=/api/payments/**
 
         - id: chatservice
-          uri: http://localhost:9006
+          uri: http://localhost:9007
           predicates:
             - Path=/api/chat/**
+
+        - id: reviewservice
+          uri: http://localhost:9008
+          predicates:
+            - Path=/api/reviews/**
 
 
       default-filters:

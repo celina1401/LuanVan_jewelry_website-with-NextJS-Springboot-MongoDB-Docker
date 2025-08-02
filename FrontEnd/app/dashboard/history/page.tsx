@@ -39,15 +39,15 @@ export default function HistoryPage() {
         return <span className="inline-block px-3 py-1 text-sm font-medium bg-green-500 text-white rounded-full">Đã thanh toán</span>;
       case "Lỗi thanh toán":
         return <span className="inline-block px-3 py-1 text-sm font-medium bg-red-500 text-white rounded-full">Lỗi thanh toán</span>;
-      case "Chờ xử lý":
-        return <span className="inline-block px-3 py-1 text-sm font-medium bg-yellow-400 text-black rounded-full">Chờ xử lý</span>;
+      case "Chưa xử lý":
+        return <span className="inline-block px-3 py-1 text-sm font-medium bg-yellow-400 text-black rounded-full">Chưa thanh toán</span>;
       case "Đã hủy":
         return <span className="inline-block px-3 py-1 text-sm font-medium bg-gray-400 text-white rounded-full">Đã hủy</span>;
       default:
         return <span className="inline-block px-3 py-1 text-sm font-medium bg-gray-200 text-gray-800 rounded-full">{status}</span>;
     }
   }
-  
+
 
   return (
     <div className="p-8">
@@ -61,25 +61,25 @@ export default function HistoryPage() {
       ) : (
         <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-base text-left text-gray-700 dark:text-gray-200 border rounded-lg overflow-hidden">
-  <thead className="text-base text-white bg-slate-800 dark:bg-slate-800">
-    <tr>
-      <th className="px-6 py-4 font-medium">Mã đơn</th>
-      <th className="px-6 py-4 font-medium">Ngày đặt</th>
-      <th className="px-6 py-4 font-medium">Tổng tiền</th>
-      <th className="px-6 py-4 font-medium">Trạng thái</th>
-    </tr>
-  </thead>
-  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 text-base">
-    {orders.map((order: any) => (
-      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">#{order.orderNumber}</td>
-        <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</td>
-        <td className="px-6 py-4">{Number(order.total || order.amount).toLocaleString()}₫</td>
-        <td className="px-6 py-4">{getStatusBadge(order.status || order.paymentStatus)}</td> 
-      </tr>
-    ))}
-  </tbody>
-</table>
+            <thead className="text-base text-white bg-slate-800 dark:bg-slate-800">
+              <tr>
+                <th className="px-6 py-4 font-medium">Mã đơn</th>
+                <th className="px-6 py-4 font-medium">Ngày đặt</th>
+                <th className="px-6 py-4 font-medium">Tổng tiền</th>
+                <th className="px-6 py-4 font-medium">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 text-base">
+              {orders.map((order: any) => (
+                <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">#{order.orderNumber}</td>
+                  <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</td>
+                  <td className="px-6 py-4">{Number(order.total || order.amount).toLocaleString()}₫</td>
+                  <td className="px-6 py-4">{getStatusBadge(order.status || order.paymentStatus)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
         </div>
       )}

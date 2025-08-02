@@ -253,14 +253,14 @@ mvn spring-boot:run
 
 ## Trạng thái đơn hàng
 
-- **Chờ xử lý**: Đơn hàng mới được tạo
+- **Chưa xử lý**: Đơn hàng mới được tạo
 - **Đang giao**: Đơn hàng đang được vận chuyển
 - **Đã giao**: Đơn hàng đã được giao thành công
 - **Hủy**: Đơn hàng đã bị hủy
 
 ## Trạng thái thanh toán
 
-- **Chờ xử lý**: Chưa thanh toán
+- **Chưa xử lý**: Chưa thanh toán
 - **Đã thanh toán**: Đã thanh toán thành công
 - **Thất bại**: Thanh toán thất bại
 - **Thanh toán một phần**: Thanh toán một phần (COD)

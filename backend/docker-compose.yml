@@ -123,6 +123,35 @@ services:
     networks:
       - microservice-networks
 
+  # reviewservice:
+  #   build:
+  #     context: ./reviewservice
+  #   ports:
+  #     - "9008:9008"
+  #   depends_on:
+  #     - discoveryserver
+  #     - mongodb
+  #   environment:
+  #     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+  #     - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+  #   networks:
+  #     - microservice-networks
+
+  reviewservice:
+    build:
+      context: ./reviewservice
+    ports:
+      - "9008:9008"
+    depends_on:
+      - discoveryserver
+      - mongodb
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    networks:
+      - microservice-networks
+
+
 
   mongodb:
     image: mongo:latest

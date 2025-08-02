@@ -66,6 +66,20 @@ public class ReviewController {
         return ResponseEntity.ok(count);
     }
 
+    @GetMapping("/product/{productId}/average-rating")
+    public ResponseEntity<Double> getAverageRatingByProduct(@PathVariable String productId) {
+        double averageRating = reviewService.getAverageRatingByProduct(productId);
+        return ResponseEntity.ok(averageRating);
+    }
+
+    @GetMapping("/product/{productId}/rating-distribution")
+    public ResponseEntity<List<Integer>> getRatingDistributionByProduct(@PathVariable String productId) {
+        System.out.println("==> [ReviewController] Getting rating distribution for product: " + productId);
+        List<Integer> ratingDistribution = reviewService.getRatingDistributionByProduct(productId);
+        System.out.println("==> [ReviewController] Rating distribution: " + ratingDistribution);
+        return ResponseEntity.ok(ratingDistribution);
+    }
+
     @GetMapping
     public ResponseEntity<List<ReviewResponse>> getAllReviews() {
         List<ReviewResponse> reviews = reviewService.getAllReviews();

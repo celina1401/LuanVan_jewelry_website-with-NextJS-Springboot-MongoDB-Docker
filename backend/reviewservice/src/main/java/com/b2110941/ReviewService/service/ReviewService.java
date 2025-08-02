@@ -73,6 +73,26 @@ public class ReviewService {
         return reviewRepository.countByProductIdAndIsActiveTrue(productId);
     }
 
+    public double getAverageRatingByProduct(String productId) {
+        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrue(productId);
+        if (reviews.isEmpty()) {
+            return 0.0;
+        }
+        double totalRating = reviews.stream()
+                .mapToDouble(Review::getRating)
+                .sum();
+        return totalRating / reviews.size();
+    }
+
+    public List<Integer> getRatingDistributionByProduct(String productId) {
+        List<Review> reviews = reviewRepository.findByProductIdAndIsActiveTrue(productId);
+        List<Integer> distribution = reviews.stream()
+                .map(Review::getRating)
+                .collect(Collectors.toList());
+        System.out.println("==> [ReviewService] Rating distribution: " + distribution);
+        return distribution;
+    }
+
     public ReviewResponse getReviewById(String reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new RuntimeException("Review not found"));

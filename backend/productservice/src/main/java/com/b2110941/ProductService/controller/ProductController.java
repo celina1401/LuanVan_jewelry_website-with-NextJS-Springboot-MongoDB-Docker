@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -30,13 +31,76 @@ public class ProductController {
     private ProductRepository productRepository;
     @Autowired
     private ProductDetailRepository productDetailRepository;
+    
+    @Autowired
+    private RestTemplate restTemplate;
 
     /**
-     * Lấy tất cả sản phẩm (hỗ trợ cả /all cho tương thích client cũ)
+     * Lấy rating và review count từ ReviewService
+     */
+    private Map<String, Object> getProductRating(String productId) {
+        Map<String, Object> ratingInfo = new HashMap<>();
+        try {
+            // Lấy average rating
+            String avgRatingUrl = "http://localhost:9008/api/reviews/product/" + productId + "/average-rating";
+            Double avgRating = restTemplate.getForObject(avgRatingUrl, Double.class);
+            
+            // Lấy review count
+            String countUrl = "http://localhost:9008/api/reviews/product/" + productId + "/count";
+            Long reviewCount = restTemplate.getForObject(countUrl, Long.class);
+            
+            // Lấy rating distribution
+            String distributionUrl = "http://localhost:9008/api/reviews/product/" + productId + "/rating-distribution";
+            List<Integer> ratingDistribution = restTemplate.getForObject(distributionUrl, List.class);
+            
+            ratingInfo.put("rating", avgRating != null ? avgRating : 0.0);
+            ratingInfo.put("reviews", reviewCount != null ? reviewCount : 0L);
+            ratingInfo.put("ratings", ratingDistribution != null ? ratingDistribution : new ArrayList<>());
+            
+        } catch (Exception e) {
+            System.out.println("Error fetching rating for product " + productId + ": " + e.getMessage());
+            ratingInfo.put("rating", 0.0);
+            ratingInfo.put("reviews", 0L);
+            ratingInfo.put("ratings", new ArrayList<>());
+        }
+        return ratingInfo;
+    }
+
+    /**
+     * Lấy tất cả sản phẩm với rating từ ReviewService
      */
     @GetMapping("/all")
-    public ResponseEntity<List<Product>> getAllProductsAll() {
-        return ResponseEntity.ok(productRepository.findAll());
+    public ResponseEntity<List<Map<String, Object>>> getAllProductsAll() {
+        List<Product> products = productRepository.findAll();
+        List<Map<String, Object>> productsWithRating = new ArrayList<>();
+        
+        for (Product product : products) {
+            Map<String, Object> productWithRating = new HashMap<>();
+            
+            // Copy tất cả thuộc tính của product
+            productWithRating.put("id", product.getId());
+            productWithRating.put("name", product.getName());
+            productWithRating.put("description", product.getDescription());
+            productWithRating.put("price", product.getPrice());
+            productWithRating.put("category", product.getCategory());
+            productWithRating.put("goldAge", product.getGoldAge());
+            productWithRating.put("karat", product.getKarat());
+            productWithRating.put("weight", product.getWeight());
+            productWithRating.put("wage", product.getWage());
+            productWithRating.put("stockQuantity", product.getStockQuantity());
+            productWithRating.put("isNew", product.getCreatedAt() != null && 
+                product.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusDays(30)));
+            
+            // Lấy rating từ ReviewService
+            Map<String, Object> ratingInfo = getProductRating(product.getId());
+            productWithRating.put("rating", ratingInfo.get("rating"));
+            productWithRating.put("reviews", ratingInfo.get("reviews"));
+            productWithRating.put("ratings", ratingInfo.get("ratings"));
+            
+            productsWithRating.add(productWithRating);
+        }
+        
+        return ResponseEntity.ok(productsWithRating);
     }
 
     /**
@@ -84,6 +148,13 @@ public class ProductController {
             result.put("createdAt", product.getCreatedAt());
             result.put("updatedAt", product.getUpdatedAt());
             result.put("description", product.getDescription());
+            
+            // Lấy rating từ ReviewService
+            Map<String, Object> ratingInfo = getProductRating(productId);
+            result.put("rating", ratingInfo.get("rating"));
+            result.put("reviews", ratingInfo.get("reviews"));
+            result.put("ratings", ratingInfo.get("ratings"));
+            
             // Lấy thêm thông tin chi tiết nếu có
             List<ProductDetail> details = productDetailRepository.findByProductId(productId);
             if (!details.isEmpty()) {

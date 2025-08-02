@@ -366,7 +366,7 @@ export default function AdminOrdersPage() {
                                                     status={
                                                         order.payment === "Lỗi thanh toán"
                                                             ? "error"
-                                                            : order.payment === "Chờ xử lý"
+                                                            : order.payment === "Chưa xử lý"
                                                                 ? "pending"
                                                                 : order.payment === "Thanh toán một phần"
                                                                     ? "warning"
@@ -487,7 +487,7 @@ export default function AdminOrdersPage() {
                             <p><strong>Trạng thái giao hàng:</strong> {selectedOrder.shippingStatus || '-'}</p>
                             <p><strong>Phương thức thanh toán:</strong> {selectedOrder.paymentMethod === 'COD' ? 'Tiền mặt khi nhận hàng' : selectedOrder.paymentMethod || '-'}</p>
                             <p><strong>Trạng thái thanh toán:</strong>{" "}
-                                {selectedOrder.paymentStatus === "Lỗi thanh toán" || selectedOrder.paymentStatus === "Chờ xử lý"
+                                {selectedOrder.paymentStatus === "Lỗi thanh toán" || selectedOrder.paymentStatus === "Chưa xử lý"
                                     ? <span className="text-red-500 font-semibold">Chưa thanh toán</span>
                                     : selectedOrder.paymentStatus === "Đã thanh toán"
                                         ? <span className="text-green-600 font-semibold">Đã thanh toán</span>

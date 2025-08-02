@@ -116,7 +116,7 @@
 //                 return <CheckCircle className="h-5 w-5 text-green-500" />;
 //             case "Đang giao":
 //                 return <Truck className="h-5 w-5 text-blue-500" />;
-//             case "Chờ xử lý":
+//             case "Chưa xử lý":
 //                 return <Package className="h-5 w-5 text-yellow-500" />;
 //             default:
 //                 return <Package className="h-5 w-5 text-gray-500" />;

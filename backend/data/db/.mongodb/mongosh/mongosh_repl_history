@@ -1,3 +1,4 @@
+db.reviews.find().pretty()
 db.users.find().pretty()
 db.orders.find().pretty()
 db.orders.drop()

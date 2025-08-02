@@ -8,7 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
-// @EnableDiscoveryClient
+@EnableDiscoveryClient
 public class ReviewserviceApplication {
 
 	// @Value("${eureka.client.service-url.defaultZone:http://discoveryserver:8761/eureka}")

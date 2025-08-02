@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/chatbox/ChatBox";
 import { translateProductTag } from "@/lib/utils";
 import { MagnifierImage } from "@/app/components/MagnifierImage";
+import ReviewSection from "@/components/ReviewSection";
+import ReviewSummary from "@/components/ReviewSummary";
 
 
 type Product = {
@@ -228,15 +230,17 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!productId) return;
     setLoading(true);
-    fetch(`http://localhost:9004/api/products/${productId}`)
+    fetch(`http://localhost:9004/api/products/profile/${productId}`)
       .then(res => res.json())
       .then((data: Product) => {
+        console.log('[DEBUG] Product data from backend:', data);
         setProduct(data);
         setSelectedImg((data.images && data.images.length > 0) ? data.images[0] : "/images/no-image.png");
         setSelectedColor(data.colors?.[0] || "");
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('[DEBUG] Error fetching product:', error);
         setProduct(null);
         setLoading(false);
       });
@@ -252,8 +256,15 @@ export default function ProductDetailPage() {
     ? currentGoldPricePerChi * product.weight + (product.wage || 0)
     : null;
 
-  // Tính điểm rating trung bình từ mảng ratings
-  const avgRating = calculateAverageRating(product.ratings);
+  // Sử dụng rating từ backend (đã được tính từ ReviewService)
+  const avgRating = product.rating || 0;
+    
+  // Debug log
+  console.log(`[DEBUG] Product Detail ${product.id}:`, {
+    name: product.name,
+    rating: product.rating,
+    reviews: product.reviews
+  });
 
   const addToCart = (product: Product) => {
     if (product.stockQuantity === 0) {
@@ -362,54 +373,7 @@ export default function ProductDetailPage() {
                 <FaRegHeart />
               </button>
             </div>
-            {/* Hiển thị đánh giá, số lượng đánh giá, đã bán... */}
-            <div className="flex items-center gap-6 mb-2">
-              {/* Điểm đánh giá trung bình */}
-              <div className="flex items-center gap-1">
-                <span className="text-xl font-bold text-yellow-500">{avgRating.toFixed(1)}</span>
-                <div className="flex items-center ml-1">
-                  {[...Array(5)].map((_, i) => {
-                    const fullStars = Math.floor(avgRating);
-                    const hasHalfStar = avgRating - fullStars >= 0.25 && avgRating - fullStars < 0.75;
-                    if (i < fullStars) {
-                      return (
-                        <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      );
-                    } else if (i === fullStars && hasHalfStar) {
-                      return (
-                        <svg key={i} className="w-5 h-5 text-yellow-400" viewBox="0 0 20 20">
-                          <defs>
-                            <linearGradient id={`half-star-${i}`}>
-                              <stop offset="50%" stopColor="#facc15" />
-                              <stop offset="50%" stopColor="#d1d5db" />
-                            </linearGradient>
-                          </defs>
-                          <path fill={`url(#half-star-${i})`} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      );
-                    } else {
-                      return (
-                        <svg key={i} className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      );
-                    }
-                  })}
-                </div>
-              </div>
-              {/* Số lượng đánh giá */}
-              <div className="flex items-center gap-1 border-l border-gray-300 dark:border-gray-700 pl-4">
-                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{product.reviews ? product.reviews.toLocaleString() : '0'}</span>
-                <span className="text-gray-500 text-base">Đánh Giá</span>
-              </div>
-              {/* Đã bán */}
-              <div className="flex items-center gap-1 border-l border-gray-300 dark:border-gray-700 pl-4">
-                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{product.sold ? (product.sold > 1000 ? (product.sold / 1000).toFixed(1) + 'k+' : product.sold) : '10k+'}</span>
-                <span className="text-gray-500 text-base">Đã Bán</span>
-              </div>
-            </div>
+
             {/* Chi tiết sản phẩm */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-2 text-sm">
               <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{product.productCode || '-'}</span></div>
@@ -510,9 +474,18 @@ export default function ProductDetailPage() {
         </div>
         {/* Bình luận */}
         <div className="mt-12 bg-white dark:bg-[#18181b] rounded-xl shadow p-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Bình luận</h2>
-          <CommentForm onSubmit={handleCommentSubmit} />
-          <CommentList comments={comments} />
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              Đánh giá & Bình luận
+            </h2>
+            <ReviewSummary productId={productId} />
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <ReviewSection productId={productId} />
+          </div>
         </div>
         {/* Sản phẩm liên quan */}
         {relatedProducts.length > 0 && (
@@ -543,19 +516,50 @@ export default function ProductDetailPage() {
                     <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                     <div className="flex items-center mt-2">
                       <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <svg
-                            key={i}
-                            className={`w-4 h-4 ${i < 4 ? "text-yellow-400" : "text-gray-300"}`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
+                        {[...Array(5)].map((_, i) => {
+                          const itemRating = item.rating || 0;
+                          const fullStars = Math.floor(itemRating);
+                          const hasHalfStar = itemRating - fullStars >= 0.25 && itemRating - fullStars < 0.75;
+                          
+                          if (i < fullStars) {
+                            return (
+                              <svg
+                                key={i}
+                                className="w-4 h-4 text-yellow-400"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            );
+                          } else if (i === fullStars && hasHalfStar) {
+                            return (
+                              <svg key={i} className="w-4 h-4 text-yellow-400" viewBox="0 0 20 20">
+                                <defs>
+                                  <linearGradient id={`half-star-related-${item.id}-${i}`}>
+                                    <stop offset="50%" stopColor="#facc15" />
+                                    <stop offset="50%" stopColor="#d1d5db" />
+                                  </linearGradient>
+                                </defs>
+                                <path fill={`url(#half-star-related-${item.id}-${i})`} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            );
+                          } else {
+                            return (
+                              <svg
+                                key={i}
+                                className="w-4 h-4 text-gray-300"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            );
+                          }
+                        })}
                       </div>
                       <span className="text-sm text-muted-foreground ml-2">
-                        ({item.reviews || 0})
+                        {(item.rating || 0).toFixed(1)} ({item.reviews || 0})
                       </span>
                     </div>
                     <p className="text-lg font-semibold mt-2 text-rose-500">
