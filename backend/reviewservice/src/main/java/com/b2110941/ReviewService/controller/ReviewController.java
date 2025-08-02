@@ -2,11 +2,13 @@ package com.b2110941.ReviewService.controller;
 
 import com.b2110941.ReviewService.payload.ReviewRequest;
 import com.b2110941.ReviewService.payload.ReviewResponse;
+import com.b2110941.ReviewService.payload.AdminReplyRequest;
 import com.b2110941.ReviewService.service.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -27,10 +30,17 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
 
+    // Store SSE emitters for real-time updates
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
+
     @PostMapping
     public ResponseEntity<ReviewResponse> createReview(@RequestBody ReviewRequest request) {
         try {
             ReviewResponse response = reviewService.createReview(request);
+            
+            // Send real-time update to admin page
+            sendNewReviewUpdate(response);
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.out.println("Error creating review: " + e.getMessage());
@@ -102,6 +112,143 @@ public class ReviewController {
         }
     }
 
+    // Admin reply endpoints
+    @PostMapping("/{reviewId}/admin-reply")
+    public ResponseEntity<ReviewResponse> addAdminReply(@PathVariable String reviewId, @RequestBody AdminReplyRequest request) {
+        try {
+            ReviewResponse response = reviewService.addAdminReply(reviewId, request);
+            
+            // Send real-time update to clients
+            sendAdminReplyUpdate(reviewId, response);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Error adding admin reply: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @PutMapping("/{reviewId}/admin-reply")
+    public ResponseEntity<ReviewResponse> updateAdminReply(@PathVariable String reviewId, @RequestBody AdminReplyRequest request) {
+        try {
+            ReviewResponse response = reviewService.updateAdminReply(reviewId, request);
+            
+            // Send real-time update to clients
+            sendAdminReplyUpdate(reviewId, response);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Error updating admin reply: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @DeleteMapping("/{reviewId}/admin-reply")
+    public ResponseEntity<ReviewResponse> removeAdminReply(@PathVariable String reviewId) {
+        try {
+            ReviewResponse response = reviewService.removeAdminReply(reviewId);
+            
+            // Send real-time update to clients
+            sendAdminReplyUpdate(reviewId, response);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Error removing admin reply: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    // SSE endpoint for real-time updates
+    @GetMapping(value = "/sse/{productId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeToUpdates(@PathVariable String productId) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        String emitterId = productId + "_" + System.currentTimeMillis();
+        emitters.put(emitterId, emitter);
+        
+        emitter.onCompletion(() -> emitters.remove(emitterId));
+        emitter.onTimeout(() -> emitters.remove(emitterId));
+        emitter.onError((ex) -> emitters.remove(emitterId));
+        
+        try {
+            emitter.send(SseEmitter.event()
+                .name("connect")
+                .data("Connected to review updates for product: " + productId));
+        } catch (IOException e) {
+            emitters.remove(emitterId);
+        }
+        
+        return emitter;
+    }
+
+    // SSE endpoint for admin page real-time updates
+    @GetMapping(value = "/sse/admin", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeToAdminUpdates() {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        String emitterId = "admin_" + System.currentTimeMillis();
+        emitters.put(emitterId, emitter);
+        
+        emitter.onCompletion(() -> emitters.remove(emitterId));
+        emitter.onTimeout(() -> emitters.remove(emitterId));
+        emitter.onError((ex) -> emitters.remove(emitterId));
+        
+        try {
+            emitter.send(SseEmitter.event()
+                .name("connect")
+                .data("Connected to admin updates"));
+        } catch (IOException e) {
+            emitters.remove(emitterId);
+        }
+        
+        return emitter;
+    }
+
+    // Helper method to send updates to all clients
+    private void sendAdminReplyUpdate(String reviewId, ReviewResponse review) {
+        List<String> toRemove = new ArrayList<>();
+        
+        for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
+            try {
+                SseEmitter emitter = entry.getValue();
+                emitter.send(SseEmitter.event()
+                    .name("adminReplyUpdate")
+                    .data(review));
+            } catch (IOException e) {
+                toRemove.add(entry.getKey());
+            }
+        }
+        
+        // Remove dead emitters
+        for (String key : toRemove) {
+            emitters.remove(key);
+        }
+    }
+
+    // Helper method to send new review updates to admin
+    private void sendNewReviewUpdate(ReviewResponse review) {
+        List<String> toRemove = new ArrayList<>();
+        
+        for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
+            try {
+                SseEmitter emitter = entry.getValue();
+                if (entry.getKey().startsWith("admin_")) {
+                    emitter.send(SseEmitter.event()
+                        .name("newReview")
+                        .data(review));
+                }
+            } catch (IOException e) {
+                toRemove.add(entry.getKey());
+            }
+        }
+        
+        // Remove dead emitters
+        for (String key : toRemove) {
+            emitters.remove(key);
+        }
+    }
+
     @PostMapping("/migrate")
     public ResponseEntity<String> migrateExistingReviews() {
         try {
@@ -110,28 +257,26 @@ public class ReviewController {
         } catch (Exception e) {
             System.out.println("Error during migration: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Error during migration: " + e.getMessage());
+            return ResponseEntity.status(500).body("Migration failed: " + e.getMessage());
         }
     }
 
     @GetMapping("/product/{productId}/count")
     public ResponseEntity<Long> getReviewCountByProduct(@PathVariable String productId) {
-        long count = reviewService.getReviewCountByProduct(productId);
+        Long count = reviewService.getReviewCountByProduct(productId);
         return ResponseEntity.ok(count);
     }
 
     @GetMapping("/product/{productId}/average-rating")
     public ResponseEntity<Double> getAverageRatingByProduct(@PathVariable String productId) {
-        double averageRating = reviewService.getAverageRatingByProduct(productId);
+        Double averageRating = reviewService.getAverageRatingByProduct(productId);
         return ResponseEntity.ok(averageRating);
     }
 
     @GetMapping("/product/{productId}/rating-distribution")
     public ResponseEntity<List<Integer>> getRatingDistributionByProduct(@PathVariable String productId) {
-        System.out.println("==> [ReviewController] Getting rating distribution for product: " + productId);
-        List<Integer> ratingDistribution = reviewService.getRatingDistributionByProduct(productId);
-        System.out.println("==> [ReviewController] Rating distribution: " + ratingDistribution);
-        return ResponseEntity.ok(ratingDistribution);
+        List<Integer> distribution = reviewService.getRatingDistributionByProduct(productId);
+        return ResponseEntity.ok(distribution);
     }
 
     @GetMapping

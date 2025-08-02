@@ -22,6 +22,10 @@ interface Review {
   updatedAt: string;
   isActive: boolean;
   isHidden: boolean;
+  adminReply?: string;
+  adminReplyDate?: string;
+  adminId?: string;
+  adminName?: string;
 }
 
 interface ReviewSectionProps {
@@ -42,7 +46,63 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
 
   useEffect(() => {
     fetchReviews();
+    setupSSEConnection();
   }, [productId]);
+
+  // Cleanup SSE connection on unmount
+  useEffect(() => {
+    return () => {
+      // Cleanup will be handled by the SSE connection itself
+    };
+  }, []);
+
+  const setupSSEConnection = () => {
+    const eventSource = new EventSource(`http://localhost:9008/api/reviews/sse/${productId}`);
+    
+    eventSource.onopen = () => {
+      console.log('SSE connection established for product:', productId);
+    };
+
+    eventSource.onmessage = (event) => {
+      console.log('SSE message received:', event);
+    };
+
+    eventSource.addEventListener('connect', (event) => {
+      console.log('SSE connected:', event.data);
+    });
+
+    eventSource.addEventListener('adminReplyUpdate', (event) => {
+      try {
+        const updatedReview = JSON.parse(event.data);
+        console.log('Admin reply update received:', updatedReview);
+        
+        // Update the specific review in the state
+        setReviews(prevReviews => 
+          prevReviews.map(review => 
+            review.id === updatedReview.id ? updatedReview : review
+          )
+        );
+        
+        // Show notification to user
+        toast({
+          title: "Cập nhật",
+          description: "Admin đã trả lời bình luận mới!",
+        });
+      } catch (error) {
+        console.error('Error parsing admin reply update:', error);
+      }
+    });
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      eventSource.close();
+    };
+
+    // Store eventSource for cleanup
+    return () => {
+      eventSource.close();
+    };
+  };
 
   const fetchReviews = async () => {
     try {
@@ -152,6 +212,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
       });
   
       if (response.ok) {
+        const newReview = await response.json();
         toast({
           title: "Thành công",
           description: "Bình luận đã được gửi",
@@ -169,6 +230,11 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
         
         // Dispatch event để ReviewSummary cập nhật
         window.dispatchEvent(new Event('reviewAdded'));
+        
+        // Dispatch custom event for real-time updates
+        window.dispatchEvent(new CustomEvent('newReviewSubmitted', { 
+          detail: { review: newReview, productId } 
+        }));
       } else {
         const errorText = await response.text();
         console.error("Error response:", errorText);
@@ -396,30 +462,52 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
                         {review.comment}
                       </p>
                       
-                                             {review.images && review.images.length > 0 && (
-                         <div className="flex gap-2 overflow-x-auto pb-2">
-                           {review.images.map((image, index) => {
-                             // Convert relative URL to full backend URL
-                             const imageUrl = image.startsWith('/uploads/') 
-                               ? `http://localhost:9008/api/reviews/image/${image.split('/').pop()}`
-                               : image;
-                             
-                             return (
-                               <img
-                                 key={index}
-                                 src={imageUrl}
-                                 alt={`Review image ${index + 1}`}
-                                 className="w-20 h-20 object-cover rounded-lg border shadow-sm hover:scale-105 transition-transform cursor-pointer"
-                                 onClick={() => window.open(imageUrl, '_blank')}
-                                 onError={(e) => {
-                                   console.error('Failed to load image:', imageUrl);
-                                   e.currentTarget.style.display = 'none';
-                                 }}
-                               />
-                             );
-                           })}
-                         </div>
-                       )}
+                      {/* Admin Reply Display */}
+                      {review.adminReply && (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-3 mb-3 rounded-r">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">A</span>
+                            </div>
+                            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                              Trả lời từ Admin {review.adminName && `(${review.adminName})`}
+                            </span>
+                          </div>
+                          <p className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
+                            {review.adminReply}
+                          </p>
+                          {review.adminReplyDate && (
+                            <p className="text-blue-600 dark:text-blue-400 text-xs mt-2">
+                              {formatDate(review.adminReplyDate)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {review.images && review.images.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                          {review.images.map((image, index) => {
+                            // Convert relative URL to full backend URL
+                            const imageUrl = image.startsWith('/uploads/') 
+                              ? `http://localhost:9008/api/reviews/image/${image.split('/').pop()}`
+                              : image;
+                            
+                            return (
+                              <img
+                                key={index}
+                                src={imageUrl}
+                                alt={`Review image ${index + 1}`}
+                                className="w-20 h-20 object-cover rounded-lg border shadow-sm hover:scale-105 transition-transform cursor-pointer"
+                                onClick={() => window.open(imageUrl, '_blank')}
+                                onError={(e) => {
+                                  console.error('Failed to load image:', imageUrl);
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>

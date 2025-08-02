@@ -3,6 +3,7 @@ package com.b2110941.ReviewService.service;
 import com.b2110941.ReviewService.entity.Review;
 import com.b2110941.ReviewService.payload.ReviewRequest;
 import com.b2110941.ReviewService.payload.ReviewResponse;
+import com.b2110941.ReviewService.payload.AdminReplyRequest;
 import com.b2110941.ReviewService.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -106,6 +107,51 @@ public class ReviewService {
         return convertToResponse(updatedReview);
     }
 
+    // Add admin reply to review
+    public ReviewResponse addAdminReply(String reviewId, AdminReplyRequest request) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        
+        review.setAdminReply(request.getAdminReply());
+        review.setAdminId(request.getAdminId());
+        review.setAdminName(request.getAdminName());
+        review.setAdminReplyDate(LocalDateTime.now());
+        review.setUpdatedAt(LocalDateTime.now());
+        
+        Review updatedReview = reviewRepository.save(review);
+        return convertToResponse(updatedReview);
+    }
+
+    // Update admin reply
+    public ReviewResponse updateAdminReply(String reviewId, AdminReplyRequest request) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        
+        review.setAdminReply(request.getAdminReply());
+        review.setAdminId(request.getAdminId());
+        review.setAdminName(request.getAdminName());
+        review.setAdminReplyDate(LocalDateTime.now());
+        review.setUpdatedAt(LocalDateTime.now());
+        
+        Review updatedReview = reviewRepository.save(review);
+        return convertToResponse(updatedReview);
+    }
+
+    // Remove admin reply
+    public ReviewResponse removeAdminReply(String reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        
+        review.setAdminReply(null);
+        review.setAdminId(null);
+        review.setAdminName(null);
+        review.setAdminReplyDate(null);
+        review.setUpdatedAt(LocalDateTime.now());
+        
+        Review updatedReview = reviewRepository.save(review);
+        return convertToResponse(updatedReview);
+    }
+
     // Hide review from clients (soft delete)
     public ReviewResponse hideReview(String reviewId) {
         Review review = reviewRepository.findById(reviewId)
@@ -192,7 +238,11 @@ public class ReviewService {
                 review.getCreatedAt(),
                 review.getUpdatedAt(),
                 review.isActive(),
-                review.isHidden()
+                review.isHidden(),
+                review.getAdminReply(),
+                review.getAdminReplyDate(),
+                review.getAdminId(),
+                review.getAdminName()
         );
     }
 } 

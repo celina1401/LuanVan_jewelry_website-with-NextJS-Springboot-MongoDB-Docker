@@ -26,4 +26,10 @@ public class Review {
     private LocalDateTime updatedAt;
     private boolean isActive = true; // Default to active
     private boolean isHidden = false; // Default to not hidden
+    
+    // Admin reply fields
+    private String adminReply;
+    private LocalDateTime adminReplyDate;
+    private String adminId;
+    private String adminName;
 } 

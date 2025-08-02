@@ -1,11 +1,11 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Star, Search, Trash2, Eye } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Eye, Trash2, MessageSquare, Edit, X, Bell } from "lucide-react";
+import { toast } from "sonner";
 
 interface Review {
   id: string;
@@ -19,50 +19,105 @@ interface Review {
   updatedAt: string;
   isActive: boolean;
   isHidden: boolean;
+  adminReply?: string;
+  adminReplyDate?: string;
+  adminId?: string;
+  adminName?: string;
 }
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
+  const [editingReply, setEditingReply] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   useEffect(() => {
     fetchReviews();
+    setupSSEConnection();
   }, []);
 
+  // Cleanup SSE connection on unmount
   useEffect(() => {
-    const filtered = reviews.filter(review =>
-      review.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.productId.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredReviews(filtered);
-  }, [reviews, searchTerm]);
+    return () => {
+      // Cleanup will be handled by the SSE connection itself
+    };
+  }, []);
+
+  const setupSSEConnection = () => {
+    const eventSource = new EventSource("http://localhost:9008/api/reviews/sse/admin");
+    
+    eventSource.onopen = () => {
+      console.log('SSE connection established for admin');
+    };
+
+    eventSource.addEventListener('connect', (event) => {
+      console.log('Admin SSE connected:', event.data);
+    });
+
+    eventSource.addEventListener('newReview', (event) => {
+      try {
+        const newReview = JSON.parse(event.data);
+        console.log('New review received:', newReview);
+        
+        // Add new review to the top of the list
+        setReviews(prevReviews => [newReview, ...prevReviews]);
+        
+        // Show notification
+        toast.success(`Bình luận mới từ ${newReview.userName}!`);
+      } catch (error) {
+        console.error('Error parsing new review:', error);
+      }
+    });
+
+    eventSource.addEventListener('adminReplyUpdate', (event) => {
+      try {
+        const updatedReview = JSON.parse(event.data);
+        console.log('Admin reply update received:', updatedReview);
+        
+        // Update the specific review in the state
+        setReviews(prevReviews => 
+          prevReviews.map(review => 
+            review.id === updatedReview.id ? updatedReview : review
+          )
+        );
+      } catch (error) {
+        console.error('Error parsing admin reply update:', error);
+      }
+    });
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      eventSource.close();
+    };
+
+    // Store eventSource for cleanup
+    return () => {
+      eventSource.close();
+    };
+  };
 
   const fetchReviews = async () => {
     try {
+      setLoading(true);
       const response = await fetch("http://localhost:9008/api/reviews");
       if (response.ok) {
         const data = await response.json();
-        console.log("Raw response from backend:", data);
-        console.log("First review data:", data[0]);
         setReviews(data);
+      } else {
+        toast.error("Failed to fetch reviews");
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách bình luận",
-        variant: "destructive",
-      });
+      toast.error("Error fetching reviews");
     } finally {
       setLoading(false);
     }
   };
 
   const deleteReview = async (reviewId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa vĩnh viễn bình luận này?")) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) {
+      return;
+    }
 
     try {
       const response = await fetch(`http://localhost:9008/api/reviews/${reviewId}`, {
@@ -70,21 +125,14 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Thành công",
-          description: "Đã xóa vĩnh viễn bình luận",
-        });
+        toast.success("Đã xóa đánh giá thành công");
         fetchReviews();
       } else {
-        throw new Error("Failed to delete review");
+        toast.error("Failed to delete review");
       }
     } catch (error) {
       console.error("Error deleting review:", error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa bình luận",
-        variant: "destructive",
-      });
+      toast.error("Error deleting review");
     }
   };
 
@@ -95,21 +143,14 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Thành công",
-          description: "Đã ẩn bình luận khỏi khách hàng",
-        });
+        toast.success("Đã ẩn đánh giá thành công");
         fetchReviews();
       } else {
-        throw new Error("Failed to hide review");
+        toast.error("Failed to hide review");
       }
     } catch (error) {
       console.error("Error hiding review:", error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể ẩn bình luận",
-        variant: "destructive",
-      });
+      toast.error("Error hiding review");
     }
   };
 
@@ -120,108 +161,186 @@ export default function AdminReviewsPage() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Thành công",
-          description: "Đã hiển thị lại bình luận cho khách hàng",
-        });
+        toast.success("Đã hiện lại đánh giá thành công");
         fetchReviews();
       } else {
-        throw new Error("Failed to unhide review");
+        toast.error("Failed to unhide review");
       }
     } catch (error) {
       console.error("Error unhiding review:", error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể hiển thị lại bình luận",
-        variant: "destructive",
-      });
+      toast.error("Error unhiding review");
     }
   };
 
+  const addAdminReply = async (reviewId: string) => {
+    if (!replyText.trim()) {
+      toast.error("Vui lòng nhập nội dung trả lời");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:9008/api/reviews/${reviewId}/admin-reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminReply: replyText.trim(),
+          adminId: "admin-001", // You can get this from auth context
+          adminName: "Admin", // You can get this from auth context
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Đã thêm trả lời thành công");
+        setEditingReply(null);
+        setReplyText("");
+        fetchReviews();
+      } else {
+        toast.error("Failed to add admin reply");
+      }
+    } catch (error) {
+      console.error("Error adding admin reply:", error);
+      toast.error("Error adding admin reply");
+    }
+  };
+
+  const updateAdminReply = async (reviewId: string) => {
+    if (!replyText.trim()) {
+      toast.error("Vui lòng nhập nội dung trả lời");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:9008/api/reviews/${reviewId}/admin-reply`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminReply: replyText.trim(),
+          adminId: "admin-001", // You can get this from auth context
+          adminName: "Admin", // You can get this from auth context
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Đã cập nhật trả lời thành công");
+        setEditingReply(null);
+        setReplyText("");
+        fetchReviews();
+      } else {
+        toast.error("Failed to update admin reply");
+      }
+    } catch (error) {
+      console.error("Error updating admin reply:", error);
+      toast.error("Error updating admin reply");
+    }
+  };
+
+  const removeAdminReply = async (reviewId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa trả lời này?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:9008/api/reviews/${reviewId}/admin-reply`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success("Đã xóa trả lời thành công");
+        fetchReviews();
+      } else {
+        toast.error("Failed to remove admin reply");
+      }
+    } catch (error) {
+      console.error("Error removing admin reply:", error);
+      toast.error("Error removing admin reply");
+    }
+  };
+
+  const startEditingReply = (review: Review) => {
+    setEditingReply(review.id);
+    setReplyText(review.adminReply || "");
+  };
+
+  const cancelEditingReply = () => {
+    setEditingReply(null);
+    setReplyText("");
+  };
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Date(dateString).toLocaleString("vi-VN");
   };
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-          }`}
-      />
+      <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>
+        ★
+      </span>
     ));
   };
 
-  if (loading) {
-    return <div className="text-center py-8">Đang tải...</div>;
-  }
-
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Quản lý bình luận</h1>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Tìm kiếm bình luận..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh sách bình luận ({filteredReviews.length})</CardTitle>
+    <div className="container mx-auto p-6 min-h-screen ">
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700">
+          <CardTitle className="text-white flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Quản lý đánh giá
+            <Badge variant="secondary" className="ml-auto bg-white/20 text-white">
+              {reviews.length} đánh giá
+            </Badge>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          {filteredReviews.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Không có bình luận nào
+        <CardContent className="p-6">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">Đang tải...</p>
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <p>Không có đánh giá nào</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredReviews.map((review) => (
-                <Card key={review.id} className="p-4">
-                  <div className="flex items-start justify-between">
+              {reviews.map((review) => (
+                <Card key={review.id} className="p-4 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+                  <div className="flex justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-2">
-                        <div className="font-medium">{review.userName}</div>
-                        <div className="flex items-center gap-1">
-                          {renderStars(review.rating)}
-                        </div>
-                        <div className="flex gap-2">
-                          {(() => {
-                            console.log('Review status:', {
-                              id: review.id,
-                              userName: review.userName,
-                              isActive: review.isActive,
-                              isHidden: review.isHidden,
-                              status: !review.isActive ? 'DELETED' : (review.isHidden ? 'HIDDEN' : 'ACTIVE')
-                            });
-                            return null;
-                          })()}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold text-gray-900 dark:text-white">{review.userName}</span>
+                          <div className="flex items-center gap-1">
+                            {renderStars(review.rating)}
+                          </div>
+                          <div className="flex gap-2">
+                            {(() => {
+                              console.log('Review status:', {
+                                id: review.id,
+                                userName: review.userName,
+                                isActive: review.isActive,
+                                isHidden: review.isHidden,
+                                status: !review.isActive ? 'DELETED' : (review.isHidden ? 'HIDDEN' : 'ACTIVE')
+                              });
+                              return null;
+                            })()}
 
-                          {!review.isActive ? (
-                            <Badge variant="destructive">Đã xóa vĩnh viễn</Badge>
-                          ) : review.isHidden ? (
-                            <Badge variant="secondary">Đã ẩn</Badge>
-                          ) : (
-                            <Badge variant="default">Hoạt động</Badge>
-                          )}
+                            {!review.isActive ? (
+                              <Badge variant="destructive">Đã xóa vĩnh viễn</Badge>
+                            ) : review.isHidden ? (
+                              <Badge variant="secondary">Đã ẩn</Badge>
+                            ) : (
+                              <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Hoạt động</Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <p className="text-gray-700 mb-2">{review.comment}</p>
+                      <p className="text-gray-700 dark:text-gray-300 mb-2">{review.comment}</p>
 
                       {review.images && review.images.length > 0 && (
                         <div className="flex gap-2 mb-2">
@@ -236,7 +355,7 @@ export default function AdminReviewsPage() {
                                 key={index}
                                 src={imageUrl}
                                 alt={`Review image ${index + 1}`}
-                                className="w-16 h-16 object-cover rounded border"
+                                className="w-16 h-16 object-cover rounded border dark:border-gray-600"
                                 onError={(e) => {
                                   console.error('Failed to load image:', imageUrl);
                                   e.currentTarget.style.display = 'none';
@@ -247,7 +366,88 @@ export default function AdminReviewsPage() {
                         </div>
                       )}
 
-                      <div className="text-sm text-gray-500">
+                      {/* Admin Reply Section */}
+                      {review.adminReply && (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-3 mb-2 rounded-r">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                              Trả lời từ Admin ({review.adminName})
+                            </span>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditingReply(review)}
+                                disabled={!review.isActive}
+                                className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-800"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeAdminReply(review.id)}
+                                disabled={!review.isActive}
+                                className="h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-800"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-blue-700 dark:text-blue-300 text-sm">{review.adminReply}</p>
+                          {review.adminReplyDate && (
+                            <p className="text-blue-600 dark:text-blue-400 text-xs mt-1">
+                              {formatDate(review.adminReplyDate)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Reply Input Section */}
+                      {editingReply === review.id ? (
+                        <div className="mb-2">
+                          <textarea
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            placeholder="Nhập trả lời của admin..."
+                            className="w-full p-2 border rounded resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                            rows={3}
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              onClick={() => review.adminReply ? updateAdminReply(review.id) : addAdminReply(review.id)}
+                              disabled={!review.isActive}
+                              className="bg-blue-500 hover:bg-blue-600"
+                            >
+                              {review.adminReply ? "Cập nhật" : "Gửi"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={cancelEditingReply}
+                              className="border-gray-300 dark:border-gray-600"
+                            >
+                              Hủy
+                            </Button>
+                          </div>
+                        </div>
+                      ) : !review.adminReply && (
+                        <div className="mb-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEditingReply(review)}
+                            disabled={!review.isActive}
+                            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                          >
+                            <MessageSquare className="w-4 h-4 mr-1" />
+                            Trả lời
+                          </Button>
+                        </div>
+                      )}
+
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         <div>Sản phẩm ID: {review.productId}</div>
                         <div>Người dùng ID: {review.userId}</div>
                         <div>Ngày tạo: {formatDate(review.createdAt)}</div>
@@ -262,6 +462,7 @@ export default function AdminReviewsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => window.open(`/products/${review.productId}`, '_blank')}
+                        className="border-gray-300 dark:border-gray-600"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -272,6 +473,7 @@ export default function AdminReviewsPage() {
                         size="sm"
                         onClick={() => review.isHidden ? unhideReview(review.id) : hideReview(review.id)}
                         disabled={!review.isActive}
+                        className={review.isHidden ? "bg-green-500 hover:bg-green-600" : "border-gray-300 dark:border-gray-600"}
                       >
                         {review.isHidden ? "Hiện lại" : "Ẩn"}
                       </Button>
