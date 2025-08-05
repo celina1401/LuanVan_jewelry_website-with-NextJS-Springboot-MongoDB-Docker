@@ -90,6 +90,7 @@ public class UserController {
             result.put("addresses", user.getAddresses());
             result.put("role", user.getRole());
             result.put("provider", user.getProvider());
+            result.put("active", user.getActive()); // Trạng thái khóa/mở khóa
             result.put("avatarUrl", user.getAvatarUrl()); // custom
             result.put("imageUrl", user.getImageUrl()); // từ Clerk
             result.put("createdAt", user.getCreatedAt());
@@ -327,6 +328,29 @@ public class UserController {
             user.setImageUrl(request.getImageUrl());
             user.setProvider(request.getProvider());
             user.setRole(request.getRole() != null ? request.getRole() : "user");
+            
+            // Thêm các trường bổ sung từ custom registration
+            if (request.getPhone() != null) {
+                user.setPhone(request.getPhone());
+            }
+            if (request.getDateOfBirth() != null) {
+                user.setDateOfBirth(request.getDateOfBirth());
+            }
+            if (request.getGender() != null) {
+                user.setGender(request.getGender());
+            }
+
+            // Set default values for new users
+            if (user.getPurchaseCount() == null) {
+                user.setPurchaseCount(0);
+            }
+            if (user.getActive() == null) {
+                user.setActive(true);
+            }
+            if (user.getCreatedAt() == null) {
+                user.setCreatedAt(java.time.LocalDateTime.now());
+            }
+            user.setUpdatedAt(java.time.LocalDateTime.now());
 
             UserEntity saved = userRepository.save(user);
             return ResponseEntity.ok(new UserResponse(saved.getUserId(), saved.getEmail()));
@@ -355,34 +379,43 @@ public class UserController {
 
     // ✅ Thêm người dùng mới
     @PostMapping("/add")
-    public ResponseEntity<?> addUser(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> addUser(@RequestBody Map<String, Object> payload) {
         try {
-            String email = payload.get("email");
+            String email = (String) payload.get("email");
             if (email == null || email.isEmpty()) {
                 return ResponseEntity.badRequest().body("Email là bắt buộc");
             }
             if (userRepository.findByEmail(email).isPresent()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Email đã tồn tại");
             }
+            
             UserEntity user = new UserEntity();
             user.setUserId(java.util.UUID.randomUUID().toString());
-            user.setFirstName(payload.getOrDefault("firstName", ""));
-            user.setLastName(payload.getOrDefault("lastName", ""));
+            user.setFirstName((String) payload.getOrDefault("firstName", ""));
+            user.setLastName((String) payload.getOrDefault("lastName", ""));
             user.setEmail(email);
-            user.setRole(payload.getOrDefault("role", "user"));
-            user.setPhone(payload.getOrDefault("phone", ""));
+            user.setRole((String) payload.getOrDefault("role", "user"));
+            user.setPhone((String) payload.getOrDefault("phone", ""));
+            user.setDateOfBirth((String) payload.getOrDefault("dateOfBirth", ""));
+            user.setGender((String) payload.getOrDefault("gender", ""));
+            
+            // Handle addresses
             if (payload.containsKey("addresses")) {
                 ObjectMapper mapper = new ObjectMapper();
                 List<Address> addresses = mapper.convertValue(
-                        payload.get("addresses"),
-                        new TypeReference<List<Address>>() {
-                        });
+                    payload.get("addresses"),
+                    new TypeReference<List<Address>>() {}
+                );
                 user.setAddresses(addresses);
             } else {
                 user.setAddresses(new java.util.ArrayList<>());
             }
+            
+            user.setPurchaseCount(0);
+            user.setActive(true);
             user.setCreatedAt(java.time.LocalDateTime.now());
             user.setUpdatedAt(java.time.LocalDateTime.now());
+            
             UserEntity saved = userRepository.save(user);
             System.out.println("[UserController] Đã thêm user vào MongoDB: " + saved.getUserId());
             return ResponseEntity.ok(saved);
@@ -390,6 +423,40 @@ public class UserController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Không thể thêm người dùng: " + e.getMessage());
+        }
+    }
+
+    // ✅ Khóa/Mở khóa tài khoản người dùng
+    @PutMapping("/{userId}/toggle-lock")
+    public ResponseEntity<?> toggleUserLock(@PathVariable String userId, @RequestBody Map<String, Object> payload) {
+        try {
+            Optional<UserEntity> userOpt = userRepository.findByUserId(userId);
+            if (!userOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            }
+
+            UserEntity user = userOpt.get();
+            Boolean active = (Boolean) payload.get("active");
+            
+            if (active == null) {
+                return ResponseEntity.badRequest().body("Active status is required");
+            }
+
+            user.setActive(active);
+            user.setUpdatedAt(java.time.LocalDateTime.now());
+            
+            UserEntity saved = userRepository.save(user);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("userId", saved.getUserId());
+            response.put("active", saved.getActive());
+            response.put("message", active ? "User unlocked successfully" : "User locked successfully");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error toggling user lock: " + e.getMessage());
         }
     }
 

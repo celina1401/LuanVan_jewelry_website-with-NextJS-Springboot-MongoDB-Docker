@@ -10,6 +10,9 @@ public class UserSyncRequest {
     private String imageUrl;
     private String provider;
     private Number purchaseCount;
+    private String phone;
+    private String dateOfBirth;
+    private String gender;
 
     // Getters & Setters
     public String getUserId() {
@@ -74,5 +77,29 @@ public class UserSyncRequest {
 
     public void setProvider(String provider) {
         this.provider = provider;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 }

@@ -8,6 +8,7 @@ import { Providers } from './providers';
 import { ClerkProvider } from '@clerk/nextjs';
 import { RedirectAdmin } from './components/RedirectAdmin';
 import UserSyncClient from './components/UserSyncClient';
+import UserStatusChecker from './components/UserStatusChecker';
 import ClientChatBoxWrapper from "@/app/ClientChatBoxWrapper";
 
 const inter = Inter({ subsets: ['latin'] });
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           <RedirectAdmin />
           <UserSyncClient />
+          <UserStatusChecker />
           <Providers>
             <ThemeProvider
               attribute="class"

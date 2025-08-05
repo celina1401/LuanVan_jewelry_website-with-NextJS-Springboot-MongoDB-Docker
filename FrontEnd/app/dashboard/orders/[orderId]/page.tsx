@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, CreditCard, Truck, CheckCircle } from "lucide-react";
+import { ArrowLeft, Package, CreditCard, Truck, CheckCircle, X, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OrderItem {
   productId: string;
@@ -64,6 +66,9 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -105,7 +110,7 @@ export default function OrderDetailPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error || "Không tìm thấy đơn hàng"}</p>
-          <Button onClick={() => router.back()}>Quay lại</Button>
+          <Button onClick={() => window.location.href = "/dashboard/orders"}>Quay lại</Button>
         </div>
       </div>
     );
@@ -164,7 +169,7 @@ export default function OrderDetailPage() {
         <div className="flex items-center gap-4 mb-6">
           <Button
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => window.location.href = "/dashboard/orders"}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -354,26 +359,84 @@ export default function OrderDetailPage() {
         </div>
       </div>
       {order.orderStatus === "Chưa xử lý" && (
-  <Button
-    variant="destructive"
-    onClick={() => {
-      const reason = prompt("Nhập lý do hủy đơn:");
-      if (reason) {
-        fetch(`http://localhost:9003/api/orders/${order.id}/cancel`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ reason }),
-        })       
-        
-        .then(() => window.location.reload());
-      }
-    }}
-  >
-    Hủy đơn hàng
-  </Button>
-)}
+        <Button
+          variant="destructive"
+          onClick={() => setShowCancelDialog(true)}
+        >
+          Hủy đơn hàng
+        </Button>
+      )}
+
+      {/* Cancel Order Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="sm:max-w-md rounded-xl p-6 animate-in">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center text-xl font-bold">
+              <AlertCircle className="h-6 w-6 text-red-500" />
+              Hủy đơn hàng
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-center text-base text-gray-700">
+              Vui lòng nhập lý do hủy đơn hàng của bạn:
+            </p>
+            <textarea
+              placeholder="Nhập lý do hủy đơn hàng (ví dụ: Đổi ý, đặt nhầm, giá cao...)"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="min-h-[100px] w-full rounded-lg border border-gray-300 focus:border-rose-500 focus:outline-none text-base p-3 resize-none"
+            />
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCancelDialog(false);
+                  setCancelReason("");
+                }}
+                disabled={isCancelling}
+                className="rounded-lg px-6 py-2"
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!cancelReason.trim()) {
+                    alert("Vui lòng nhập lý do hủy đơn");
+                    return;
+                  }
+                  setIsCancelling(true);
+                  try {
+                    const response = await fetch(`http://localhost:9003/api/orders/${order.id}/cancel`, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({ reason: cancelReason.trim() }),
+                    });
+                    if (response.ok) {
+                      setShowCancelDialog(false);
+                      setCancelReason("");
+                      window.location.reload();
+                    } else {
+                      alert("Có lỗi xảy ra khi hủy đơn hàng");
+                    }
+                  } catch (error) {
+                    console.error("Error cancelling order:", error);
+                    alert("Có lỗi xảy ra khi hủy đơn hàng");
+                  } finally {
+                    setIsCancelling(false);
+                  }
+                }}
+                disabled={isCancelling || !cancelReason.trim()}
+                className="rounded-lg px-6 py-2 font-semibold bg-rose-500 hover:bg-rose-600"
+              >
+                {isCancelling ? "Đang hủy..." : "Xác nhận hủy"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

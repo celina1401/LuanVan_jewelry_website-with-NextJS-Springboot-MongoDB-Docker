@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import Barcode from "react-barcode";
+import { Edit, Trash2, Eye } from "lucide-react";
 
 export default function ProductPage() {
   const [form, setForm] = useState({
@@ -462,12 +463,13 @@ export default function ProductPage() {
               {/* Hàng 1: Tên sản phẩm */}
               <div className="space-y-2 mb-2">
                 <label className="font-semibold text-base">Tên sản phẩm</label>
-                <Input
+                <input
                   name="name"
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full"
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                  style={{ outline: 'none', boxShadow: 'none' }}
                 />
               </div>
 
@@ -479,7 +481,7 @@ export default function ProductPage() {
                     value={form.category}
                     onValueChange={(v) => handleSelect("category", v)}
                   >
-                    <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full">
+                    <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none">
                       <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
@@ -492,23 +494,25 @@ export default function ProductPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Mã sản phẩm</label>
-                  <Input
+                  <input
                     name="productCode"
                     value={form.productCode}
                     readOnly
-                    className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground"
+                    className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Số lượng</label>
-                  <Input
+                  <input
                     name="quantity"
                     type="number"
                     min={0}
                     value={form.quantity}
                     onChange={handleChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
               </div>
@@ -516,7 +520,7 @@ export default function ProductPage() {
               <div className="grid grid-cols-4 gap-6 mb-2">
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Khối lượng (chỉ)</label>
-                  <Input
+                  <input
                     name="weight"
                     type="number"
                     min={0}
@@ -525,7 +529,8 @@ export default function ProductPage() {
                     onChange={handleChange}
                     required
                     placeholder="Nhập khối lượng theo chỉ"
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -541,7 +546,7 @@ export default function ProductPage() {
                     <SelectContent>
                       <SelectItem value="983">983</SelectItem>
                       <SelectItem value="999">999</SelectItem>
-                      <SelectItem value="9999">9999</SelectItem>
+                      {/* <SelectItem value="9999">9999</SelectItem> */}
                       <SelectItem value="15k">15k</SelectItem>
                       <SelectItem value="16k">16k</SelectItem>
                       <SelectItem value="17k">17k</SelectItem>
@@ -551,7 +556,7 @@ export default function ProductPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Tiền công (VNĐ)</label>
-                  <Input
+                  <input
                     name="wage"
                     type="number"
                     min={0}
@@ -559,19 +564,21 @@ export default function ProductPage() {
                     onChange={handleChange}
                     onBlur={handleWageBlur}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Giá bán (VNĐ)</label>
-                  <Input
+                  <input
                     name="price"
                     type="number"
                     min={0}
                     value={form.price}
                     onChange={handleChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
               </div>
@@ -579,33 +586,36 @@ export default function ProductPage() {
               <div className="grid grid-cols-2 gap-6 mb-2">
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Xuất xứ</label>
-                  <Input
+                  <input
                     name="origin"
                     value={form.origin}
                     onChange={handleChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Thương hiệu</label>
-                  <Input
+                  <input
                     name="brand"
                     value={form.brand}
                     onChange={handleChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
               </div>
               {/* Mã SKU: chiếm 2 cột */}
               <div className="col-span-2 space-y-2">
                 <label className="font-semibold text-base">Mã SKU (tự động)</label>
-                <Input
+                <input
                   name="sku"
                   value={form.sku}
                   readOnly
-                  className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground"
+                  className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground shadow-none"
+                  style={{ outline: 'none', boxShadow: 'none' }}
                 />
               </div>
 
@@ -617,7 +627,7 @@ export default function ProductPage() {
                   value={form.description}
                   onChange={handleChange}
                   rows={3}
-                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full resize-none"
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full resize-none shadow-none"
                   placeholder="Nhập mô tả chi tiết về sản phẩm..."
                 />
               </div>
@@ -777,24 +787,33 @@ export default function ProductPage() {
 
                   <div className="col-span-1 text-xs text-muted-foreground">{product.createdAt ? new Date(product.createdAt).toLocaleDateString('vi-VN') : (product.created_at ? new Date(product.created_at).toLocaleDateString('vi-VN') : '-')}</div>
                   <div className="col-span-1 text-xs text-muted-foreground">{product.updatedAt ? new Date(product.updatedAt).toLocaleDateString('vi-VN') : (product.updated_at ? new Date(product.updated_at).toLocaleDateString('vi-VN') : '-')}</div>
-                  <div className="col-span-1">
+                  <div className="col-span-1 flex justify-center">
                     <button onClick={async () => {
                       const detail = await fetchProductDetail(product.id || product.product_id);
                       setDetailProduct(detail || product);
                       setShowDetail(true);
                     }}
-                      className="text-blue-600 underline font-semibold hover:text-blue-800 transition-colors"
-                    >Xem chi tiết</button>
+                      className="p-2 rounded-lg transition-all duration-200 hover:scale-110 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      title="Xem chi tiết sản phẩm"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
                   </div>
                   <div className="col-span-1 flex gap-2 justify-center">
                     <button
-                      className="text-yellow-600 font-semibold hover:underline hover:text-yellow-700 transition-colors"
+                      className="p-2 rounded-lg transition-all duration-200 hover:scale-110 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
                       onClick={() => handleEdit(product)}
-                    >Sửa</button>
+                      title="Sửa sản phẩm"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
                     <button
-                      className="text-red-500 font-semibold hover:underline hover:text-red-700 transition-colors"
+                      className="p-2 rounded-lg transition-all duration-200 hover:scale-110 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                       onClick={() => handleDelete(product)}
-                    >Xóa</button>
+                      title="Xóa sản phẩm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               )
@@ -808,80 +827,149 @@ export default function ProductPage() {
         </CardContent>
       </Card>
       {/* Popup chi tiết sản phẩm */}
-      <DetailDialog open={showDetail} onOpenChange={setShowDetail}>
-        <DetailDialogContent className="max-w-3xl w-full bg-card rounded-2xl shadow-2xl border-2 border-rose-300 p-0 overflow-hidden">
-          <DetailDialogHeader className="px-8 pt-8 pb-2">
-            <DetailDialogTitle className="text-3xl font-extrabold mb-2 text-primary">Chi tiết sản phẩm</DetailDialogTitle>
-          </DetailDialogHeader>
-          {detailProduct && (
-            (() => {
-              // Ưu tiên lấy thông tin từ detailProduct (Product), chỉ fallback sang productDetails[0] nếu Product không có trường đó
-              const detail = Array.isArray(detailProduct.productDetails) && detailProduct.productDetails.length > 0
-                ? detailProduct.productDetails[0]
-                : {};
-              // Sửa lại hàm getField: ưu tiên lấy từ detailProduct trước
-              const getField = (field: string) => detailProduct?.[field] ?? detail?.[field] ?? '-';
-              const getDate = (field: string) => {
-                const val = detailProduct?.[field] ?? detail?.[field];
-                return val ? new Date(val).toLocaleDateString('vi-VN') : '-';
-              };
-              return (
-                <div className="flex flex-col md:flex-row gap-8 px-8 pb-8">
-                  {/* Ảnh sản phẩm */}
-                  <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
-                    {(detailProduct.id || detailProduct.product_id) ? (
-                      <img
-                        src={`http://localhost:9004/api/products/image/${detailProduct.id || detailProduct.product_id}`}
-                        alt={detailProduct.name}
-                        className="w-48 h-48 object-cover rounded-xl shadow-lg border-2 border-rose-200"
-                        onError={(e) => {
-                          e.currentTarget.src = '/default-avatar.png';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
-                        Không có ảnh
-                      </div>
-                    )}
+      {showDetail && detailProduct && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl relative">
+            <button 
+              className="absolute top-4 right-4 text-gray-500 hover:text-red-500 text-xl font-bold" 
+              onClick={() => setShowDetail(false)}
+            >
+              ×
+            </button>
+            
+            <h2 className="text-xl font-bold mb-4">Chi tiết sản phẩm #{detailProduct.productCode}</h2>
+            
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Ảnh sản phẩm */}
+              <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
+                {(detailProduct.id || detailProduct.product_id) ? (
+                  <img
+                    src={`http://localhost:9004/api/products/image/${detailProduct.id || detailProduct.product_id}`}
+                    alt={detailProduct.name}
+                    className="w-64 h-64 object-cover rounded-xl shadow-lg border-2 border-rose-200"
+                    onError={(e) => {
+                      e.currentTarget.src = '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <div className="w-64 h-64 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
+                    Không có ảnh
                   </div>
-                  {/* Thông tin sản phẩm */}
-                  <div className="flex-1 grid grid-cols-1 gap-y-2 text-base">
-                    <div><span className="font-semibold text-gray-500">Mã sản phẩm:</span> <span className="font-medium">{getField('productCode')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Tên sản phẩm:</span> <span className="font-medium">{getField('name')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Loại:</span> <span className="font-medium">{(() => {
-                      switch (getField('category')) {
+                )}
+              </div>
+              
+              {/* Thông tin sản phẩm */}
+              <div className="flex-1 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="font-semibold text-gray-500">Mã sản phẩm:</span>
+                    <p className="font-medium text-lg">{detailProduct.productCode || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Tên sản phẩm:</span>
+                    <p className="font-medium text-lg">{detailProduct.name || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Loại:</span>
+                    <p className="font-medium">{(() => {
+                      switch (detailProduct.category) {
                         case 'necklace': return 'Dây chuyền';
                         case 'bracelet': return 'Vòng tay';
                         case 'ring': return 'Nhẫn';
                         case 'earring': return 'Bông tai';
-                        default: return getField('category');
+                        default: return detailProduct.category || '-';
                       }
-                    })()}</span></div>
-                    <div><span className="font-semibold text-gray-500">Chất liệu:</span> <span className="font-medium">Vàng</span></div>
-                    <div><span className="font-semibold text-gray-500">Hàm lượng:</span> <span className="font-medium">{getField('karat') !== '-' ? getField('karat') : getField('goldAge')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Trọng lượng:</span> <span className="font-medium">{getField('weight')} chỉ</span></div>
-                    <div><span className="font-semibold text-gray-500">Xuất xứ:</span> <span className="font-medium">{getField('origin')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Số lượng tồn kho:</span> <span className="font-medium">{getField('stockQuantity')}</span></div>
-                    <div><span className="font-semibold text-gray-500">Mô tả chi tiết sản phẩm:</span> <span className="font-medium">{getField('description')}</span></div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="font-semibold text-gray-500">Trạng thái:</span>
-                      {Number(getField('stockQuantity') !== '-' ? getField('stockQuantity') : getField('quantity')) > 0 ? (
-                        <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-semibold shadow-sm">Còn hàng</span>
-                      ) : (
-                        <span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold shadow-sm">Hết hàng</span>
-                      )}
-                    </div>
-                    <div className="flex flex-row items-center justify-start gap-8 mt-2">
-                      <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày tạo:</span> <span className="font-medium">{getDate('createdAt')}</span></div>
-                      <div className="whitespace-nowrap"><span className="font-semibold text-gray-500">Ngày cập nhật:</span> <span className="font-medium">{getDate('updatedAt')}</span></div>
-                    </div>
+                    })()}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Chất liệu:</span>
+                    <p className="font-medium">Vàng</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Hàm lượng:</span>
+                    <p className="font-medium">{detailProduct.karat || detailProduct.goldAge || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Trọng lượng:</span>
+                    <p className="font-medium">{detailProduct.weight ? `${detailProduct.weight} chỉ` : '-'}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Xuất xứ:</span>
+                    <p className="font-medium">{detailProduct.origin || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Số lượng tồn kho:</span>
+                    <p className="font-medium">{detailProduct.stockQuantity || detailProduct.quantity || '0'}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Tiền công:</span>
+                    <p className="font-medium text-rose-600 font-bold">
+                      {detailProduct.wage ? `${detailProduct.wage.toLocaleString()}₫` : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Giá bán:</span>
+                    <p className="font-medium text-rose-600 font-bold">
+                      {detailProduct.price ? `${detailProduct.price.toLocaleString()}₫` : '-'}
+                    </p>
                   </div>
                 </div>
-              );
-            })()
-          )}
-        </DetailDialogContent>
-      </DetailDialog>
+                
+                <div>
+                  <span className="font-semibold text-gray-500">Mô tả chi tiết:</span>
+                  <p className="font-medium mt-1">{detailProduct.description || 'Không có mô tả'}</p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-500">Trạng thái:</span>
+                  {(detailProduct.stockQuantity || detailProduct.quantity || 0) > 0 ? (
+                    <span className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-semibold shadow-sm">
+                      Còn hàng
+                    </span>
+                  ) : (
+                    <span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold shadow-sm">
+                      Hết hàng
+                    </span>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-semibold">Ngày tạo:</span>
+                    <p className="font-medium">
+                      {detailProduct.createdAt ? new Date(detailProduct.createdAt).toLocaleDateString('vi-VN') : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Ngày cập nhật:</span>
+                    <p className="font-medium">
+                      {detailProduct.updatedAt ? new Date(detailProduct.updatedAt).toLocaleDateString('vi-VN') : '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                onClick={() => setShowDetail(false)}
+              >
+                Đóng
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={() => {
+                  setShowDetail(false);
+                  handleEdit(detailProduct);
+                }}
+              >
+                Sửa sản phẩm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Popup sửa sản phẩm */}
       <DetailDialog open={showEdit} onOpenChange={setShowEdit}>
         <DetailDialogContent className="max-w-4xl w-full overflow-y-auto max-h-screen border-2 border-border bg-card text-foreground rounded-2xl shadow-2xl">
@@ -893,12 +981,13 @@ export default function ProductPage() {
               {/* Hàng 1: Tên sản phẩm */}
               <div className="space-y-2 mb-2">
                 <label className="font-semibold text-base">Tên sản phẩm</label>
-                <Input
+                <input
                   name="name"
                   value={editProduct.name}
                   onChange={handleEditChange}
                   required
-                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                  style={{ outline: 'none', boxShadow: 'none' }}
                 />
               </div>
               {/* Hàng 2: Loại sản phẩm - Mã sản phẩm - Số lượng */}
@@ -909,7 +998,7 @@ export default function ProductPage() {
                     value={editProduct.category}
                     onValueChange={(v) => setEditProduct((prev: any) => ({ ...prev, category: v }))}
                   >
-                    <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full">
+                    <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none">
                       <SelectValue placeholder="Chọn loại sản phẩm" />
                     </SelectTrigger>
                     <SelectContent>
@@ -922,23 +1011,25 @@ export default function ProductPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Mã sản phẩm</label>
-                  <Input
+                  <input
                     name="productCode"
                     value={editProduct.productCode}
                     readOnly
-                    className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground"
+                    className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Số lượng tồn kho</label>
-                  <Input
+                  <input
                     name="stockQuantity"
                     type="number"
                     min={0}
                     value={editProduct.stockQuantity ?? ''}
                     onChange={handleEditChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
               </div>
@@ -946,7 +1037,7 @@ export default function ProductPage() {
               <div className="grid grid-cols-4 gap-6 mb-2">
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Khối lượng (chỉ)</label>
-                  <Input
+                  <input
                     name="weight"
                     type="number"
                     min={0}
@@ -955,7 +1046,8 @@ export default function ProductPage() {
                     onChange={handleEditChange}
                     required
                     placeholder="Nhập khối lượng theo chỉ"
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -980,26 +1072,28 @@ export default function ProductPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Tiền công (VNĐ)</label>
-                  <Input
+                  <input
                     name="wage"
                     type="number"
                     min={0}
                     value={editProduct.wage || ''}
                     onChange={handleEditChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Giá bán (VNĐ)</label>
-                  <Input
+                  <input
                     name="price"
                     type="number"
                     min={0}
                     value={editProduct.price}
                     onChange={handleEditChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
               </div>
@@ -1007,33 +1101,36 @@ export default function ProductPage() {
               <div className="grid grid-cols-2 gap-6 mb-2">
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Xuất xứ</label>
-                  <Input
+                  <input
                     name="origin"
                     value={editProduct.origin || ''}
                     onChange={handleEditChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Thương hiệu</label>
-                  <Input
+                  <input
                     name="brand"
                     value={editProduct.brand || ''}
                     onChange={handleEditChange}
                     required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full"
+                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
               </div>
               {/* Mã SKU: chiếm 2 cột */}
               <div className="col-span-2 space-y-2">
                 <label className="font-semibold text-base">Mã SKU (tự động)</label>
-                <Input
+                <input
                   name="sku"
                   value={editProduct.sku || ''}
                   readOnly
-                  className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground"
+                  className="bg-muted border border-border rounded-lg px-4 py-3 text-base w-full text-foreground shadow-none"
+                  style={{ outline: 'none', boxShadow: 'none' }}
                 />
               </div>
               {/* Mô tả chi tiết */}
@@ -1044,7 +1141,7 @@ export default function ProductPage() {
                   value={editProduct.description || ''}
                   onChange={handleEditChange}
                   rows={3}
-                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full resize-none"
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full resize-none shadow-none"
                   placeholder="Nhập mô tả chi tiết về sản phẩm..."
                 />
               </div>

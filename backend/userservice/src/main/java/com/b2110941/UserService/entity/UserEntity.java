@@ -30,7 +30,10 @@ public class UserEntity {
     private List<Address> addresses;
     private String avatarUrl;
     private byte[] avatarImage;
-    // private String purchaseCount;
+    private Boolean active = true; // Mặc định tài khoản hoạt động
+    private String dateOfBirth;
+    private String gender;
+    private Integer purchaseCount = 0;
 
 
     // Getters & Setters
@@ -159,5 +162,37 @@ public class UserEntity {
     }
     public void setAvatarImage(byte[] avatarImage) {
         this.avatarImage = avatarImage;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Integer getPurchaseCount() {
+        return purchaseCount;
+    }
+
+    public void setPurchaseCount(Integer purchaseCount) {
+        this.purchaseCount = purchaseCount;
     }
 }

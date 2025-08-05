@@ -22,9 +22,22 @@ export default function PaymentCallback() {
         const orderIdParam = params.get("vnp_TxnRef");
         const amountParam = params.get("vnp_Amount");
 
-        // Set order details
+        // Set order details - orderIdParam is actually orderNumber
         if (orderIdParam) {
-          setOrderId(orderIdParam);
+          // Try to get the actual orderId from MongoDB using orderNumber
+          try {
+            const getRes = await fetch(`/api/orders?orderNumber=${orderIdParam}`);
+            const order = await getRes.json();
+            
+            if (order?.id) {
+              setOrderId(order.id); // Use the actual MongoDB orderId
+            } else {
+              setOrderId(orderIdParam); // Fallback to orderNumber
+            }
+          } catch (err) {
+            console.error('Error fetching order details:', err);
+            setOrderId(orderIdParam); // Fallback to orderNumber
+          }
         }
 
         if (amountParam) {
@@ -89,6 +102,14 @@ export default function PaymentCallback() {
     window.location.href = "/order";
   };
 
+  const handleViewOrder = () => {
+    if (orderId) {
+      window.location.href = `/dashboard/orders/${orderId}`;
+    } else {
+      window.location.href = "/dashboard/orders";
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -121,6 +142,7 @@ export default function PaymentCallback() {
           orderId={orderId}
           amount={amount}
           onRetry={handleRetry}
+          onViewOrder={handleViewOrder}
           showActions={true}
         />
       </div>
