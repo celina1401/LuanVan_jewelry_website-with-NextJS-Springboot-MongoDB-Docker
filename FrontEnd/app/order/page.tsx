@@ -290,7 +290,7 @@ export default function OrderPage() {
                   {items.map((item) => {
                     const unitPrice = dynamicPrices[item.id] ?? item.price;
                     return (
-                      <li key={item.id} className="flex items-center gap-3 justify-between">
+                      <li key={item.id} className="flex flex-col gap-1 justify-between">
                         <div className="flex items-center gap-3">
                           {item.image && <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded border" />}
                           <span>{item.name}</span>
@@ -299,8 +299,34 @@ export default function OrderPage() {
                             <span className="w-8 text-center">{item.quantity}</span>
                             <button type="button" onClick={() => updateQuantity(item.id, item.quantity + 1, item.metadata)} className="w-7 h-7 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold">+</button>
                           </div>
+                          <span>{(unitPrice * item.quantity).toLocaleString()}₫</span>
                         </div>
-                        <span>{(unitPrice * item.quantity).toLocaleString()}₫</span>
+                        {/* Thông tin khối lượng × giá vàng + tiền công */}
+                        <div className="ml-20 text-xs text-gray-500 dark:text-gray-300">ID
+                          {(() => {
+                            const weight = item.metadata?.weight;
+                            const wage = item.metadata?.wage || 0;
+                            const goldAge = item.metadata?.goldAge;
+                            const pricePerChi = (dynamicPrices[item.id] && weight)
+                              ? ((dynamicPrices[item.id] - wage) / weight)
+                              : null;
+                            if (weight && pricePerChi !== null && pricePerChi !== undefined) {
+                              return (
+                                <span>
+                                  (Khối lượng: <b>{weight}</b> chỉ × Giá vàng: <b>{pricePerChi.toLocaleString()}₫</b> + Tiền công: <b>{wage.toLocaleString()}₫</b>) × Số lượng: <b>{item.quantity}</b> = <b>{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                </span>
+                              );
+                            } else if (weight && goldAge) {
+                              return (
+                                <span>
+                                  (Khối lượng: <b>{weight}</b> chỉ × Giá vàng + Tiền công: <b>{wage.toLocaleString()}₫</b>) × Số lượng: <b>{item.quantity}</b> = <b>{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                </span>
+                              );
+                            } else {
+                              return null;
+                            }
+                          })()}
+                        </div>
                       </li>
                     );
                   })}

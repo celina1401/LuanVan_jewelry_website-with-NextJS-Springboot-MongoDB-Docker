@@ -447,7 +447,7 @@ export default function DashboardPage() {
                           <p>Giao hàng: {order.shippingStatus}</p>
                         </div>
                         <button 
-                          onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                          onClick={() => router.push(`/dashboard/orders/${order.orderNumber}`)}
                           className="mt-2 text-sm text-blue-600 hover:underline"
                         >
                           Xem chi tiết

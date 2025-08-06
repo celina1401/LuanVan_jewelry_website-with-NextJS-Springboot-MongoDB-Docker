@@ -30,7 +30,7 @@ export default function PaymentCallback() {
             const order = await getRes.json();
             
             if (order?.id) {
-              setOrderId(order.id); // Use the actual MongoDB orderId
+              setOrderId(orderIdParam); // Luôn hiển thị orderNumber cho người dùng
             } else {
               setOrderId(orderIdParam); // Fallback to orderNumber
             }

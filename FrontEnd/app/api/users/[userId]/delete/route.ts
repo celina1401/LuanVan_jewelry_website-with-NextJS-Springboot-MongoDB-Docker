@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
-  const { userId } = params;
+  const { userId } = await params;
 
   try {
     await clerkClient.users.deleteUser(userId);

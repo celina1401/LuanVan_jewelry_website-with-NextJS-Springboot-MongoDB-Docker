@@ -16,7 +16,18 @@ export async function GET(
   }
 
   try {
-    const response = await fetch(`${ORDER_SERVICE_URL}/api/orders/${orderId}`, {
+    // Kiểm tra xem orderId có phải là orderNumber (bắt đầu bằng chữ cái) hay không
+    let url = `${ORDER_SERVICE_URL}/api/orders`;
+    
+    if (/^[A-Z]/.test(orderId)) {
+      // Nếu bắt đầu bằng chữ cái, coi như là orderNumber
+      url = `${ORDER_SERVICE_URL}/api/orders/number/${orderId}`;
+    } else {
+      // Nếu không, coi như là id
+      url = `${ORDER_SERVICE_URL}/api/orders/${orderId}`;
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });

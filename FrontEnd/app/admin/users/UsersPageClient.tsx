@@ -1,10 +1,10 @@
 "use client";
 import AddAddressForm, { Address } from "@/app/components/AddAddressForm";
-import { Eye, Lock, Unlock, Trash2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Eye, Lock, Unlock, Trash2, CheckCircle, XCircle, RefreshCw, Filter } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Toast, ToastTitle, ToastDescription, ToastClose } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth, useClerk } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 // CHUA HIEN THI DUOC LICH SU DON HANG
 interface User {
@@ -67,16 +67,15 @@ export default function UsersPageClient() {
   const [showAddAddressForm, setShowAddAddressForm] = useState(false);
   const [lockingId, setLockingId] = useState<string | null>(null);
 
-// TOAST
-const [openToast, setOpenToast] = useState(false);
-const [toastMessage, setToastMessage] = useState("");
+  // ROLE FILTER
+  const [roleFilter, setRoleFilter] = useState<string>("user");
 
-// order
-const [orders, setOrders] = useState<any[]>([]);
-const [ordersLoading, setOrdersLoading] = useState(false);
-const [selectedOrder, setSelectedOrder] = useState<any>(null);
-const [showOrderDetail, setShowOrderDetail] = useState(false);
-const router = useRouter();
+  // order
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showOrderDetail, setShowOrderDetail] = useState(false);
+  const router = useRouter();
 
 const { user } = useUser();
 
@@ -99,6 +98,11 @@ const { user } = useUser();
   useEffect(() => {
     loadUsers();
   }, []);
+
+  // Filter users based on selected role
+  const filteredUsers = roleFilter === "all" 
+    ? users 
+    : users.filter(user => user.role === roleFilter);
 
   // Toggle user lock/unlock handler
   const handleToggleLock = async (userId: string, currentActive: boolean) => {
@@ -124,7 +128,9 @@ const { user } = useUser();
               : user
           )
         );
-        setOpenToast(true);
+        toast.success("Cập nhật trạng thái người dùng thành công!", {
+          description: `Đã ${currentActive ? 'khóa' : 'mở khóa'} tài khoản người dùng`
+        });
       } else {
         alert(`Không thể ${action} người dùng. Vui lòng thử lại.`);
       }
@@ -165,6 +171,13 @@ const { user } = useUser();
     // Validate required fields
     if (!newUser.firstName || !newUser.lastName || !newUser.email) {
       setAddError("Vui lòng điền đầy đủ thông tin bắt buộc");
+      setAddLoading(false);
+      return;
+    }
+
+    // Validate phone number (must be exactly 10 digits if provided)
+    if (newUser.phone && newUser.phone.length !== 10) {
+      setAddError("Số điện thoại phải có đúng 10 chữ số");
       setAddLoading(false);
       return;
     }
@@ -235,8 +248,9 @@ const { user } = useUser();
         setShowAdd(false);
         setNewUser(initialNewUser);
         loadUsers();
-        setToastMessage("Tài khoản đã được tạo với xác thực Clerk và đồng bộ với backend.");
-        setOpenToast(true);
+        toast.success("Tài khoản đã được tạo thành công!", {
+          description: "Người dùng có thể đăng nhập ngay với thông tin đã cung cấp"
+        });
       }
     } catch (error) {
       console.error('Error adding user:', error);
@@ -267,6 +281,26 @@ const { user } = useUser();
 
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
+    
+    // Validate phone number (must be exactly 10 digits if provided)
+    if (editPhone && editPhone.length !== 10) {
+      setError("Số điện thoại phải có đúng 10 chữ số");
+      return;
+    }
+    
+    // Check if there are any changes
+    const hasChanges = 
+      editPhone !== (selectedUser.phone || "") ||
+      editPurchaseCount !== (selectedUser.purchaseCount || 0) ||
+      JSON.stringify(editAddresses) !== JSON.stringify(selectedUser.addresses || []);
+    
+    if (!hasChanges) {
+      toast.info("Không có thay đổi nào để cập nhật!", {
+        description: "Thông tin người dùng không có sự thay đổi"
+      });
+      return;
+    }
+    
     setUpdating(true);
     try {
       const payload = {
@@ -286,7 +320,12 @@ const { user } = useUser();
       const updated: User = await res.json();
       setSelectedUser(updated);
       loadUsers();
-      setOpenToast(true);
+      
+      // Close popup and show success toast
+      setSelectedUser(null);
+      toast.success("Cập nhật thông tin người dùng thành công!", {
+        description: "Thông tin đã được lưu và cập nhật trong hệ thống"
+      });
     } catch {
       setError("Cập nhật thất bại");
     } finally {
@@ -343,7 +382,25 @@ const { user } = useUser();
         </button>
       </div>
 
-      {error && <div className="text-red-500 mb-4">{error}</div>}
+      {/* Role Filter */}
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Filter className="w-5 h-5 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">Lọc theo vai trò:</span>
+        </div>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent"
+        >
+          <option value="all">Tất cả</option>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <div className="text-sm text-muted-foreground">
+          Hiển thị {filteredUsers.length} người dùng
+        </div>
+      </div>
 
       <div className="bg-card rounded-lg shadow overflow-x-auto border border-border">
         <table className="min-w-full">
@@ -363,15 +420,19 @@ const { user } = useUser();
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-muted-foreground">Đang tải...</td>
+                <td colSpan={9} className="text-center py-8 text-muted-foreground">Đang tải...</td>
               </tr>
-            ) : users.length === 0 ? (
-
+            ) : filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-muted-foreground">Không có người dùng nào.</td>
+                <td colSpan={9} className="text-center py-8 text-muted-foreground">
+                  {roleFilter === 'all' 
+                    ? 'Không có người dùng nào trong hệ thống.'
+                    : `Không có người dùng nào với vai trò ${roleFilter === 'user' ? 'User' : 'Admin'}.`
+                  }
+                </td>
               </tr>
             ) : (
-              users.map(user => {
+              filteredUsers.map(user => {
                 const count = user.purchaseCount || 0;
                 const rank = getRank(count);
                 return (
@@ -515,11 +576,17 @@ const { user } = useUser();
                    <div>
                      <label className="block text-sm font-medium mb-1">Số điện thoại</label>
                      <input
-                       className="w-full border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-0 focus:border-rose-400"
+                       className={`w-full border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-0 focus:border-rose-400 ${
+                         newUser.phone && newUser.phone.length !== 10 ? 'border-red-500' : ''
+                       }`}
                        placeholder="0123456789"
+                       maxLength={10}
                        value={newUser.phone}
-                       onChange={e => setNewUser(u => ({ ...u, phone: e.target.value }))}
+                       onChange={e => setNewUser(u => ({ ...u, phone: e.target.value.slice(0, 10) }))}
                      />
+                     {newUser.phone && newUser.phone.length !== 10 && (
+                       <p className="text-red-500 text-xs mt-1">Số điện thoại phải có đúng 10 chữ số</p>
+                     )}
                    </div>
                    <div>
                      <label className="block text-sm font-medium mb-1">Ngày sinh</label>
@@ -598,7 +665,7 @@ const { user } = useUser();
                    >
                      <option value="user">User</option>
                      <option value="admin">Admin</option>
-                     <option value="moderator">Moderator</option>
+                     {/* <option value="moderator">Moderator</option> */}
                    </select>
                  </div>
                </div>
@@ -678,10 +745,16 @@ const { user } = useUser();
                 <strong>SĐT:</strong>{" "}
                 <input
                   type="text"
+                  maxLength={10}
                   value={editPhone}
-                  onChange={e => setEditPhone(e.target.value)}
-                  className="ml-2 border border-border rounded-lg px-2 py-1"
+                  onChange={e => setEditPhone(e.target.value.slice(0, 10))}
+                  className={`ml-2 border border-border rounded-lg px-2 py-1 ${
+                    editPhone && editPhone.length !== 10 ? 'border-red-500' : ''
+                  }`}
                 />
+                {editPhone && editPhone.length !== 10 && (
+                  <p className="text-red-500 text-xs mt-1 ml-2">Số điện thoại phải có đúng 10 chữ số</p>
+                )}
               </li>
 
               <li>
@@ -693,18 +766,16 @@ const { user } = useUser();
                   + Thêm địa chỉ mới
                 </button>
                 {showAddAddressForm && (
-                  <li>
-                    <div className="mt-2">
-                      <AddAddressForm
-                        onAdd={addr => {
-                          setEditAddresses(prev => [...prev, addr]);
-                          setShowAddAddressForm(false);
-                        }}
-                        showCancel={true}
-                        onCancel={() => setShowAddAddressForm(false)}
-                      />
-                    </div>
-                  </li>
+                  <div className="mt-2">
+                    <AddAddressForm
+                      onAdd={addr => {
+                        setEditAddresses(prev => [...prev, addr]);
+                        setShowAddAddressForm(false);
+                      }}
+                      showCancel={true}
+                      onCancel={() => setShowAddAddressForm(false)}
+                    />
+                  </div>
                 )}
 
                 <span className="font-medium">
@@ -950,19 +1021,6 @@ const { user } = useUser();
           </div>
         </div>
       )}
-
-<Toast
-  open={openToast}
-  onOpenChange={setOpenToast}
-  variant="success"
-  className="flex-col items-start space-y-1 p-4"
->
-  <ToastTitle>Thêm người dùng thành công</ToastTitle>
-  <ToastDescription>
-    {toastMessage}
-  </ToastDescription>
-  <ToastClose />
-</Toast>
 
     </div>
 

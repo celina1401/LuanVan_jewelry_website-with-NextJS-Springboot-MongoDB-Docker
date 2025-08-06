@@ -112,7 +112,7 @@ export default function OrdersPage() {
                   </span>
                 </div>
                 <div>
-                  <Link href={`/dashboard/orders/${order.id}`} className="text-blue-600 hover:underline">
+                  <Link href={`/dashboard/orders/${order.orderNumber}`} className="text-blue-600 hover:underline">
                     Xem chi tiết
                   </Link>
                 </div>

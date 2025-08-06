@@ -13,10 +13,10 @@ function getAuthToken(request: NextRequest): string | null {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const { orderId } = params;
+    const { orderId } = await params;
     const body = await request.json();
     
     console.log('Update order request:', { orderId, body });

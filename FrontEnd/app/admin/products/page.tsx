@@ -8,6 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { useState, useEffect } from "react";
 import Barcode from "react-barcode";
 import { Edit, Trash2, Eye } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ProductPage() {
   const [form, setForm] = useState({
@@ -256,9 +257,17 @@ export default function ProductPage() {
   // Sửa lại hàm handleSubmit để gửi FormData (multipart/form-data) khi thêm sản phẩm mới, phù hợp với backend nhận @RequestPart product (JSON) và @RequestPart image (file).
   async function handleSubmit(e: any) {
     e.preventDefault();
-    const { image, ...productData } = form;
+    const { image, weight: weightStr, ...productData } = form;
+    // Xử lý weight - chuyển đổi thành double
+    let weight: number | null = null;
+    if (weightStr && !isNaN(Number(weightStr))) {
+      // Chuyển đổi dấu phẩy thành dấu chấm nếu có
+      const cleanWeightStr = weightStr.replace(',', '.');
+      // Chuyển thành double
+      weight = parseFloat(cleanWeightStr);
+    }
     const formData = new FormData();
-    formData.append('product', JSON.stringify(productData));
+    formData.append('product', JSON.stringify({ ...productData, weight }));
     if (form.image && typeof form.image !== "string") {
       formData.append('image', form.image); // form.image là file
     }
@@ -291,11 +300,18 @@ export default function ProductPage() {
         });
         setImagePreview(null);
         setShowAdd(false); // Đóng popup khi thêm thành công
+        toast.success("Thêm sản phẩm thành công!", {
+          description: "Sản phẩm đã được thêm vào hệ thống"
+        });
       } else {
-        alert('Thêm sản phẩm thất bại!');
+        toast.error("Thêm sản phẩm thất bại!", {
+          description: "Vui lòng kiểm tra lại thông tin và thử lại"
+        });
       }
     } catch (err) {
-      alert('Có lỗi khi kết nối server!');
+      toast.error("Có lỗi khi kết nối server!", {
+        description: "Vui lòng kiểm tra kết nối mạng và thử lại"
+      });
     }
   }
   function handleTagChange(tag: string) {
@@ -326,12 +342,13 @@ export default function ProductPage() {
   function handleEditChange(e: any) {
     const { name, value, type } = e.target;
     // Nếu là input type number, chuyển về số hoặc null nếu rỗng
-    if (["weight", "price", "quantity", "stockQuantity", "wage"].includes(name)) {
+    if (["price", "quantity", "stockQuantity", "wage"].includes(name)) {
       setEditProduct((prev: any) => ({
         ...prev,
         [name]: value === '' ? null : Number(value)
       }));
     } else {
+      // Xử lý weight như string để có thể nhập dấu phẩy
       setEditProduct((prev: any) => ({ ...prev, [name]: value }));
     }
   }
@@ -340,20 +357,90 @@ export default function ProductPage() {
     e.preventDefault();
     if (!editProduct || !(editProduct.id || editProduct.product_id)) return;
     try {
-      const { createdAt, ...dataToSend } = editProduct;
+      const { createdAt, weight: weightStr, ...dataToSend } = editProduct;
+      // Xử lý weight - chuyển đổi thành double
+      let weight: number | null = null;
+      if (weightStr) {
+        let weightString = weightStr;
+        if (typeof weightStr === 'number') {
+          weightString = weightStr.toString();
+        } else if (typeof weightStr === 'string') {
+          weightString = weightStr;
+        } else {
+          weightString = '';
+        }
+        // Luôn chuyển dấu phẩy thành dấu chấm trước khi kiểm tra
+        const cleanWeightStr = weightString.replace(',', '.');
+        if (!isNaN(Number(cleanWeightStr))) {
+          weight = parseFloat(cleanWeightStr);
+        }
+      }
+      
+      // Xử lý wage - đảm bảo là number
+      let wage = dataToSend.wage;
+      if (wage !== null && wage !== undefined) {
+        if (typeof wage === 'string') {
+          wage = parseFloat(wage);
+        } else if (typeof wage === 'number') {
+          wage = wage;
+        } else {
+          wage = null;
+        }
+      } else {
+        wage = null;
+      }
+      
+      const payload = { ...dataToSend, weight, wage };
+      
+      // Log dữ liệu gửi lên để debug
+      console.log('Data being sent to backend:', payload);
+      console.log('Product ID:', editProduct.id || editProduct.product_id);
+      
       const res = await fetch(`http://localhost:9004/api/products/${editProduct.id || editProduct.product_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify(payload),
       });
+      
+      // Log response để debug
+      console.log('Response status:', res.status);
+      console.log('Response ok:', res.ok);
+      
       if (res.ok) {
+        const result = await res.json();
+        console.log('Success response:', result);
         await fetchProducts(); // Cập nhật bảng ngay sau khi lưu
         setShowEdit(false);
+        toast.success("Cập nhật sản phẩm thành công!", {
+          description: "Thông tin sản phẩm đã được lưu và cập nhật"
+        });
       } else {
-        alert('Cập nhật sản phẩm thất bại!');
+        // Lấy lỗi thực tế từ backend
+        let errorMessage = "Cập nhật sản phẩm thất bại!";
+        try {
+          const errorData = await res.text();
+          console.error('Backend error response:', errorData);
+          if (errorData) {
+            try {
+              const errorJson = JSON.parse(errorData);
+              errorMessage = errorJson.message || errorJson.error || errorMessage;
+            } catch {
+              errorMessage = errorData || errorMessage;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing error response:', error);
+        }
+        
+        toast.error("Cập nhật sản phẩm thất bại!", {
+          description: errorMessage
+        });
       }
     } catch (err) {
-      alert('Có lỗi khi kết nối server!');
+      console.error('Network error:', err);
+      toast.error("Có lỗi khi kết nối server!", {
+        description: err instanceof Error ? err.message : "Vui lòng kiểm tra kết nối mạng và thử lại"
+      });
     }
   }
 
@@ -378,12 +465,18 @@ export default function ProductPage() {
               : p
           )
         );
+        toast.success("Cập nhật ảnh thành công!", {
+          description: "Ảnh sản phẩm đã được cập nhật"
+        });
         return result;
       } else {
         throw new Error('Failed to update image');
       }
     } catch (error) {
       console.error('Error updating product image:', error);
+      toast.error("Lỗi khi cập nhật ảnh!", {
+        description: "Vui lòng thử lại sau"
+      });
       throw error;
     }
   };
@@ -404,12 +497,18 @@ export default function ProductPage() {
               : p
           )
         );
+        toast.success("Xóa ảnh thành công!", {
+          description: "Ảnh sản phẩm đã được xóa"
+        });
         return true;
       } else {
         throw new Error('Failed to delete image');
       }
     } catch (error) {
       console.error('Error deleting product image:', error);
+      toast.error("Lỗi khi xóa ảnh!", {
+        description: "Vui lòng thử lại sau"
+      });
       throw error;
     }
   };
@@ -427,11 +526,18 @@ export default function ProductPage() {
       if (res.ok) {
         setProducts((prev: any[]) => sortProductsByCode(prev.filter((p: any) => (p.id || p.product_id) !== (deleteConfirm.product.id || deleteConfirm.product.product_id)))); // Khi xóa
         setDeleteConfirm({ open: false, product: null });
+        toast.success("Xóa sản phẩm thành công!", {
+          description: "Sản phẩm đã được xóa khỏi hệ thống"
+        });
       } else {
-        alert('Xóa sản phẩm thất bại!');
+        toast.error("Xóa sản phẩm thất bại!", {
+          description: "Vui lòng thử lại sau"
+        });
       }
     } catch (err) {
-      alert('Có lỗi khi kết nối server!');
+      toast.error("Có lỗi khi kết nối server!", {
+        description: "Vui lòng kiểm tra kết nối mạng và thử lại"
+      });
     }
   }
 
@@ -522,14 +628,51 @@ export default function ProductPage() {
                   <label className="font-semibold text-base">Khối lượng (chỉ)</label>
                   <input
                     name="weight"
-                    type="number"
+                    type="text"
                     min={0}
-                    step={0.01}
                     value={form.weight}
-                    onChange={handleChange}
+                    onChange={e => {
+                      let value = e.target.value;
+                      // Cho phép nhập dấu phẩy và dấu chấm
+                      // Chỉ cho phép số, dấu phẩy và dấu chấm
+                      value = value.replace(/[^0-9,.]/g, '');
+                      // Chỉ cho phép một dấu phẩy hoặc một dấu chấm
+                      const commaCount = (value.match(/,/g) || []).length;
+                      const dotCount = (value.match(/\./g) || []).length;
+                      
+                      if (commaCount > 1) {
+                        // Nếu có nhiều dấu phẩy, chỉ giữ lại dấu phẩy đầu tiên
+                        const parts = value.split(',');
+                        value = parts[0] + ',' + parts.slice(1).join('');
+                      }
+                      
+                      if (dotCount > 1) {
+                        // Nếu có nhiều dấu chấm, chỉ giữ lại dấu chấm đầu tiên
+                        const parts = value.split('.');
+                        value = parts[0] + '.' + parts.slice(1).join('');
+                      }
+                      
+                      // Không cho phép cả dấu phẩy và dấu chấm cùng lúc
+                      if (commaCount > 0 && dotCount > 0) {
+                        // Nếu có cả dấu phẩy và dấu chấm, chỉ giữ lại dấu phẩy
+                        value = value.replace(/\./g, '');
+                      }
+                      
+                      // Giới hạn số thập phân
+                      if (value.includes(',') || value.includes('.')) {
+                        const separator = value.includes(',') ? ',' : '.';
+                        const parts = value.split(separator);
+                        if (parts.length > 1) {
+                          const decimal = parts[1].slice(0, 3); // Chỉ cho phép tối đa 3 chữ số thập phân
+                          value = parts[0] + separator + decimal;
+                        }
+                      }
+                      
+                      setForm(f => ({ ...f, weight: value }));
+                    }}
                     required
-                    placeholder="Nhập khối lượng theo chỉ"
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    placeholder="Nhập khối lượng theo chỉ (VD: 3,45)"
+                    className={`border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none ${form.weight && typeof form.weight === 'string' && isNaN(Number(form.weight.replace(',', '.'))) ? 'border-red-500' : ''}`}
                     style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
@@ -958,7 +1101,7 @@ export default function ProductPage() {
                 Đóng
               </button>
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600"
                 onClick={() => {
                   setShowDetail(false);
                   handleEdit(detailProduct);
@@ -1039,14 +1182,51 @@ export default function ProductPage() {
                   <label className="font-semibold text-base">Khối lượng (chỉ)</label>
                   <input
                     name="weight"
-                    type="number"
+                    type="text"
                     min={0}
-                    step={0.01}
                     value={editProduct.weight}
-                    onChange={handleEditChange}
+                    onChange={e => {
+                      let value = e.target.value;
+                      // Cho phép nhập dấu phẩy và dấu chấm
+                      // Chỉ cho phép số, dấu phẩy và dấu chấm
+                      value = value.replace(/[^0-9,.]/g, '');
+                      // Chỉ cho phép một dấu phẩy hoặc một dấu chấm
+                      const commaCount = (value.match(/,/g) || []).length;
+                      const dotCount = (value.match(/\./g) || []).length;
+                      
+                      if (commaCount > 1) {
+                        // Nếu có nhiều dấu phẩy, chỉ giữ lại dấu phẩy đầu tiên
+                        const parts = value.split(',');
+                        value = parts[0] + ',' + parts.slice(1).join('');
+                      }
+                      
+                      if (dotCount > 1) {
+                        // Nếu có nhiều dấu chấm, chỉ giữ lại dấu chấm đầu tiên
+                        const parts = value.split('.');
+                        value = parts[0] + '.' + parts.slice(1).join('');
+                      }
+                      
+                      // Không cho phép cả dấu phẩy và dấu chấm cùng lúc
+                      if (commaCount > 0 && dotCount > 0) {
+                        // Nếu có cả dấu phẩy và dấu chấm, chỉ giữ lại dấu phẩy
+                        value = value.replace(/\./g, '');
+                      }
+                      
+                      // Giới hạn số thập phân
+                      if (value.includes(',') || value.includes('.')) {
+                        const separator = value.includes(',') ? ',' : '.';
+                        const parts = value.split(separator);
+                        if (parts.length > 1) {
+                          const decimal = parts[1].slice(0, 3); // Chỉ cho phép tối đa 3 chữ số thập phân
+                          value = parts[0] + separator + decimal;
+                        }
+                      }
+                      
+                      setEditProduct((prev: any) => ({ ...prev, weight: value }));
+                    }}
                     required
-                    placeholder="Nhập khối lượng theo chỉ"
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    placeholder="Nhập khối lượng theo chỉ (VD: 3,45)"
+                    className={`border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none ${editProduct.weight && typeof editProduct.weight === 'string' && isNaN(Number(editProduct.weight.replace(',', '.'))) ? 'border-red-500' : ''}`}
                     style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
@@ -1201,7 +1381,7 @@ export default function ProductPage() {
                             setEditProduct(updatedProduct);
                           }
                         } catch (error) {
-                          alert('Lỗi khi cập nhật ảnh!');
+                          toast.error('Lỗi khi cập nhật ảnh!');
                         }
                       }
                     }}
@@ -1221,7 +1401,7 @@ export default function ProductPage() {
                               setEditProduct(updatedProduct);
                             }
                           } catch (error) {
-                            alert('Lỗi khi xóa ảnh!');
+                            toast.error('Lỗi khi xóa ảnh!');
                           }
                         }
                       }}

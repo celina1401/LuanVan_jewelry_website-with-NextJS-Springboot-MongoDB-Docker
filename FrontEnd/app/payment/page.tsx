@@ -34,9 +34,9 @@ export default function PaymentCallbackPage() {
         const getRes = await fetch(`/api/orders?orderNumber=${orderNumber}`);
         const order = await getRes.json();
 
-        if (!order?.id) throw new Error('Không tìm thấy đơn hàng');
+        if (!order?.orderNumber) throw new Error('Không tìm thấy đơn hàng');
         
-        setOrderId(order.id); // Lưu orderId để sử dụng trong link
+        setOrderId(order.orderNumber); // Lưu orderNumber để sử dụng trong link
         setOrderFetched(true);
 
         // Gửi cập nhật trạng thái thanh toán
