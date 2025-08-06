@@ -279,6 +279,7 @@ public class OrderService {
                 order.getSmsNotification(),
                 order.getInvoiceRequest(),
                 order.getPromoCode(),
+                order.getInvoiceUrl(),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 order.getPaidAt(),
@@ -317,24 +318,32 @@ public class OrderService {
     
     public OrderResponse cancelOrder(String orderId, String reason) {
         Optional<Order> orderOpt = orderRepository.findById(orderId);
-    
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
-    
-            if (!"Chưa xử lý".equalsIgnoreCase(order.getOrderStatus())) {
-                throw new IllegalStateException("Chỉ được hủy đơn hàng khi trạng thái là 'Chưa xử lý'");
-            }
-    
             order.setOrderStatus("Đã hủy");
+            order.setNote(reason);
             order.setUpdatedAt(LocalDateTime.now());
-    
-            String updatedNote = (order.getNote() != null ? order.getNote() + " | " : "") + "Lý do hủy: " + reason;
-            order.setNote(updatedNote);
-    
             Order savedOrder = orderRepository.save(order);
-            return convertToOrderResponse(savedOrder); // ✅ map thủ công
+            return convertToOrderResponse(savedOrder);
         }
-    
+        throw new RuntimeException("Order not found with id: " + orderId);
+    }
+
+    public String generateInvoice(String orderId) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isPresent()) {
+            Order order = orderOpt.get();
+            // Tạo URL hóa đơn (có thể là URL tới service tạo PDF hoặc URL tới file đã tạo)
+            // Trong thực tế, đây sẽ là URL tới file PDF đã được tạo
+            String invoiceUrl = String.format("http://localhost:9003/api/orders/%s/invoice.pdf", order.getOrderNumber());
+            
+            // Lưu URL này vào database
+            order.setInvoiceUrl(invoiceUrl);
+            orderRepository.save(order);
+            
+            log.info("Generated invoice URL for order {}: {}", orderId, invoiceUrl);
+            return invoiceUrl;
+        }
         throw new RuntimeException("Order not found with id: " + orderId);
     }
     

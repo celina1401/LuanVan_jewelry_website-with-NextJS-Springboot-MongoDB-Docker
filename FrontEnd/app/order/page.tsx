@@ -174,6 +174,16 @@ export default function OrderPage() {
         const savedOrder = await orderRes.json();
         const createdOrderId = savedOrder.orderNumber; // Hoặc orderNumber nếu bạn dùng
 
+        // Nếu có invoiceUrl và người dùng chọn xuất hóa đơn
+        if (invoice && savedOrder.invoiceUrl) {
+          const link = document.createElement('a');
+          link.href = savedOrder.invoiceUrl;
+          link.download = 'HoaDon.pdf';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+
         // Bước 2: Lấy URL thanh toán từ PaymentService
         const res = await fetch(
           `http://localhost:9006/api/payment/vnpay?orderId=${createdOrderId}&amount=${finalTotal}`

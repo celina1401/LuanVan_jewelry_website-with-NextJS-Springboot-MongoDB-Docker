@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Package, CreditCard, Truck, CheckCircle, X, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { generateInvoicePDF } from "@/lib/invoice-generator";
+import { toast } from "sonner";
 
 interface OrderItem {
   productId: string;
@@ -58,6 +60,7 @@ interface Order {
   shippedAt?: string;
   deliveredAt?: string;
   cancelReason?: string;
+  invoiceUrl?: string;
 }
 
 export default function OrderDetailPage() {
@@ -93,6 +96,45 @@ export default function OrderDetailPage() {
       fetchOrder();
     }
   }, [params.orderId]);
+
+  const handleGenerateInvoice = async () => {
+    if (!order) return;
+
+    try {
+      // Chuẩn bị dữ liệu cho hóa đơn
+      const invoiceData = {
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        customerEmail: order.customerEmail,
+        receiverName: order.receiverName,
+        shippingAddress: order.shippingAddress,
+        items: order.items.map(item => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          wage: item.wage ? parseFloat(item.wage) : 0, // Thêm trường wage
+          totalPrice: item.totalPrice,
+          weight: item.weight
+        })),
+        subtotal: order.subtotal,
+        shippingFee: order.shippingFee,
+        discount: order.discount,
+        total: order.total,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt,
+        note: order.note
+      };
+
+      // Tạo và tải xuống PDF
+      await generateInvoicePDF(invoiceData);
+      toast.success("Hóa đơn đã được tạo và tải xuống thành công!");
+    } catch (error) {
+      console.error('Lỗi khi tạo hóa đơn:', error);
+      toast.error("Có lỗi xảy ra khi tạo hóa đơn. Vui lòng thử lại sau.");
+    }
+  };
 
   if (loading) {
     return (
@@ -181,6 +223,15 @@ export default function OrderDetailPage() {
               Đặt hàng ngày {new Date(order.createdAt).toLocaleDateString("vi-VN")}
             </p>
           </div>
+          {/* Nút tải hóa đơn - hiển thị nếu có invoiceRequest hoặc đã thanh toán */}
+          {(order.invoiceRequest || order.paymentStatus === "Đã thanh toán") && (
+            <Button
+              className="ml-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleGenerateInvoice}
+            >
+              Tạo hóa đơn PDF
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

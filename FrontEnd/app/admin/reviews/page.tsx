@@ -318,7 +318,7 @@ export default function AdminReviewsPage() {
         <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700">
           <CardTitle className="text-white flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            Quản lý đánh giá
+            Quản lý đánh giá & bình luận
             <Badge variant="secondary" className="ml-auto bg-white/20 text-white">
               {reviews.length} đánh giá
             </Badge>

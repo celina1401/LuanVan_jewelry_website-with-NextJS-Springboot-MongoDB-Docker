@@ -60,6 +60,7 @@ public class Order {
     private Boolean smsNotification;
     private Boolean invoiceRequest;
     private String promoCode;
+    private String invoiceUrl;
     
     // Timestamps
     private LocalDateTime createdAt;

@@ -306,6 +306,7 @@ public class OrderServiceImpl implements IOrderService {
                 order.getSmsNotification(),
                 order.getInvoiceRequest(),
                 order.getPromoCode(),
+                order.getInvoiceUrl(),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 order.getPaidAt(),

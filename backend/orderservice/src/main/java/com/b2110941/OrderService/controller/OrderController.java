@@ -5,7 +5,11 @@ import com.b2110941.OrderService.payload.response.OrderResponse;
 import com.b2110941.OrderService.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -165,21 +169,50 @@ public class OrderController {
     }
 
     @PutMapping("/{orderId}/cancel")
-public ResponseEntity<OrderResponse> cancelOrder(
-        @PathVariable String orderId,
-        @RequestBody Map<String, String> body) {
-    try {
-        String reason = body.get("reason");
-        OrderResponse order = orderService.cancelOrder(orderId, reason);
-        return ResponseEntity.ok(order);
-    } catch (RuntimeException e) {
-        log.error("Order not found: {}", orderId);
-        return ResponseEntity.notFound().build();
-    } catch (Exception e) {
-        log.error("Error canceling order: ", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @PathVariable String orderId,
+            @RequestBody Map<String, String> body) {
+        try {
+            String reason = body.get("reason");
+            OrderResponse order = orderService.cancelOrder(orderId, reason);
+            return ResponseEntity.ok(order);
+        } catch (RuntimeException e) {
+            log.error("Order not found: {}", orderId);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error cancelling order: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
-}
+
+    @PostMapping("/{orderId}/invoice")
+    public ResponseEntity<Map<String, String>> generateInvoice(@PathVariable String orderId) {
+        try {
+            log.info("Generating invoice for order: {}", orderId);
+            String invoiceUrl = orderService.generateInvoice(orderId);
+            return ResponseEntity.ok(Map.of("invoiceUrl", invoiceUrl));
+        } catch (RuntimeException e) {
+            log.error("Order not found: {}", orderId);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error generating invoice: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{orderNumber}/invoice.pdf")
+    public ResponseEntity<InputStreamResource> downloadInvoicePdf(@PathVariable String orderNumber) {
+        try {
+            // Đường dẫn tới file PDF mẫu trong resources
+            ClassPathResource pdfFile = new ClassPathResource("sample-invoice.pdf");
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + orderNumber + ".pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(new InputStreamResource(pdfFile.getInputStream()));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
 
 }
