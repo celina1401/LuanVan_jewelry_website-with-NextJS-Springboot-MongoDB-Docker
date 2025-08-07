@@ -45,6 +45,7 @@ export const MagnifierImage: React.FC<MagnifierImageProps> = ({
         width={width}
         height={height}
         className="object-contain"
+        priority
       />
 
       {position && (

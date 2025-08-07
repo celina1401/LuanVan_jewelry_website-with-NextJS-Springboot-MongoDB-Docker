@@ -525,7 +525,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
 
       {/* Debug Section - Show inactive reviews for admin debugging */}
       {/* {allReviews.length > reviews.length && (
-        <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-800">
+        <div className="mt-8 p-4 bg-gray-50 dark:bg-black rounded-lg border border-orange-200 dark:border-orange-800">
           <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="w-5 h-5 text-orange-500" />
             <h4 className="text-lg font-semibold text-orange-700 dark:text-orange-300">
@@ -536,7 +536,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
             {allReviews
               .filter((review) => !review.isActive || review.isHidden)
               .map((review) => (
-                <div key={review.id} className="p-3 bg-white dark:bg-gray-700 rounded border border-orange-200 dark:border-orange-700">
+                <div key={review.id} className="p-3 bg-white dark:bg-black rounded border border-orange-200 dark:border-orange-700">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400">

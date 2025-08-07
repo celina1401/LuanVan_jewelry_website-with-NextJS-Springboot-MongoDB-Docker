@@ -284,17 +284,17 @@ export default function OrderPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       <Navbar />
       <div className="max-w-3xl mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-6">Thông tin đặt hàng</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Thông tin đặt hàng</h1>
         {success ? (
           <div className="bg-green-100 text-green-700 p-4 rounded">
             Đặt hàng thành công! Cảm ơn bạn đã mua sắm tại T&C Jewelry.
           </div>
         ) : (
           <form onSubmit={handleOrder} className="space-y-6">
-            <div className="bg-white dark:bg-[#18181b] rounded-xl shadow p-4 mb-4">
-              <h2 className="text-xl font-semibold mb-2">Sản phẩm</h2>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Sản phẩm</h2>
               {items.length === 0 ? (
-                <p>Giỏ hàng của bạn đang trống.</p>
+                <p className="text-gray-900 dark:text-white">Giỏ hàng của bạn đang trống.</p>
               ) : (
                 <ul className="space-y-2">
                   {items.map((item) => {
@@ -303,16 +303,16 @@ export default function OrderPage() {
                       <li key={item.id} className="flex flex-col gap-1 justify-between">
                         <div className="flex items-center gap-3">
                           {item.image && <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded border" />}
-                          <span>{item.name}</span>
+                          <span className="text-gray-900 dark:text-white">{item.name}</span>
                           <div className="flex items-center gap-1 ml-2">
-                            <button type="button" onClick={() => updateQuantity(item.id, item.quantity - 1, item.metadata)} disabled={item.quantity <= 1} className="w-7 h-7 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold">-</button>
-                            <span className="w-8 text-center">{item.quantity}</span>
-                            <button type="button" onClick={() => updateQuantity(item.id, item.quantity + 1, item.metadata)} className="w-7 h-7 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold">+</button>
+                            <button type="button" onClick={() => updateQuantity(item.id, item.quantity - 1, item.metadata)} disabled={item.quantity <= 1} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">-</button>
+                            <span className="w-8 text-center text-gray-900 dark:text-white">{item.quantity}</span>
+                            <button type="button" onClick={() => updateQuantity(item.id, item.quantity + 1, item.metadata)} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">+</button>
                           </div>
-                          <span>{(unitPrice * item.quantity).toLocaleString()}₫</span>
+                          <span className="text-gray-900 dark:text-white">{(unitPrice * item.quantity).toLocaleString()}₫</span>
                         </div>
                         {/* Thông tin khối lượng × giá vàng + tiền công */}
-                        <div className="ml-20 text-xs text-gray-500 dark:text-gray-300">ID
+                        <div className="ml-20 text-xs text-gray-600 dark:text-gray-300">ID
                           {(() => {
                             const weight = item.metadata?.weight;
                             const wage = item.metadata?.wage || 0;
@@ -323,13 +323,13 @@ export default function OrderPage() {
                             if (weight && pricePerChi !== null && pricePerChi !== undefined) {
                               return (
                                 <span>
-                                  (Khối lượng: <b>{weight}</b> chỉ × Giá vàng: <b>{pricePerChi.toLocaleString()}₫</b> + Tiền công: <b>{wage.toLocaleString()}₫</b>) × Số lượng: <b>{item.quantity}</b> = <b>{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng: <b className="text-gray-900 dark:text-white">{pricePerChi.toLocaleString()}₫</b> + Tiền công: <b className="text-gray-900 dark:text-white">{wage.toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
                                 </span>
                               );
                             } else if (weight && goldAge) {
                               return (
                                 <span>
-                                  (Khối lượng: <b>{weight}</b> chỉ × Giá vàng + Tiền công: <b>{wage.toLocaleString()}₫</b>) × Số lượng: <b>{item.quantity}</b> = <b>{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng + Tiền công: <b className="text-gray-900 dark:text-white">{wage.toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
                                 </span>
                               );
                             } else {
@@ -343,37 +343,33 @@ export default function OrderPage() {
                 </ul>
               )}
               <div className="mt-4 flex flex-col gap-2 text-sm">
-                <div className="flex justify-between"><span>Tạm tính</span><span>{finalTotal.toLocaleString()}₫</span></div>
-                <div className="flex justify-between"><span>Giao hàng</span><span>{shipping === 0 ? "Miễn phí" : shipping + "₫"}</span></div>
-                <div className="flex justify-between"><span>Giảm giá</span><span>- {discount}₫</span></div>
-                <div className="flex justify-between font-bold text-lg"><span>Tổng tiền</span><span>{finalTotal.toLocaleString()}₫</span></div>
+                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Tạm tính</span><span className="text-gray-900 dark:text-white">{finalTotal.toLocaleString()}₫</span></div>
+                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Giao hàng</span><span className="text-gray-900 dark:text-white">{shipping === 0 ? "Miễn phí" : shipping + "₫"}</span></div>
+                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Giảm giá</span><span className="text-gray-900 dark:text-white">- {discount}₫</span></div>
+                <div className="flex justify-between font-bold text-lg"><span className="text-gray-900 dark:text-white">Tổng tiền</span><span className="text-gray-900 dark:text-white">{finalTotal.toLocaleString()}₫</span></div>
               </div>
               <div className="mt-4 flex gap-2 items-center">
-                <input className="border rounded p-2 flex-1" placeholder="Nhập mã ưu đãi" value={promo} onChange={e => setPromo(e.target.value)} />
+                <input className="border rounded p-2 flex-1 text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Nhập mã ưu đãi" value={promo} onChange={e => setPromo(e.target.value)} />
                 <button type="button" className="bg-rose-400 text-white px-4 py-2 rounded font-semibold">Áp dụng</button>
               </div>
             </div>
-
             {/* giao hang */}
-
-            <div className="bg-white dark:bg-[#18181b] rounded-xl shadow p-4">
-              <h2 className="font-semibold mb-2">Hình thức nhận hàng</h2>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Hình thức nhận hàng</h2>
               <div className="flex gap-4 mb-4">
-
-                <button type="button" onClick={() => setDeliveryType("home")} className={`flex-1 border rounded-lg p-3 flex flex-col items-center gap-1 ${deliveryType === "home" ? "bg-yellow-100 border-yellow-400" : "bg-gray-50 dark:bg-gray-900"}`}>
+                <button type="button" onClick={() => setDeliveryType("home")} className={`flex-1 border rounded-lg p-3 flex flex-col items-center gap-1 ${deliveryType === "home" ? "bg-yellow-100 border-yellow-400" : "bg-gray-50 dark:bg-black"}`}>
                   <span className="font-bold text-yellow-600">Giao hàng tận nơi</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-900">Miễn phí toàn quốc</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-300">Miễn phí toàn quốc</span>
                 </button>
-                <button type="button" onClick={() => setDeliveryType("store")} className={`flex-1 border rounded-lg p-3 flex flex-col items-center gap-1 ${deliveryType === "store" ? "bg-purple-100 border-purple-400" : "bg-gray-50 dark:bg-gray-900"}`}>
+                <button type="button" onClick={() => setDeliveryType("store")} className={`flex-1 border rounded-lg p-3 flex flex-col items-center gap-1 ${deliveryType === "store" ? "bg-purple-100 border-purple-400" : "bg-gray-50 dark:bg-black"}`}>
                   <span className="font-bold text-purple-600">Nhận tại cửa hàng</span>
                 </button>
               </div>
-
               {deliveryType === "home" && (
                 <>
-                  <label className="block mb-1 font-medium">Chọn địa chỉ giao hàng</label>
+                  <label className="block mb-1 font-medium text-gray-900 dark:text-white">Chọn địa chỉ giao hàng</label>
                   <select
-                    className="w-full border p-2 rounded mb-2"
+                    className="w-full border p-2 rounded mb-2 text-gray-900 dark:text-white"
                     value={selectedIndex}
                     onChange={(e) => {
                       const index = parseInt(e.target.value, 10);
@@ -395,12 +391,12 @@ export default function OrderPage() {
                       }
                       if (defaultIdx !== -1) {
                         return [
-                          <option key={defaultIdx} value={defaultIdx}>
+                          <option key={defaultIdx} value={defaultIdx} className="text-gray-900 dark:text-white">
                             ⭐ {`${addresses[defaultIdx].receiverName} - ${addresses[defaultIdx].street}, ${addresses[defaultIdx].ward}, ${addresses[defaultIdx].district}, ${addresses[defaultIdx].province}`}
                           </option>,
                           ...addresses.map((addr, idx) =>
                             idx !== defaultIdx ? (
-                              <option key={idx} value={idx}>
+                              <option key={idx} value={idx} className="text-gray-900 dark:text-white">
                                 {`${addr.receiverName} - ${addr.street}, ${addr.ward}, ${addr.district}, ${addr.province}`}
                               </option>
                             ) : null
@@ -408,16 +404,15 @@ export default function OrderPage() {
                         ];
                       }
                       return [
-                        <option key={-1} value={-1}>Chọn địa chỉ giao hàng</option>,
+                        <option key={-1} value={-1} className="text-gray-900 dark:text-white">Chọn địa chỉ giao hàng</option>,
                         ...addresses.map((addr, idx) => (
-                          <option key={idx} value={idx}>
+                          <option key={idx} value={idx} className="text-gray-900 dark:text-white">
                             {`${addr.receiverName} - ${addr.street}, ${addr.ward}, ${addr.district}, ${addr.province}`}
                           </option>
                         ))
                       ];
                     })()}
                   </select>
-
                   {!showAddAddress ? (
                     <button
                       type="button"
@@ -469,63 +464,58 @@ export default function OrderPage() {
                       onCancel={() => setShowAddAddress(false)}
                       showCancel
                     />
-
-
                   )}
                 </>
               )}
-
-
-
               <div className="flex items-center gap-2 mb-2">
                 <input type="checkbox" checked={sms} onChange={e => setSms(e.target.checked)} />
-                <label className="text-sm">Tôi muốn gửi thiệp và lời chúc qua SMS</label>
+                <label className="text-sm text-gray-900 dark:text-white">Tôi muốn gửi thiệp và lời chúc qua SMS</label>
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <input type="checkbox" checked={invoice} onChange={e => setInvoice(e.target.checked)} />
-                <label className="text-sm">Xuất hóa đơn công ty</label>
+                <label className="text-sm text-gray-900 dark:text-white">Xuất hóa đơn công ty</label>
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} required />
-                <label className="text-sm">Đồng ý xử lý dữ liệu cá nhân</label>
+                <label className="text-sm text-gray-900 dark:text-white">Đồng ý xử lý dữ liệu cá nhân</label>
               </div>
             </div>
-
-            <div className="bg-white dark:bg-[#18181b] rounded-xl shadow p-4">
-              <h2 className="font-semibold mb-2">Phương thức thanh toán</h2>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Phương thức thanh toán</h2>
               <div className="flex flex-col gap-2">
                 {paymentMethods.map(pm => (
-                  <label key={pm.value} className={`flex items-center gap-2 border rounded p-2 cursor-pointer ${payment === pm.value ? "border-rose-400 bg-rose-50 dark:bg-rose-900/30" : ""}`}>
+                  <label key={pm.value} className={`flex items-center gap-2 border rounded p-2 cursor-pointer ${payment === pm.value ? "border-rose-400 bg-rose-50 dark:bg-rose-900/30" : ""} text-gray-900 dark:text-white`}>
                     <input type="radio" name="payment" value={pm.value} checked={payment === pm.value} onChange={e => setPayment(e.target.value)} />
                     <span>{pm.label}</span>
                   </label>
                 ))}
               </div>
             </div>
-            <div className="bg-white dark:bg-[#18181b] rounded-xl shadow p-4">
-              <h2 className="font-semibold mb-2">Thông tin người mua</h2>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Thông tin người mua</h2>
               <div className="flex gap-4 mb-2">
-                <label className="flex items-center gap-1">
+                <label className="flex items-center gap-1 text-gray-900 dark:text-white">
                   <input type="radio" name="gender" value="female" checked={gender === "female"} onChange={() => setGender("female")} />
                   Chị
                 </label>
-                <label className="flex items-center gap-1">
+                <label className="flex items-center gap-1 text-gray-900 dark:text-white">
                   <input type="radio" name="gender" value="male" checked={gender === "male"} onChange={() => setGender("male")} />
                   Anh
                 </label>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input className="border rounded p-2" placeholder="Họ và tên" value={name} onChange={e => setName(e.target.value)} required />
-                <input className="border rounded p-2" placeholder="Số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} required />
-                <input className="border rounded p-2" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} type="email" />
-                <input className="border rounded p-2" placeholder="Ngày sinh" value={dob} onChange={e => setDob(e.target.value)} type="date" />
+                <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Họ và tên" value={name} onChange={e => setName(e.target.value)} required />
+                <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} required />
+                <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} type="email" />
+                <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Ngày sinh" value={dob} onChange={e => setDob(e.target.value)} type="date" />
               </div>
             </div>
-            <div className="bg-white dark:bg-[#18181b] rounded-xl shadow p-4">
-              <h2 className="font-semibold mb-2">Ghi chú đơn hàng (Không bắt buộc)</h2>
-              <textarea className="w-full border rounded p-2" placeholder="Vui lòng ghi chú thêm để T&C Jewelry hỗ trợ tốt nhất cho Quý khách!" value={note} onChange={e => setNote(e.target.value)} />
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Ghi chú đơn hàng (Không bắt buộc)</h2>
+              <textarea className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Vui lòng ghi chú thêm để T&C Jewelry hỗ trợ tốt nhất cho Quý khách!" value={note} onChange={e => setNote(e.target.value)} />
             </div>
-            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={items.length === 0 || !agree}>
+            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={items.length === 0 || !agree}
+            >
               Xác nhận đặt hàng
             </button>
           </form>

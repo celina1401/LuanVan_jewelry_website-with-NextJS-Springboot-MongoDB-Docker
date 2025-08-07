@@ -39,11 +39,11 @@ function AddAddressForm({ onAdd, onCancel, showCancel }: { onAdd: (addr: Address
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 shadow-lg">
+    <div className="flex flex-col gap-4 p-4 rounded-xl bg-white dark:bg-black border border-gray-200 dark:border-gray-700 shadow-lg">
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-gray-900 dark:text-zinc-200">Tên người nhận</label>
+        <label className="text-sm font-semibold text-gray-900 dark:text-white">Tên người nhận</label>
         <input
-          className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
           value={receiverName}
           onChange={e => setReceiverName(e.target.value)}
           placeholder="Nhập tên người nhận"
@@ -51,9 +51,9 @@ function AddAddressForm({ onAdd, onCancel, showCancel }: { onAdd: (addr: Address
         />
       </div>
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-gray-900 dark:text-zinc-200">Địa chỉ (số nhà, đường)</label>
+        <label className="text-sm font-semibold text-gray-900 dark:text-white">Địa chỉ (số nhà, đường)</label>
         <input
-          className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
           value={street}
           onChange={e => setStreet(e.target.value)}
           placeholder="Nhập địa chỉ (số nhà, đường)"
@@ -67,7 +67,7 @@ function AddAddressForm({ onAdd, onCancel, showCancel }: { onAdd: (addr: Address
           setWard(ward?.name_with_type || "");
         }}
       />
-      <label className="flex items-center gap-2 text-gray-900 dark:text-zinc-200 mt-2">
+      <label className="flex items-center gap-2 text-gray-900 dark:text-white mt-2">
         <input
           type="checkbox"
           checked={isDefault}
@@ -80,7 +80,7 @@ function AddAddressForm({ onAdd, onCancel, showCancel }: { onAdd: (addr: Address
         {showCancel && (
           <button
             type="button"
-            className="px-6 py-2 rounded-lg border border-gray-400 bg-transparent text-gray-700 dark:text-gray-300 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+            className="px-6 py-2 rounded-lg border border-gray-400 bg-transparent text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             onClick={onCancel}
           >
             Hủy
@@ -421,7 +421,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {orders.map((order) => (
-                      <div key={order.id} className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                      <div key={order.id} className="border rounded-lg p-3 bg-gray-50 dark:bg-black">
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="font-semibold">#{order.orderNumber}</p>
@@ -468,10 +468,10 @@ export default function DashboardPage() {
                     </div>
                     <form onSubmit={handleUpdate} className="space-y-4 text-left">
                       <div>
-                        <label className="block font-medium mb-1">Số điện thoại</label>
+                        <label className="block font-medium mb-1 text-gray-900 dark:text-white">Số điện thoại</label>
                         <input
                           type="text"
-                          className="w-full border rounded px-3 py-2"
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-black text-gray-900 dark:text-white"
                           value={phone}
                           onChange={e => setPhone(e.target.value)}
                           placeholder="Nhập số điện thoại"

@@ -17,7 +17,7 @@ export function AuthActions() {
     <div className="flex items-center gap-2">
       <SignedOut>
         <SignInButton mode="modal">
-          <Button variant="ghost">Đăng nhập</Button>
+          <Button variant="ghost" className="text-gray-900 dark:text-white">Đăng nhập</Button>
         </SignInButton>
         <SignUpButton mode="modal" >
           <Button>Đăng ký</Button>

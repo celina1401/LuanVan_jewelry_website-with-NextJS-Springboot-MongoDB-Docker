@@ -371,11 +371,11 @@ const { user } = useUser();
     }
   };
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Quản lý người dùng</h1>
+    <div className="w-full max-w-6xl mx-auto py-10">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <h1 className="text-4xl font-extrabold tracking-tight text-primary">Quản lý người dùng</h1>
         <button
-          className="bg-primary text-primary-foreground px-4 py-2 rounded shadow hover:bg-primary/80 transition"
+          className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold shadow hover:bg-primary/90 transition-colors"
           onClick={() => setShowAdd(true)}
         >
           Thêm người dùng
@@ -383,7 +383,7 @@ const { user } = useUser();
       </div>
 
       {/* Role Filter */}
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-8 flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Filter className="w-5 h-5 text-muted-foreground" />
           <span className="text-sm font-medium text-muted-foreground">Lọc theo vai trò:</span>
@@ -406,15 +406,15 @@ const { user } = useUser();
         <table className="min-w-full">
           <thead>
             <tr className="bg-gradient-to-r from-rose-100/80 to-rose-200/80 dark:from-[#23232b] dark:to-[#18181b]">
-              <th className="py-4 px-4 text-left">Avatar</th>
-              <th className="py-4 px-4 text-left">Tên</th>
-              <th className="py-4 px-4 text-left">Email</th>
-              <th className="py-4 px-4 text-left">Vai trò</th>
-              <th className="py-4 px-4 text-left">SĐT</th>
-              <th className="py-2 px-4 text-left">Hạng</th>
-              <th className="py-4 px-4 text-center">Trạng thái</th>
-              <th className="py-4 px-4">Chi tiết</th>
-              <th className="py-4 px-4">Hành động</th>
+              <th className="py-4 px-4 text-left text-gray-900 dark:text-white">Avatar</th>
+              <th className="py-4 px-4 text-left text-gray-900 dark:text-white">Tên</th>
+              <th className="py-4 px-4 text-left text-gray-900 dark:text-white">Email</th>
+              <th className="py-4 px-4 text-left text-gray-900 dark:text-white">Vai trò</th>
+              <th className="py-4 px-4 text-left text-gray-900 dark:text-white">SĐT</th>
+              <th className="py-2 px-4 text-left text-gray-900 dark:text-white">Hạng</th>
+              <th className="py-4 px-4 text-center text-gray-900 dark:text-white">Trạng thái</th>
+              <th className="py-4 px-4 text-gray-900 dark:text-white">Chi tiết</th>
+              <th className="py-4 px-4 text-gray-900 dark:text-white">Hành động</th>
             </tr>
           </thead>
           <tbody>

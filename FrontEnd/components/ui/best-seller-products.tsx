@@ -141,7 +141,7 @@ export function BestSellerProducts() {
           )}
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-4">
-              {bestSellerProducts.map((product) => (
+              {bestSellerProducts.map((product, index) => (
                 <div key={product.id} className="flex-[0_0_calc(25%-12px)] min-w-0">
                   <Card className="overflow-hidden h-full">
                     <CardHeader className="p-0">
@@ -151,6 +151,7 @@ export function BestSellerProducts() {
                           alt={product.name}
                           fill
                           className="object-cover"
+                          priority={index < 4} // Thêm priority cho tất cả sản phẩm bán chạy
                         />
                         <Badge className="absolute top-2 right-2">
                           {translateProductTag(product.category)}

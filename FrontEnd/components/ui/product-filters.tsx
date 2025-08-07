@@ -34,9 +34,9 @@ export function ProductFilters({
 }: ProductFiltersProps) {
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-white dark:bg-black">
         <CardHeader>
-          <CardTitle>Loại sản phẩm</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Loại sản phẩm</CardTitle>
         </CardHeader>
         <CardContent>
           <RadioGroup
@@ -47,16 +47,16 @@ export function ProductFilters({
             {categories.map((category) => (
               <div key={category.value} className="flex items-center space-x-2">
                 <RadioGroupItem value={category.value} id={category.value} />
-                <Label htmlFor={category.value}>{category.label}</Label>
+                <Label htmlFor={category.value} className="text-gray-900 dark:text-white">{category.label}</Label>
               </div>
             ))}
           </RadioGroup>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white dark:bg-black">
         <CardHeader>
-          <CardTitle>Mức giá</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Mức giá</CardTitle>
         </CardHeader>
         <CardContent>
           <RadioGroup
@@ -67,16 +67,16 @@ export function ProductFilters({
             {priceRanges.map((range) => (
               <div key={range.value} className="flex items-center space-x-2">
                 <RadioGroupItem value={range.value} id={range.value} />
-                <Label htmlFor={range.value}>{range.label}</Label>
+                <Label htmlFor={range.value} className="text-gray-900 dark:text-white">{range.label}</Label>
               </div>
             ))}
           </RadioGroup>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white dark:bg-black">
         <CardHeader>
-          <CardTitle>Giới tính</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Giới tính</CardTitle>
         </CardHeader>
         <CardContent>
           <RadioGroup
@@ -86,15 +86,15 @@ export function ProductFilters({
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="all" id="gender-all" />
-              <Label htmlFor="gender-all">Tất cả</Label>
+              <Label htmlFor="gender-all" className="text-gray-900 dark:text-white">Tất cả</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="female" id="gender-female" />
-              <Label htmlFor="gender-female">Nữ</Label>
+              <Label htmlFor="gender-female" className="text-gray-900 dark:text-white">Nữ</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="male" id="gender-male" />
-              <Label htmlFor="gender-male">Nam</Label>
+              <Label htmlFor="gender-male" className="text-gray-900 dark:text-white">Nam</Label>
             </div>
           </RadioGroup>
         </CardContent>
@@ -102,7 +102,7 @@ export function ProductFilters({
 
       <Button
         variant="outline"
-        className="w-full"
+        className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
         onClick={() => {
           onCategoryChange("all")
           onPriceRangeChange("all")

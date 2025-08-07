@@ -41,11 +41,11 @@ export default function AddAddressForm({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 shadow-lg">
+    <div className="flex flex-col gap-4 p-4 rounded-xl bg-white dark:bg-black border border-gray-200 dark:border-gray-700 shadow-lg">
       <div className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-gray-900 dark:text-zinc-200">Tên người nhận</label>
         <input
-          className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
           value={receiverName}
           onChange={e => setReceiverName(e.target.value)}
           placeholder="Nhập tên người nhận"
@@ -55,7 +55,7 @@ export default function AddAddressForm({
       <div className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-gray-900 dark:text-zinc-200">Địa chỉ (số nhà, đường)</label>
         <input
-          className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
           value={street}
           onChange={e => setStreet(e.target.value)}
           placeholder="Nhập địa chỉ (số nhà, đường)"

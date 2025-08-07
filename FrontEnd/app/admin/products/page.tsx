@@ -972,7 +972,7 @@ export default function ProductPage() {
       {/* Popup chi tiết sản phẩm */}
       {showDetail && detailProduct && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl relative">
+          <div className="bg-white dark:bg-black p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl relative">
             <button 
               className="absolute top-4 right-4 text-gray-500 hover:text-red-500 text-xl font-bold" 
               onClick={() => setShowDetail(false)}

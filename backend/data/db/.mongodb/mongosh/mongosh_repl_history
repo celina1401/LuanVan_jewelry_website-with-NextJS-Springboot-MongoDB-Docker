@@ -1,3 +1,6 @@
+db.chat_logs.drop()
+db.chat_logs.find().pretty()
+db.chat_logs.drop()
 db.reviews.drop()
 db.users.find().pretty()
 db.reviews.drop()

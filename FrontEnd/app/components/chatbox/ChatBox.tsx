@@ -21,7 +21,25 @@ export default function ChatBox() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const receiverId = "admin";
-  const localKey = `chat_user_${userId}`; // ✅ Khóa riêng từng user
+  const localKey = `chat_user_${userId}`;
+
+  // Function to clear chat history
+  const clearChatHistory = () => {
+    localStorage.removeItem(localKey);
+    setMessages([]);
+  };
+
+  // Function to clear all chat data from localStorage
+  const clearAllChatData = () => {
+    // Clear all chat-related localStorage items
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('chat_') || key === 'admin_inbox' || key === 'selected_user_id') {
+        localStorage.removeItem(key);
+      }
+    });
+    setMessages([]);
+  };
 
   useEffect(() => {
     if (role === "admin" || !open || !userId) return;
@@ -90,6 +108,11 @@ export default function ChatBox() {
           if (!hasThank) sorted = [sorted[0], thankMsg, ...sorted.slice(1)];
           setMessages(sorted);
           localStorage.setItem(localKey, JSON.stringify(sorted));
+        } else {
+          // Nếu backend trả về rỗng (đã reset), xóa localStorage
+          localStorage.removeItem(localKey);
+          setMessages([welcomeMsg]);
+          localStorage.setItem(localKey, JSON.stringify([welcomeMsg]));
         }
         // Nếu không có lịch sử, giữ nguyên tin nhắn chào
       } catch (err) {
@@ -209,7 +232,7 @@ export default function ChatBox() {
         </button>
       )}
       {open && (
-        <div className="fixed bottom-6 right-6 w-[420px] max-h-[80vh] bg-white dark:bg-gray-900 shadow-xl rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col z-50 animate-fade-in">
+        <div className="fixed bottom-6 right-6 w-[420px] max-h-[80vh] bg-white dark:bg-[#18181b] shadow-xl rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col z-50 animate-fade-in">
           <div className="flex items-center justify-between px-4 py-2 border-b dark:border-gray-700 font-bold text-lg bg-blue-500 text-white rounded-t-xl">
             <span>Hỏi đáp</span>
             <button onClick={() => setOpen(false)} className="ml-2 text-white hover:text-gray-200 text-xl">
@@ -225,7 +248,7 @@ export default function ChatBox() {
                     className={`max-w-[70%] px-3 py-2 rounded-lg text-sm shadow ${
                       isSentByMe
                         ? "bg-blue-500 text-white"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
+                        : "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
                     }`}
                   >
                     <div className="font-semibold mb-1">{isSentByMe ? "Bạn" : "Admin"}</div>
@@ -245,7 +268,7 @@ export default function ChatBox() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Nhập tin nhắn..."
-              className="flex-1 rounded-md px-3 py-2 border dark:bg-gray-800 dark:text-gray-100 text-sm"
+              className="flex-1 rounded-md px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
             />
             <button
               type="submit"

@@ -222,7 +222,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredProducts.map((product) => {
+      {filteredProducts.map((product, index) => {
         const totalPrice = productGoldPrices[product.id] ?? product.price;
         return (
           <Card
@@ -237,6 +237,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                   alt={product.name}
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
+                  priority={index < 6} // Thêm priority cho 6 sản phẩm đầu tiên
                 />
                 <Badge className="absolute top-2 right-2">
                   {translateProductTag(product.category)}

@@ -41,12 +41,12 @@ export default function ProductsPage() {
   const [gender, setGender] = React.useState("all")
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-black">
       <Navbar />
       <main className="flex-1">
         <div className="container px-4 md:px-6 py-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h1 className="text-3xl font-bold">Bộ sưu tập của chúng tôi</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bộ sưu tập của chúng tôi</h1>
             <div className="flex items-center gap-4">
               <button
                 className="md:hidden inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"

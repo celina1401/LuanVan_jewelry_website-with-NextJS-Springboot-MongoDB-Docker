@@ -27,13 +27,19 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
         const res = await fetch(`http://localhost:9007/api/chat/filter/${userId}`);
         const data = await res.json();
 
-        const sorted = data.sort(
-          (a: Message, b: Message) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
+        if (data && data.length > 0) {
+          const sorted = data.sort(
+            (a: Message, b: Message) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
 
-        setMessages(sorted);
-        localStorage.setItem(`chat_admin_${userId}`, JSON.stringify(sorted));
+          setMessages(sorted);
+          localStorage.setItem(`chat_admin_${userId}`, JSON.stringify(sorted));
+        } else {
+          // Nếu backend trả về rỗng (đã reset), xóa localStorage
+          localStorage.removeItem(`chat_admin_${userId}`);
+          setMessages([]);
+        }
       } catch (err) {
         console.error("❌ Lỗi khi tải lịch sử admin:", err);
         setMessages([]);
@@ -123,7 +129,7 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
               <div
                 className={`max-w-[70%] px-3 py-2 rounded-lg text-sm shadow ${isSentByMe
                     ? "bg-blue-500 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
+                    : "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
                   }`}
               >
                 <div className="font-semibold mb-1">{isSentByMe ? "Admin" : "Khách"}</div>
@@ -143,7 +149,7 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Nhập tin nhắn..."
-          className="flex-1 rounded-md px-3 py-2 border dark:bg-gray-800 dark:text-white text-sm"
+          className="flex-1 rounded-md px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
         />
         <button
           type="submit"

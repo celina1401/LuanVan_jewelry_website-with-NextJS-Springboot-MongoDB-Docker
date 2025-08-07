@@ -314,7 +314,7 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="container mx-auto p-6 min-h-screen ">
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <Card className="bg-white dark:bg-black border-gray-200 dark:border-gray-700">
         <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700">
           <CardTitle className="text-white flex items-center gap-2">
             <Bell className="w-5 h-5" />
@@ -338,7 +338,7 @@ export default function AdminReviewsPage() {
           ) : (
             <div className="space-y-4">
               {reviews.map((review) => (
-                <Card key={review.id} className="p-4 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+                <Card key={review.id} className="p-4 bg-white dark:bg-black border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
                   <div className="flex justify-between">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
@@ -440,7 +440,7 @@ export default function AdminReviewsPage() {
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             placeholder="Nhập trả lời của admin..."
-                            className="w-full p-2 border rounded resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                            className="w-full p-2 border rounded resize-none bg-white dark:bg-black text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                             rows={3}
                           />
                           <div className="flex gap-2 mt-2">

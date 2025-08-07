@@ -30,8 +30,15 @@ export default function AdminMessagePage() {
         const res = await fetch("http://localhost:9007/api/chat/inbox");
         if (!res.ok) throw new Error(`Lỗi: ${res.statusText}`);
         const data = await res.json();
-        setInbox(data);
-        localStorage.setItem("admin_inbox", JSON.stringify(data));
+        if (data && data.length > 0) {
+          setInbox(data);
+          localStorage.setItem("admin_inbox", JSON.stringify(data));
+        } else {
+          // Nếu backend trả về rỗng (đã reset), xóa localStorage
+          localStorage.removeItem("admin_inbox");
+          localStorage.removeItem("selected_user_id");
+          setInbox([]);
+        }
       } catch (err: any) {
         console.error("❌ Lỗi khi tải hộp thư:", err);
         setError("Không thể tải hộp thư");
@@ -50,8 +57,8 @@ export default function AdminMessagePage() {
   }, [selectedUserId]);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">📨 Tin nhắn từ khách hàng</h1>
+    <div className="p-6 bg-white dark:bg-black min-h-screen">
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">📨 Tin nhắn từ khách hàng</h1>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="border-r w-full overflow-y-auto max-h-[80vh]">
           {loading ? (
@@ -72,7 +79,7 @@ export default function AdminMessagePage() {
                   }`}
                 >
                   <div>
-                    <div className="font-semibold">👤 {chat.username}</div>
+                    <div className="font-semibold text-gray-900 dark:text-white">👤 {chat.username}</div>
                     <div className="text-sm text-gray-500 mt-1 truncate">{chat.lastMessage}</div>
                     <div className="text-xs text-gray-400">
                       {new Date(chat.timestamp).toLocaleString()}

@@ -51,7 +51,7 @@ export default function HistoryPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Lịch sử giao dịch</h1>
+      <h1 className="text-2xl text-gray-900 dark:text-white font-bold mb-6">Lịch sử giao dịch</h1>
       {loading ? (
         <div>Đang tải...</div>
       ) : error ? (

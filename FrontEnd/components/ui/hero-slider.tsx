@@ -116,13 +116,14 @@ export function HeroSlider() {
     <section className="relative w-full overflow-hidden rounded-lg shadow-xl md:rounded-2xl">
       <div className="embla" ref={emblaRef}>
         <div className="embla__container flex">
-          {slides.map((slide) => (
+          {slides.map((slide, index) => (
             <div key={slide.id} className="embla__slide relative flex-none w-full h-[400px]">
               <Image
                 src={slide.image}
                 alt={slide.title}
                 fill
                 className="object-cover"
+                priority={index === 0} // Thêm priority cho slide đầu tiên
               />
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                 <div className="text-center text-white p-4">

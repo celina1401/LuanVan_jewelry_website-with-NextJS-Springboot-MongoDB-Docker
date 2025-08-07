@@ -241,7 +241,7 @@ export function GoldPriceChart() {
       const price = payload[0].value;
       const time = new Date(label).toLocaleString();
       return (
-        <div className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 p-3 rounded-md shadow-md border border-zinc-200 dark:border-zinc-700">
+        <div className="bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 p-3 rounded-md shadow-md border border-zinc-200 dark:border-zinc-700">
           <p className="text-sm font-semibold">Thời gian: {time}</p>
           <p className="text-sm">Giá: <span className="font-bold text-yellow-500">{price.toLocaleString()} USD</span></p>
         </div>
@@ -279,7 +279,7 @@ export function GoldPriceChart() {
     <div className="flex flex-col md:flex-row gap-6 md:items-stretch">
       {/* Chart */}
       <div className="w-full md:w-1/2 flex flex-col min-h-0">
-        <Card className="flex flex-col h-full min-h-0 max-h-[600px] rounded-xl shadow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
+        <Card className="flex flex-col h-full min-h-0 max-h-[600px] rounded-xl shadow bg-white dark:bg-black border border-zinc-200 dark:border-zinc-700">
           <CardHeader>
             <CardTitle className="mb-2 text-zinc-900 dark:text-zinc-100">Lịch sử giá vàng (USD/oz)</CardTitle>
             <div className="mt-4 flex gap-4">
@@ -341,7 +341,7 @@ export function GoldPriceChart() {
       </div>
       {/* Bảng giá */}
       <div className="w-full md:w-1/2 flex flex-col min-h-0">
-        <Card className="flex flex-col h-full min-h-0 rounded-xl shadow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
+        <Card className="flex flex-col h-full min-h-0 rounded-xl shadow bg-white dark:bg-black border border-zinc-200 dark:border-zinc-700">
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <CardTitle className="whitespace-nowrap text-zinc-900 dark:text-zinc-100">Bảng giá vàng</CardTitle>
@@ -350,7 +350,7 @@ export function GoldPriceChart() {
                   placeholder="Tìm theo loại..."
                   value={searchTerm}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                  className="w-[200px] bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                  className="w-[200px] bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                 />
                 <div className="flex flex-row items-center gap-2">
                   <Input
@@ -358,7 +358,7 @@ export function GoldPriceChart() {
                     min={0}
                     value={exchangeRate}
                     readOnly
-                    className="w-[120px] bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                    className="w-[120px] bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                     placeholder="Tỷ giá USD/VND"
                   />
                   <span className="text-xs text-muted-foreground dark:text-zinc-400">Tỷ giá tự động lấy từ Vietcombank.</span>
@@ -369,7 +369,7 @@ export function GoldPriceChart() {
           <CardContent className="p-4">
             <div className="flex flex-col">
               <div className="overflow-y-auto max-h-[400px]">
-                <Table className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                <Table className="bg-white dark:bg-black text-zinc-900 dark:text-zinc-100">
                   <TableHeader>
                     <TableRow className="border-b border-zinc-200 dark:border-zinc-700">
                       <TableHead className="text-left font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tuổi vàng</TableHead>

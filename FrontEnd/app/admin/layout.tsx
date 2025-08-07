@@ -27,10 +27,10 @@ export default function AdminLayout({
         swipeDirection="right"
         duration={3000} // 👈 3s = 3000ms
       >
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-gray-50 dark:bg-black">
           <AdminSidebar />
           <main
-            className="flex-1 bg-[#f5f6fa] dark:bg-background p-6 overflow-y-auto"
+            className="flex-1 bg-gray-50 dark:bg-black p-6 overflow-y-auto"
             style={{ paddingLeft: '20rem' }}
           >
             {children}

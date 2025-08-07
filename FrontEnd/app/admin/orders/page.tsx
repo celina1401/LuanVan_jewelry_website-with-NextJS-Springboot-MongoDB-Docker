@@ -67,14 +67,14 @@ function getPaymentBadgeClass(method: string): string {
         case "COD":
             return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
         default:
-            return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+            return "bg-gray-100 text-gray-700 dark:bg-black dark:text-gray-300";
     }
 }
 
 function getOrderStatusColor(status: string): string {
     switch (status) {
         case "Chưa xử lý":
-            return "bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-200";
+            return "bg-gray-100 dark:bg-black text-gray-800 dark:text-gray-200";
         case "Đã nhận đơn":
             return "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
         case "Đang đóng gói":
@@ -84,7 +84,7 @@ function getOrderStatusColor(status: string): string {
         case "Đã hủy":
             return "bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-100 font-semibold border border-red-300 dark:border-red-600"; // ✅ đậm hơn
         default:
-            return "bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-200";
+            return "bg-gray-100 dark:bg-black text-gray-800 dark:text-gray-200";
     }
 }
 
@@ -121,7 +121,7 @@ function getShippingTriggerClass(status: string): string {
         case "Đang giao":
             return "bg-blue-100 dark:bg-blue-900 ";
         default:
-            return "bg-gray-100 dark:bg-zinc-800 ";
+            return "bg-gray-100 dark:bg-black ";
     }
 }
 
@@ -252,7 +252,7 @@ export default function AdminOrdersPage() {
                             <Filter className="h-4 w-4" /> Thêm điều kiện lọc
                         </Button>
                         {filters.map((f, idx) => (
-                            <span key={idx} className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded px-2 py-1 text-xs flex items-center gap-1">
+                            <span key={idx} className="bg-gray-100 dark:bg-black text-gray-700 dark:text-gray-200 rounded px-2 py-1 text-xs flex items-center gap-1">
                                 {f}
                                 <button onClick={() => setFilters(filters.filter((_, i) => i !== idx))} className="ml-1 text-gray-400 hover:text-red-500">×</button>
                             </span>
@@ -285,7 +285,7 @@ export default function AdminOrdersPage() {
                                     </tr>
 
                                 </thead>
-                                <tbody className="bg-white dark:bg-[#0f0f11]">
+                                <tbody className="bg-white dark:bg-black">
                                     {filteredOrders.map((order, idx) => (
                                         <tr key={order.id} className="transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/80">
                                             <td className="px-4 py-2 font-mono text-sm text-blue-600 hover:underline cursor-pointer">#{order.orderNumber}</td>
@@ -335,7 +335,7 @@ export default function AdminOrdersPage() {
                                                         </div>
                                                     </SelectTrigger>
 
-                                                    <SelectContent className="rounded-md shadow-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 z-50">
+                                                    <SelectContent className="rounded-md shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-gray-700 z-50">
                                                         {[
                                                             "Chưa xử lý",
                                                             "Đã nhận đơn",
@@ -411,7 +411,7 @@ export default function AdminOrdersPage() {
                                                                 variant="default" />
                                                         </div>
                                                     </SelectTrigger>
-                                                    <SelectContent className="rounded-md shadow-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 z-50">
+                                                    <SelectContent className="rounded-md shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-gray-700 z-50">
                                                         {[
                                                             "Đã giao hàng",
                                                             "Chưa giao hàng",
@@ -461,7 +461,7 @@ export default function AdminOrdersPage() {
             {showDetail && selectedOrder && (
                 <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
                     {/* <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg max-w-3xl w-full shadow-xl relative"> */}
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl relative">
+                    <div className="bg-white dark:bg-black p-6 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl relative">
 
                         <button className="absolute top-4 right-4 text-gray-500 hover:text-red-500 text-xl font-bold" onClick={() => setShowDetail(false)}>
                             ×

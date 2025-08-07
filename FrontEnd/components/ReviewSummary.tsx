@@ -135,7 +135,7 @@ export default function ReviewSummary({ productId, onReviewAdded }: ReviewSummar
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Average Rating */}
-          <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <div className="text-center p-4 bg-white dark:bg-black rounded-lg shadow-sm">
             <div className="text-4xl font-bold text-yellow-400 mb-2">
               {stats.averageRating.toFixed(1)}
             </div>
@@ -151,7 +151,7 @@ export default function ReviewSummary({ productId, onReviewAdded }: ReviewSummar
           </div>
 
           {/* Total Reviews */}
-          <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <div className="text-center p-4 bg-white dark:bg-black rounded-lg shadow-sm">
             <div className="flex items-center justify-center mb-2">
               <Users className="w-8 h-8 text-blue-500" />
             </div>
@@ -164,7 +164,7 @@ export default function ReviewSummary({ productId, onReviewAdded }: ReviewSummar
           </div>
 
           {/* Rating Trend */}
-          <div className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <div className="text-center p-4 bg-white dark:bg-black rounded-lg shadow-sm">
             <div className="flex items-center justify-center mb-2">
               <TrendingUp className="w-8 h-8 text-green-500" />
             </div>
@@ -195,7 +195,7 @@ export default function ReviewSummary({ productId, onReviewAdded }: ReviewSummar
                   <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                 </div>
                 
-                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3 relative overflow-hidden">
+                <div className="flex-1 bg-gray-200 dark:bg-black rounded-full h-3 relative overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${percentage}%` }}
