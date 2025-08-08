@@ -14,7 +14,7 @@ import java.util.List;
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:3000")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -26,7 +26,7 @@ public class NotificationController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error creating notification: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -37,7 +37,7 @@ public class NotificationController {
             return ResponseEntity.ok(notifications);
         } catch (Exception e) {
             log.error("Error getting notifications for user {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -48,7 +48,7 @@ public class NotificationController {
             return ResponseEntity.ok(notifications);
         } catch (Exception e) {
             log.error("Error getting unread notifications for user {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -59,7 +59,7 @@ public class NotificationController {
             return ResponseEntity.ok(count);
         } catch (Exception e) {
             log.error("Error getting unread count for user {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -70,7 +70,7 @@ public class NotificationController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error marking notification {} as read: {}", notificationId, e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -81,7 +81,7 @@ public class NotificationController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("Error deleting notification {}: {}", notificationId, e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -92,7 +92,7 @@ public class NotificationController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("Error deleting notifications for user {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -112,7 +112,7 @@ public class NotificationController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error creating order status notification: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -132,13 +132,13 @@ public class NotificationController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error creating shipping status notification: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
-    // Health check endpoint
-    @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("NotificationService is running");
-    }
+    // // Health check endpoint
+    // @GetMapping("/health")
+    // public ResponseEntity<String> health() {
+    //     return ResponseEntity.ok("NotificationService is running");
+    // }
 } 

@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: notificationservice
+  data:
+    mongodb:
+      uri: mongodb://mongodb:27017/jewelry_db
+      database: jewelry_db
 
 eureka:
   client:

@@ -152,7 +152,7 @@ export default function OrderDetailPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error || "Không tìm thấy đơn hàng"}</p>
-          <Button className="bg-rose-500 hover:bg-rose-600 text-black dark:text-white" onClick={() => window.location.href = "/dashboard/orders"}>Quay lại</Button>
+          <Button onClick={() => window.location.href = "/dashboard/orders"}>Quay lại</Button>
         </div>
       </div>
     );
@@ -212,13 +212,13 @@ export default function OrderDetailPage() {
           <Button
             variant="outline"
             onClick={() => window.location.href = "/dashboard/orders"}
-            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-900 hover:bg-gray-100 dark:bg-black dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
+            className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
             Quay lại
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Đơn hàng #{order.orderNumber}</h1>
+            <h1 className="text-2xl font-bold">Đơn hàng #{order.orderNumber}</h1>
             <p className="text-gray-600 dark:text-gray-400">
               Đặt hàng ngày {new Date(order.createdAt).toLocaleDateString("vi-VN")}
             </p>
@@ -422,28 +422,20 @@ export default function OrderDetailPage() {
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="sm:max-w-md rounded-xl p-6 animate-in">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 justify-center text-xl font-bold text-gray-900 dark:text-white">
-              <AlertCircle className="h-6 w-6 text-red-500 dark:text-red-500" />
+            <DialogTitle className="flex items-center gap-2 justify-center text-xl font-bold">
+              <AlertCircle className="h-6 w-6 text-red-500" />
               Hủy đơn hàng
             </DialogTitle>
           </DialogHeader>
-          <button
-            className="absolute top-2 right-2 text-xl text-gray-900 dark:text-white hover:text-rose-500"
-            onClick={() => setShowCancelDialog(false)}
-            aria-label="Đóng"
-            type="button"
-          >
-            ×
-          </button>
           <div className="space-y-4">
-            <p className="text-center text-base text-gray-900 dark:text-white">
+            <p className="text-center text-base text-gray-700">
               Vui lòng nhập lý do hủy đơn hàng của bạn:
             </p>
             <textarea
               placeholder="Nhập lý do hủy đơn hàng (ví dụ: Đổi ý, đặt nhầm, giá cao...)"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              className="min-h-[100px] w-full rounded-lg border border-gray-300 focus:border-rose-500 focus:outline-none text-base p-3 resize-none text-gray-900 dark:text-white bg-white dark:bg-black"
+              className="min-h-[100px] w-full rounded-lg border border-gray-300 focus:border-rose-500 focus:outline-none text-base p-3 resize-none"
             />
             <div className="flex justify-end gap-3">
               <Button
@@ -453,7 +445,7 @@ export default function OrderDetailPage() {
                   setCancelReason("");
                 }}
                 disabled={isCancelling}
-                className="rounded-lg px-6 py-2 text-gray-900 dark:text-white"
+                className="rounded-lg px-6 py-2"
               >
                 Hủy
               </Button>
@@ -488,7 +480,7 @@ export default function OrderDetailPage() {
                   }
                 }}
                 disabled={isCancelling || !cancelReason.trim()}
-                className="rounded-lg px-6 py-2 font-semibold bg-rose-500 hover:bg-rose-600 text-white"
+                className="rounded-lg px-6 py-2 font-semibold bg-rose-500 hover:bg-rose-600"
               >
                 {isCancelling ? "Đang hủy..." : "Xác nhận hủy"}
               </Button>

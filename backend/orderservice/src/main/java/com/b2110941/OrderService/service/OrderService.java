@@ -31,6 +31,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final RestTemplate restTemplate;
+    private final NotificationClientService notificationClientService;
 
     @Value("${user.service.url:http://localhost:9001}")
     private String userServiceUrl;
@@ -144,6 +145,7 @@ public class OrderService {
 
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
+            String previousStatus = order.getOrderStatus();
             order.setOrderStatus(orderStatus);
             order.setUpdatedAt(LocalDateTime.now());
             
@@ -152,6 +154,22 @@ public class OrderService {
             }
             
             Order savedOrder = orderRepository.save(order);
+
+            try {
+                notificationClientService.sendOrderStatusNotification(
+                        order.getUserId(),
+                        order.getId(),
+                        order.getOrderNumber(),
+                        order.getCustomerName(),
+                        order.getCustomerEmail(),
+                        order.getCustomerPhone(),
+                        previousStatus,
+                        orderStatus
+                );
+            } catch (Exception e) {
+                log.warn("Failed to send order status notification: {}", e.getMessage());
+            }
+
             return convertToOrderResponse(savedOrder);
         }
         throw new RuntimeException("Order not found with id: " + orderId);
@@ -163,6 +181,7 @@ public class OrderService {
     
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
+            String previousShippingStatus = order.getShippingStatus();
             order.setShippingStatus(shippingStatus);
             order.setUpdatedAt(LocalDateTime.now());
     
@@ -172,6 +191,22 @@ public class OrderService {
             }
     
             Order savedOrder = orderRepository.save(order);
+
+            try {
+                notificationClientService.sendShippingStatusNotification(
+                        order.getUserId(),
+                        order.getId(),
+                        order.getOrderNumber(),
+                        order.getCustomerName(),
+                        order.getCustomerEmail(),
+                        order.getCustomerPhone(),
+                        previousShippingStatus,
+                        shippingStatus
+                );
+            } catch (Exception e) {
+                log.warn("Failed to send shipping status notification: {}", e.getMessage());
+            }
+
             return convertToOrderResponse(savedOrder);
         }
     

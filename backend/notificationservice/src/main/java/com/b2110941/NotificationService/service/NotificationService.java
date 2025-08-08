@@ -6,6 +6,7 @@ import com.b2110941.NotificationService.entity.Notification;
 import com.b2110941.NotificationService.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,78 +19,152 @@ import java.util.stream.Collectors;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final EmailService emailService;
-    private final WebSocketService webSocketService;
+    
+    @Autowired(required = false)
+    private EmailService emailService;
+    
+    @Autowired(required = false)
+    private WebSocketService webSocketService;
 
     public NotificationResponse createNotification(NotificationRequest request) {
-        try {
-            Notification notification = new Notification();
-            notification.setUserId(request.getUserId());
-            notification.setOrderId(request.getOrderId());
-            notification.setOrderNumber(request.getOrderNumber());
-            notification.setTitle(request.getTitle());
-            notification.setMessage(request.getMessage());
-            notification.setType(request.getType());
-            notification.setStatus("UNREAD");
-            notification.setCreatedAt(LocalDateTime.now());
-            notification.setCustomerName(request.getCustomerName());
-            notification.setCustomerEmail(request.getCustomerEmail());
-            notification.setCustomerPhone(request.getCustomerPhone());
+        Notification notification = new Notification();
+        notification.setUserId(request.getUserId());
+        notification.setOrderId(request.getOrderId());
+        notification.setOrderNumber(request.getOrderNumber());
+        notification.setTitle(request.getTitle());
+        notification.setMessage(request.getMessage());
+        notification.setType(request.getType());
+        notification.setStatus("UNREAD");
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setCustomerName(request.getCustomerName());
+        notification.setCustomerEmail(request.getCustomerEmail());
+        notification.setCustomerPhone(request.getCustomerPhone());
 
-            Notification savedNotification = notificationRepository.save(notification);
-            
-            // Send email notification
-            if (request.getCustomerEmail() != null && !request.getCustomerEmail().isEmpty()) {
+        Notification persisted = null;
+        try {
+            persisted = notificationRepository.save(notification);
+        } catch (Exception e) {
+            // DB lỗi: vẫn tiếp tục gửi WS để client nhận real-time
+            log.warn("Notification DB save failed, sending WS only. Cause: {}", e.getMessage());
+        }
+
+        // Gửi email (nếu có cấu hình) – không làm hỏng flow
+        try {
+            if (emailService != null && request.getCustomerEmail() != null && !request.getCustomerEmail().isEmpty()) {
                 emailService.sendNotificationEmail(request.getCustomerEmail(), request.getTitle(), request.getMessage());
             }
-
-            // Send WebSocket notification
-            webSocketService.sendNotificationToUser(request.getUserId(), convertToResponse(savedNotification));
-
-            log.info("Notification created successfully for user: {}, order: {}", request.getUserId(), request.getOrderId());
-            return convertToResponse(savedNotification);
         } catch (Exception e) {
-            log.error("Error creating notification: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to create notification", e);
+            log.warn("Failed to send email notification: {}", e.getMessage());
         }
+
+        // Gửi WebSocket để client nhận ngay
+        try {
+            if (webSocketService != null) {
+                NotificationResponse payload = persisted != null ? convertToResponse(persisted) : new NotificationResponse(
+                        null,
+                        notification.getUserId(),
+                        notification.getOrderId(),
+                        notification.getOrderNumber(),
+                        notification.getTitle(),
+                        notification.getMessage(),
+                        notification.getType(),
+                        notification.getStatus(),
+                        notification.getCreatedAt(),
+                        null,
+                        notification.getCustomerName(),
+                        notification.getCustomerEmail(),
+                        notification.getCustomerPhone()
+                );
+                webSocketService.sendNotificationToUser(request.getUserId(), payload);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send WebSocket notification: {}", e.getMessage());
+        }
+
+        log.info("Notification processed for user: {}, order: {} (persisted: {})", request.getUserId(), request.getOrderId(), persisted != null);
+        return persisted != null ? convertToResponse(persisted) : new NotificationResponse(
+                null,
+                notification.getUserId(),
+                notification.getOrderId(),
+                notification.getOrderNumber(),
+                notification.getTitle(),
+                notification.getMessage(),
+                notification.getType(),
+                notification.getStatus(),
+                notification.getCreatedAt(),
+                null,
+                notification.getCustomerName(),
+                notification.getCustomerEmail(),
+                notification.getCustomerPhone()
+        );
     }
 
     public List<NotificationResponse> getUserNotifications(String userId) {
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        return notifications.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+        try {
+            List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            return notifications.stream()
+                    .map(this::convertToResponse)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error getting notifications for user {}: {}", userId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get notifications for user: " + userId, e);
+        }
     }
 
     public List<NotificationResponse> getUserUnreadNotifications(String userId) {
-        List<Notification> notifications = notificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, "UNREAD");
-        return notifications.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+        try {
+            List<Notification> notifications = notificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, "UNREAD");
+            return notifications.stream()
+                    .map(this::convertToResponse)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error getting unread notifications for user {}: {}", userId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get unread notifications for user: " + userId, e);
+        }
     }
 
     public NotificationResponse markAsRead(String notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
-        
-        notification.setStatus("READ");
-        notification.setReadAt(LocalDateTime.now());
-        
-        Notification updatedNotification = notificationRepository.save(notification);
-        return convertToResponse(updatedNotification);
+        try {
+            Notification notification = notificationRepository.findById(notificationId)
+                    .orElseThrow(() -> new RuntimeException("Notification not found"));
+            
+            notification.setStatus("READ");
+            notification.setReadAt(LocalDateTime.now());
+            
+            Notification updatedNotification = notificationRepository.save(notification);
+            return convertToResponse(updatedNotification);
+        } catch (Exception e) {
+            log.error("Error marking notification {} as read: {}", notificationId, e.getMessage(), e);
+            throw new RuntimeException("Failed to mark notification as read: " + notificationId, e);
+        }
     }
 
     public long getUnreadCount(String userId) {
-        return notificationRepository.countByUserIdAndStatus(userId, "UNREAD");
+        try {
+            return notificationRepository.countByUserIdAndStatus(userId, "UNREAD");
+        } catch (Exception e) {
+            log.error("Error getting unread count for user {}: {}", userId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get unread count for user: " + userId, e);
+        }
     }
 
     public void deleteNotification(String notificationId) {
-        notificationRepository.deleteById(notificationId);
+        try {
+            notificationRepository.deleteById(notificationId);
+        } catch (Exception e) {
+            log.error("Error deleting notification {}: {}", notificationId, e.getMessage(), e);
+            throw new RuntimeException("Failed to delete notification: " + notificationId, e);
+        }
     }
 
     public void deleteUserNotifications(String userId) {
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        notificationRepository.deleteAll(notifications);
+        try {
+            List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            notificationRepository.deleteAll(notifications);
+        } catch (Exception e) {
+            log.error("Error deleting notifications for user {}: {}", userId, e.getMessage(), e);
+            throw new RuntimeException("Failed to delete notifications for user: " + userId, e);
+        }
     }
 
     private NotificationResponse convertToResponse(Notification notification) {

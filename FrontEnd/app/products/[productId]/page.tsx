@@ -146,7 +146,7 @@ function CommentForm({ onSubmit }: { onSubmit: (data: { content: string; images:
         value={content}
         onChange={e => setContent(e.target.value)}
         placeholder="Nhập bình luận..."
-        className="w-full border rounded p-2 bg-white text-gray-900 dark:bg-black dark:text-white dark:border-gray-700"
+        className="w-full border rounded p-2 bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
         required
       />
       <input type="file" multiple accept="image/*" onChange={handleImageChange} className="mt-2 dark:text-gray-100" />
@@ -374,7 +374,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
           {/* Thông tin sản phẩm */}
-          <div className="flex-1 flex flex-col gap-4 bg-white dark:bg-black rounded-2xl shadow-xl p-8">
+          <div className="flex-1 flex flex-col gap-4 bg-white dark:bg-[#18181b] rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">{product.name}</h1>
               <button
@@ -414,9 +414,9 @@ export default function ProductDetailPage() {
             )}
             {/* Số lượng */}
             <div className="flex items-center gap-2 mb-2">
-              <span className="font-medium text-gray-900 dark:text-white">Số lượng:</span>
+              <span className="font-medium">Số lượng:</span>
               <button
-                className="w-8 h-8 rounded bg-gray-200 dark:bg-black text-lg font-bold"
+                className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold"
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
               >-</button>
               <input
@@ -424,13 +424,13 @@ export default function ProductDetailPage() {
                 min={1}
                 value={quantity}
                 onChange={e => setQuantity(Math.max(1, Number(e.target.value)))}
-                className="w-12 text-center border rounded dark:bg-black dark:text-white dark:border-gray-700 text-gray-900 dark:text-white"
+                className="w-12 text-center border rounded dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
               />
               <button
-                className="w-8 h-8 rounded bg-gray-200 dark:bg-black text-lg font-bold"
+                className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 text-lg font-bold"
                 onClick={() => setQuantity(q => q + 1)}
               >+</button>
-              <span className="ml-2 text-sm text-rose-500 dark:text-rose-700">{product.stockQuantity === 0 ? "Hết hàng" : null}</span>
+              <span className="ml-2 text-sm text-gray-500">{product.stockQuantity === 0 ? "Hết hàng" : null}</span>
             </div>
             {/* Nút đặt mua/giỏ hàng */}
             <div className="flex flex-wrap gap-4 mt-4">
@@ -442,7 +442,7 @@ export default function ProductDetailPage() {
                 Đặt hàng
               </button>
               <button
-                className="px-8 py-3 bg-white dark:bg-black border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
+                className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2"
                 onClick={() => addToCart(product)}
                 disabled={product.stockQuantity === 0}
               >
@@ -460,11 +460,11 @@ export default function ProductDetailPage() {
             </div>
             {/* Trả góp */}
             {/* <div className="flex gap-4 mt-4">
-              <div className="flex-1 bg-gray-100 dark:bg-black rounded-lg p-3 text-center">
+              <div className="flex-1 bg-gray-100 dark:bg-[#23272f] rounded-lg p-3 text-center">
                 <div className="font-semibold text-gray-900 dark:text-gray-100">Trả góp 3 tháng</div>
                 <div className="text-sm text-gray-500 dark:text-gray-300">(Chỉ từ {(product.price/3).toLocaleString()}₫/tháng)</div>
               </div>
-              <div className="flex-1 bg-gray-100 dark:bg-black rounded-lg p-3 text-center">
+              <div className="flex-1 bg-gray-100 dark:bg-[#23272f] rounded-lg p-3 text-center">
                 <div className="font-semibold text-gray-900 dark:text-gray-100">Trả góp 6 tháng</div>
                 <div className="text-sm text-gray-500 dark:text-gray-300">(Chỉ từ {(product.price/6).toLocaleString()}₫/tháng)</div>
               </div>
@@ -484,7 +484,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
         {/* Bình luận */}
-        <div className="mt-12 bg-white dark:bg-black rounded-xl shadow p-6">
+        <div className="mt-12 bg-white dark:bg-[#18181b] rounded-xl shadow p-6">
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">

@@ -83,9 +83,9 @@ export default function OrdersPage() {
 
   return (
     <>
-      <h1 className="text-3xl text-gray-900 dark:text-white font-bold mb-8">Đơn hàng của tôi</h1>
+      <h1 className="text-3xl font-bold mb-8">Đơn hàng của tôi</h1>
       <Card>
-        <div className="rounded-lg border bg-white dark:bg-black">
+        <div className="rounded-lg border bg-white dark:bg-[#18181b]">
           <div className="grid grid-cols-5 gap-4 font-medium border-b p-4">
             <div>Mã đơn</div>
             <div>Ngày đặt</div>

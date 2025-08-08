@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Bell, X, Check, Trash2 } from 'lucide-react';
+import { Bell, X, Check, Trash2, AlertCircle } from 'lucide-react';
 import { useNotifications } from '../contexts/notification-context';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
+import { Alert, AlertDescription } from './ui/alert';
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, deleteNotification, error, loading } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleMarkAsRead = async (notificationId: string) => {
@@ -53,13 +54,13 @@ export function NotificationBell() {
         variant="ghost"
         size="icon"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative"
+        className="relative hover:bg-zinc-100 dark:hover:bg-zinc-800"
       >
         <Bell className="h-5 w-5 text-gray-900 dark:text-white" />
         {unreadCount > 0 && (
           <Badge 
             variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+            className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-medium"
           >
             {unreadCount > 99 ? '99+' : unreadCount}
           </Badge>
@@ -83,9 +84,24 @@ export function NotificationBell() {
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-96">
-                {notifications.length === 0 ? (
+                {error && (
+                  <Alert className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {error === 'Notification service is not available' 
+                        ? 'Dịch vụ thông báo hiện không khả dụng. Vui lòng thử lại sau.'
+                        : error}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {loading ? (
                   <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                    Không có thông báo nào
+                    Đang tải thông báo...
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                    {error ? 'Không thể tải thông báo' : 'Không có thông báo nào'}
                   </div>
                 ) : (
                   <div className="space-y-1">
