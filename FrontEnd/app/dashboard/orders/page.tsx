@@ -10,17 +10,32 @@ export default function OrdersPage() {
   const { user } = useUser();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
       if (!user) return;
       setLoading(true);
+      setError(null);
       try {
-        const res = await fetch(`/api/orders?userId=${user.id}`);
+        const res = await fetch(`http://localhost:9003/api/orders?userId=${user.id}`);
         const data = await res.json();
-        setOrders(data);
+        
+        // Check if the response is an error object
+        if (data.error) {
+          setError(data.error);
+          setOrders([]);
+        } else if (Array.isArray(data)) {
+          setOrders(data);
+        } else {
+          console.error("Unexpected data format:", data);
+          setError("Unexpected data format received from server");
+          setOrders([]);
+        }
       } catch (err) {
         console.error("Lỗi khi lấy đơn hàng:", err);
+        setError("Không thể tải danh sách đơn hàng");
+        setOrders([]);
       } finally {
         setLoading(false);
       }
@@ -78,9 +93,6 @@ export default function OrdersPage() {
     }
   };
 
-
-
-
   return (
     <>
       <h1 className="text-3xl font-bold mb-8">Đơn hàng của tôi</h1>
@@ -95,20 +107,27 @@ export default function OrdersPage() {
           </div>
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Đang tải đơn hàng...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">
+              <p className="font-medium">Lỗi khi tải đơn hàng</p>
+              <p className="text-sm text-gray-500 mt-1">{error}</p>
+            </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">Bạn chưa có đơn hàng nào.</div>
           ) : (
             orders.map(order => (
-              <div key={order.id} className="grid grid-cols-5 gap-4 items-center border-b p-4">
+              <div key={order.id || order.orderNumber} className="grid grid-cols-5 gap-4 items-center border-b p-4">
                 <div className="truncate break-all min-w-[120px]">#{order.orderNumber}</div>
-                <div className="whitespace-nowrap">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</div>
-                <div>{order.total.toLocaleString()}₫</div>
+                <div className="whitespace-nowrap">
+                  {order.createdAt ? new Date(order.createdAt).toLocaleDateString("vi-VN") : "N/A"}
+                </div>
+                <div>{order.total ? order.total.toLocaleString() : "0"}₫</div>
                 <div>
                   <span
-                    className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full ${getStatusInfo(order.orderStatus).bg}`}
+                    className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-full ${getStatusInfo(order.orderStatus || order.status || "Chưa xử lý").bg}`}
                   >
-                    {getStatusInfo(order.orderStatus).icon}
-                    {getStatusInfo(order.orderStatus).label}
+                    {getStatusInfo(order.orderStatus || order.status || "Chưa xử lý").icon}
+                    {getStatusInfo(order.orderStatus || order.status || "Chưa xử lý").label}
                   </span>
                 </div>
                 <div>
@@ -117,7 +136,6 @@ export default function OrdersPage() {
                   </Link>
                 </div>
               </div>
-
             ))
           )}
         </div>

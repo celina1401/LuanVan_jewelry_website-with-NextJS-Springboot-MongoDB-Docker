@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:9001';
+// Try multiple possible URLs for the user service
+const USER_SERVICE_URLS = [
+  process.env.USER_SERVICE_URL || 'http://localhost:9001',
+  'http://userservice:9001', // Docker service name
+  'http://host.docker.internal:9001', // Docker host
+  'http://localhost:9001' // Fallback
+];
 
 export async function GET(
   request: NextRequest,
@@ -11,24 +17,27 @@ export async function GET(
 
     console.log(`Checking status for user ${userId}`);
 
-    // Add timeout and better error handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-    try {
-      const response = await fetch(`${USER_SERVICE_URL}/api/users/users/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`UserService status check error: ${response.status} - ${errorText}`);
+    // Try multiple URLs
+    let lastError: Error | null = null;
+    
+    for (const baseUrl of USER_SERVICE_URLS) {
+      try {
+        const url = `${baseUrl}/api/users/users/${userId}`;
+        console.log(`Trying to connect to: ${url}`);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(5000), // 5 second timeout per attempt
+        });
+        
+        if (response.ok) {
+          console.log(`Successfully connected to: ${url}`);
+          const data = await response.json();
+          return NextResponse.json(data);
+        }
         
         if (response.status === 404) {
           return NextResponse.json(
@@ -37,32 +46,20 @@ export async function GET(
           );
         }
         
-        throw new Error(`UserService error: ${response.status} - ${errorText}`);
+        lastError = new Error(`HTTP ${response.status} from ${url}`);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        console.log(`Failed to connect to ${baseUrl}: ${lastError.message}`);
+        continue;
       }
-
-      const data = await response.json();
-      return NextResponse.json(data);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        console.error('Request timeout when checking user status');
-        return NextResponse.json(
-          { error: 'Request timeout - User service may be unavailable' },
-          { status: 503 }
-        );
-      }
-      
-      if (fetchError instanceof Error && fetchError.message.includes('ECONNREFUSED')) {
-        console.error('Connection refused - User service may not be running');
-        return NextResponse.json(
-          { error: 'User service is not available - please try again later' },
-          { status: 503 }
-        );
-      }
-      
-      throw fetchError;
     }
+    
+    // If all URLs failed
+    console.error('Error checking user status:', lastError);
+    return NextResponse.json(
+      { error: 'User service is not available. Please ensure the backend services are running. You can start them with: docker-compose up -d' },
+      { status: 503 }
+    );
   } catch (error) {
     console.error('Error checking user status:', error);
     return NextResponse.json(

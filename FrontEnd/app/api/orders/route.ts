@@ -1,74 +1,13 @@
-// import { NextRequest, NextResponse } from 'next/server';
-
-// const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:9003';
-
-// export async function GET(request: NextRequest) {
-//   try {
-//     const { searchParams } = new URL(request.url);
-//     const userId = searchParams.get('userId');
-    
-//     let url = `${ORDER_SERVICE_URL}/api/orders`;
-//     if (userId) {
-//       url = `${ORDER_SERVICE_URL}/api/orders/user/${userId}`;
-//     }
-    
-//     const response = await fetch(url, {
-//       method: 'GET',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//     });
-
-//     if (!response.ok) {
-//       throw new Error(`HTTP error! status: ${response.status}`);
-//     }
-
-//     const data = await response.json();
-//     return NextResponse.json(data);
-//   } catch (error) {
-//     console.error('Error fetching orders:', error);
-//     return NextResponse.json(
-//       { error: 'Failed to fetch orders' },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// export async function POST(request: NextRequest) {
-//   try {
-//     const body = await request.json();
-//     console.log('Creating order with data:', JSON.stringify(body, null, 2));
-    
-//     const response = await fetch(`${ORDER_SERVICE_URL}/api/orders`, {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(body),
-//     });
-
-//     if (!response.ok) {
-//       const errorText = await response.text();
-//       console.error(`OrderService error: ${response.status} - ${errorText}`);
-//       throw new Error(`OrderService error: ${response.status} - ${errorText}`);
-//     }
-
-//     const data = await response.json();
-//     console.log('Order created successfully:', data);
-//     return NextResponse.json(data, { status: 201 });
-//   } catch (error) {
-//     console.error('Error creating order:', error);
-//     return NextResponse.json(
-//       { error: error instanceof Error ? error.message : 'Failed to create order' },
-//       { status: 500 }
-//     );
-//   }
-// }
-
 // app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
-const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:9003';
+// Try multiple possible URLs for the order service
+const ORDER_SERVICE_URLS = [
+  process.env.ORDER_SERVICE_URL || 'http://localhost:9003',
+  'http://orderservice:9003', // Docker service name
+  'http://host.docker.internal:9003', // Docker host
+  'http://localhost:9003' // Fallback
+];
 
 // Helper function to get auth token from request headers
 function getAuthToken(request: NextRequest): string | null {
@@ -79,9 +18,9 @@ function getAuthToken(request: NextRequest): string | null {
   return null;
 }
 
-// Helper function to make authenticated requests to Order Service
+// Helper function to make authenticated requests to Order Service with fallback
 async function makeOrderServiceRequest(
-  url: string, 
+  path: string, 
   options: RequestInit, 
   token?: string | null
 ) {
@@ -90,14 +29,38 @@ async function makeOrderServiceRequest(
     ...(options.headers as HeadersInit),
   };
 
-  // if (token) {
-  //   headers['Authorization'] = `Bearer ${token}`;
-  // }
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
 
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+  // Try multiple URLs
+  let lastError: Error | null = null;
+  
+  for (const baseUrl of ORDER_SERVICE_URLS) {
+    try {
+      const url = `${baseUrl}${path}`;
+      console.log(`Trying to connect to: ${url}`);
+      
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        signal: AbortSignal.timeout(5000), // 5 second timeout per attempt
+      });
+      
+      if (response.ok || (response.status >= 400 && response.status < 500)) {
+        console.log(`Successfully connected to: ${url}`);
+        return response;
+      }
+      
+      lastError = new Error(`HTTP ${response.status} from ${url}`);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      console.log(`Failed to connect to ${baseUrl}: ${lastError.message}`);
+      continue;
+    }
+  }
+  
+  throw lastError || new Error('All order service URLs failed');
 }
 
 export async function GET(request: NextRequest) {
@@ -109,37 +72,76 @@ export async function GET(request: NextRequest) {
     
     const token = getAuthToken(request);
     
-    let url = `${ORDER_SERVICE_URL}/api/orders`;
+    let path = '/api/orders';
     
     // Route to different endpoints based on parameters
     if (orderId) {
-      url = `${ORDER_SERVICE_URL}/api/orders/${orderId}`;
+      path = `/api/orders/${orderId}`;
     } else if (orderNumber) {
-      url = `${ORDER_SERVICE_URL}/api/orders/number/${orderNumber}`;
+      path = `/api/orders/number/${orderNumber}`;
     } else if (userId) {
-      url = `${ORDER_SERVICE_URL}/api/orders/user/${userId}`;
+      path = `/api/orders/user/${userId}`;
     }
     
-    console.log('Fetching from Order Service:', url);
+    console.log('Fetching from Order Service:', path);
     
-    const response = await makeOrderServiceRequest(url, { method: 'GET' }, token);
+    try {
+      const response = await makeOrderServiceRequest(path, { 
+        method: 'GET'
+      }, token);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OrderService GET error: ${response.status} - ${errorText}`);
-      
-      if (response.status === 404) {
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`OrderService GET error: ${response.status} - ${errorText}`);
+        
+        if (response.status === 404) {
+          return NextResponse.json(
+            { error: 'Order not found' },
+            { status: 404 }
+          );
+        }
+        
+        // Return a more specific error for 500 status
+        if (response.status === 500) {
+          return NextResponse.json(
+            { error: 'Order service internal error - please try again later' },
+            { status: 503 }
+          );
+        }
+        
+        throw new Error(`OrderService error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (fetchError) {
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        console.error('Request timeout when fetching orders');
         return NextResponse.json(
-          { error: 'Order not found' },
-          { status: 404 }
+          { error: 'Request timeout - Order service may be unavailable' },
+          { status: 503 }
         );
       }
       
-      throw new Error(`OrderService error: ${response.status} - ${errorText}`);
+      if (fetchError instanceof Error && fetchError.message.includes('ECONNREFUSED')) {
+        console.error('Connection refused - Order service may not be running');
+        return NextResponse.json(
+          { error: 'Order service is not available. Please ensure the backend services are running. You can start them with: docker-compose up -d' },
+          { status: 503 }
+        );
+      }
+      
+      // Handle other network errors
+      if (fetchError instanceof Error) {
+        console.error('Network error when fetching orders:', fetchError.message);
+        return NextResponse.json(
+          { error: 'Network error - please check your connection and ensure backend services are running' },
+          { status: 503 }
+        );
+      }
+      
+      throw fetchError;
     }
-
-    const data = await response.json();
-    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching orders:', error);
     return NextResponse.json(
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
     console.log('Creating order with data:', JSON.stringify(body, null, 2));
     
     const response = await makeOrderServiceRequest(
-      `${ORDER_SERVICE_URL}/api/orders`,
+      '/api/orders',
       {
         method: 'POST',
         body: JSON.stringify(body),
@@ -187,18 +189,19 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
+    const token = getAuthToken(request);
     
     if (!orderId) {
       return NextResponse.json(
-        { error: 'orderId parameter is required' },
+        { error: 'Order ID is required' },
         { status: 400 }
       );
     }
-
-    const token = getAuthToken(request);
+    
+    console.log('Deleting order:', orderId);
     
     const response = await makeOrderServiceRequest(
-      `${ORDER_SERVICE_URL}/api/orders/${orderId}`,
+      `/api/orders/${orderId}`,
       { method: 'DELETE' },
       token
     );

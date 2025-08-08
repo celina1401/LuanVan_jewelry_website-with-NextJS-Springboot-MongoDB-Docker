@@ -1,10 +1,13 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PaymentStatusCard, PaymentStatus, LoadingSpinner, ErrorBoundary, ApiErrorDisplay } from "@/lib";
+import { Suspense } from "react";
 
-export default function PaymentCallback() {
+function PaymentCallbackContent() {
   const params = useSearchParams();
   const [status, setStatus] = useState<PaymentStatus>("pending");
   const [orderId, setOrderId] = useState<string>("");
@@ -147,5 +150,21 @@ export default function PaymentCallback() {
         />
       </div>
     </ErrorBoundary>
+  );
+}
+
+export default function PaymentCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner
+          size="lg"
+          text="Đang xử lý kết quả thanh toán..."
+          fullScreen={false}
+        />
+      </div>
+    }>
+      <PaymentCallbackContent />
+    </Suspense>
   );
 }

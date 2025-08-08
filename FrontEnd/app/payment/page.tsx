@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+export const dynamic = 'force-dynamic';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { LoadingSpinner } from '@/lib';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-export default function PaymentCallbackPage() {
+function PaymentCallback() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'success' | 'fail' | 'pending'>('pending');
   const [orderId, setOrderId] = useState<string>('');
@@ -100,5 +101,13 @@ export default function PaymentCallbackPage() {
         <a href="/orders">Quay lại đơn hàng</a>
       </Button>
     </div>
+  );
+}
+
+export default function PaymentCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner text="Đang tải..." />}>
+      <PaymentCallback />
+    </Suspense>
   );
 }

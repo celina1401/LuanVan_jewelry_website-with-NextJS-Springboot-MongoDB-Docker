@@ -68,7 +68,7 @@ export function NotificationBell() {
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 w-80 bg-white dark:bg-black rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+        <div className="absolute right-0 top-12 w-[400px] bg-white dark:bg-black rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

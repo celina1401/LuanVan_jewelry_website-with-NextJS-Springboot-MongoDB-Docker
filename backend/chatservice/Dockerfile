@@ -9,7 +9,7 @@ RUN mvn clean package -DskipTests
 FROM openjdk:17-jdk-slim
 
 WORKDIR /app
-COPY --from=build /app/target/*.jar cartservice.jar
+COPY --from=build /app/target/*.jar chatservice.jar
 
 EXPOSE 9007
-ENTRYPOINT ["java", "-jar", "cartservice.jar"]
+ENTRYPOINT ["java", "-jar", "chatservice.jar"]

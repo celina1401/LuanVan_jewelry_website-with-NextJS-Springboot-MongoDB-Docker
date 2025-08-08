@@ -7,7 +7,7 @@ import { useUser, useAuth } from "@clerk/nextjs";
 export default function HistoryPage() {
   const { user } = useUser();
   const { getToken } = useAuth();
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -21,11 +21,23 @@ export default function HistoryPage() {
       })
         .then(res => res.json())
         .then(data => {
-          setOrders(data);
+          // Check if the response is an error object
+          if (data.error) {
+            setError(data.error);
+            setOrders([]);
+          } else if (Array.isArray(data)) {
+            setOrders(data);
+          } else {
+            console.error("Unexpected data format:", data);
+            setError("Unexpected data format received from server");
+            setOrders([]);
+          }
           setLoading(false);
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error("Error fetching orders:", err);
           setError("Không thể tải lịch sử giao dịch.");
+          setOrders([]);
           setLoading(false);
         });
     });
@@ -71,11 +83,13 @@ export default function HistoryPage() {
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 text-base">
               {orders.map((order: any) => (
-                <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <tr key={order.id || order.orderNumber} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">#{order.orderNumber}</td>
-                  <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString("vi-VN")}</td>
-                  <td className="px-6 py-4">{Number(order.total || order.amount).toLocaleString()}₫</td>
-                  <td className="px-6 py-4">{getStatusBadge(order.status || order.paymentStatus)}</td>
+                  <td className="px-6 py-4">
+                    {order.createdAt ? new Date(order.createdAt).toLocaleDateString("vi-VN") : "N/A"}
+                  </td>
+                  <td className="px-6 py-4">{Number(order.total || order.amount || 0).toLocaleString()}₫</td>
+                  <td className="px-6 py-4">{getStatusBadge(order.status || order.paymentStatus || "Chưa xử lý")}</td>
                 </tr>
               ))}
             </tbody>

@@ -49,6 +49,7 @@ export function OrdersList() {
 
       try {
         setLoading(true);
+        setError(null);
         const token = await getToken();
         
         const response = await fetch(`/api/orders?userId=${user.id}`, {
@@ -63,10 +64,22 @@ export function OrdersList() {
         }
 
         const data = await response.json();
-        setOrders(data);
+        
+        // Check if the response is an error object
+        if (data.error) {
+          setError(data.error);
+          setOrders([]);
+        } else if (Array.isArray(data)) {
+          setOrders(data);
+        } else {
+          console.error("Unexpected orders data format:", data);
+          setError("Unexpected data format received from server");
+          setOrders([]);
+        }
       } catch (err) {
         console.error('Error fetching orders:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+        setOrders([]);
       } finally {
         setLoading(false);
       }

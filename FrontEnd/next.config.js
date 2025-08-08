@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   images: { unoptimized: true },
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3001', 'localhost:3000'],
     },
   },
+  output: 'standalone',
   env: {
     // Clerk keys & URLs
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,

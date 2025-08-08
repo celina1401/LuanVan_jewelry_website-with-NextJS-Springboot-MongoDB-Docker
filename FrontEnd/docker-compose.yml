@@ -1,0 +1,29 @@
+# version: '3.8'
+
+# services:
+#   frontend:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       - NODE_ENV=production
+#       - NEXT_TELEMETRY_DISABLED=1
+#       # Add your environment variables here
+#       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+#       - NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+#       - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+#       - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL}
+#       - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL}
+#       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+#       - NEXT_PUBLIC_BACKEND_API_URL=${NEXT_PUBLIC_BACKEND_API_URL}
+#       - NEXT_PUBLIC_JWKS_URL=${NEXT_PUBLIC_JWKS_URL}
+#       - NEXT_PUBLIC_JWKS_PUBLIC_KEY=${NEXT_PUBLIC_JWKS_PUBLIC_KEY}
+#     restart: unless-stopped
+#     networks:
+#       - frontend-network
+
+# networks:
+#   frontend-network:
+#     driver: bridge

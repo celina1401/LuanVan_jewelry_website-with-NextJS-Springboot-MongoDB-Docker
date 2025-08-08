@@ -9,6 +9,6 @@ RUN mvn clean package -DskipTests
 FROM openjdk:17-jdk-slim
 
 WORKDIR /app
-COPY --from=build /app/target/*.jar discoveryserver.jar
+COPY --from=build /app/target/*.jar apigateway.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "discoveryserver.jar"]
+ENTRYPOINT ["java", "-jar", "apigateway.jar"]

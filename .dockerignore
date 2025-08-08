@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+DOCKER_README.md
+*.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Node.js (Frontend)
+FrontEnd/node_modules
+FrontEnd/.next
+FrontEnd/out
+FrontEnd/build
+FrontEnd/npm-debug.log*
+FrontEnd/yarn-debug.log*
+FrontEnd/yarn-error.log*
+
+# Java (Backend)
+BackEnd/*/target
+BackEnd/*/.mvn
+BackEnd/*/mvnw
+BackEnd/*/mvnw.cmd
+BackEnd/*/.idea
+BackEnd/*/.vscode
+
+# Logs
+*.log
+logs
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Data (keep for MongoDB)
+# BackEnd/data/db

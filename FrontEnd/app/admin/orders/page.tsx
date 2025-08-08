@@ -8,9 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Filter, Save, Search, Eye } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
-import { useToast } from "@/contexts/use-toast";
-// import { toast } from "@/components/ui/use-toast";
-// import { toastVariants } from "@/lib/toast-config";
+import { toast } from "sonner";
 
 
 const ORDER_TABS = [
@@ -132,7 +130,6 @@ export default function AdminOrdersPage() {
     const [tab, setTab] = useState("all");
     const [search, setSearch] = useState("");
     const [filters, setFilters] = useState<string[]>([]);
-    const { toast } = useToast();
 
 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -295,6 +292,7 @@ export default function AdminOrdersPage() {
                                                 <Select
                                                     disabled={order.status === "Đã hủy"}
                                                     onValueChange={async (value) => {
+                                                        const previousStatus = order.status;
                                                         setOrders((prev) =>
                                                             prev.map((o, i) => (i === idx ? { ...o, status: value } : o))
                                                         );
@@ -306,11 +304,22 @@ export default function AdminOrdersPage() {
 
                                                             if (!res.ok) {
                                                                 console.error('❌ Lỗi khi cập nhật trạng thái đơn hàng');
+                                                                toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
+                                                                // Revert the change if failed
+                                                                setOrders((prev) =>
+                                                                    prev.map((o, i) => (i === idx ? { ...o, status: previousStatus } : o))
+                                                                );
                                                             } else {
                                                                 console.log('✅ Đã cập nhật trạng thái đơn hàng');
+                                                                toast.success(`Đã cập nhật trạng thái đơn hàng #${order.orderNumber} thành "${value}"`);
                                                             }
                                                         } catch (err) {
                                                             console.error('❌ Lỗi network khi cập nhật trạng thái đơn hàng:', err);
+                                                            toast.error('Lỗi kết nối khi cập nhật trạng thái đơn hàng');
+                                                            // Revert the change if failed
+                                                            setOrders((prev) =>
+                                                                prev.map((o, i) => (i === idx ? { ...o, status: previousStatus } : o))
+                                                            );
                                                         }
                                                     }}
                                                 >
@@ -382,6 +391,7 @@ export default function AdminOrdersPage() {
                                                 <Select
                                                     disabled={order.status !== "Chờ giao hàng"}
                                                     onValueChange={async (value) => {
+                                                        const previousShippingStatus = order.shippingStatus;
                                                         setOrders((prev) =>
                                                             prev.map((o, i) => (i === idx ? { ...o, shippingStatus: value } : o))
                                                         );
@@ -393,11 +403,22 @@ export default function AdminOrdersPage() {
 
                                                             if (!res.ok) {
                                                                 console.error('❌ Lỗi khi cập nhật trạng thái giao hàng');
+                                                                toast.error('Lỗi khi cập nhật trạng thái giao hàng');
+                                                                // Revert the change if failed
+                                                                setOrders((prev) =>
+                                                                    prev.map((o, i) => (i === idx ? { ...o, shippingStatus: previousShippingStatus } : o))
+                                                                );
                                                             } else {
                                                                 console.log('✅ Đã cập nhật trạng thái giao hàng');
+                                                                toast.success(`Đã cập nhật trạng thái giao hàng đơn hàng #${order.orderNumber} thành "${value}"`);
                                                             }
                                                         } catch (err) {
                                                             console.error('❌ Lỗi network khi cập nhật giao hàng:', err);
+                                                            toast.error('Lỗi kết nối khi cập nhật trạng thái giao hàng');
+                                                            // Revert the change if failed
+                                                            setOrders((prev) =>
+                                                                prev.map((o, i) => (i === idx ? { ...o, shippingStatus: previousShippingStatus } : o))
+                                                            );
                                                         }
                                                     }}
                                                 >
@@ -496,17 +517,28 @@ export default function AdminOrdersPage() {
                                     <button
                                         className="ml-2 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                                         onClick={async () => {
-                                            await fetch(`http://localhost:9003/api/orders/${selectedOrder.orderNumber}/payment?paymentStatus=Đã thanh toán`, {
-                                                method: "PUT",
-                                            });
-                                            setSelectedOrder({ ...selectedOrder, paymentStatus: "Đã thanh toán" });
-                                            setOrders((prev) =>
-                                                prev.map((o) =>
-                                                    o.id === selectedOrder.id
-                                                        ? { ...o, payment: "Đã thanh toán" }
-                                                        : o
-                                                )
-                                            );
+                                            try {
+                                                const res = await fetch(`http://localhost:9003/api/orders/${selectedOrder.orderNumber}/payment?paymentStatus=Đã thanh toán`, {
+                                                    method: "PUT",
+                                                });
+                                                
+                                                if (!res.ok) {
+                                                    toast.error('Lỗi khi cập nhật trạng thái thanh toán');
+                                                } else {
+                                                    setSelectedOrder({ ...selectedOrder, paymentStatus: "Đã thanh toán" });
+                                                    setOrders((prev) =>
+                                                        prev.map((o) =>
+                                                            o.id === selectedOrder.id
+                                                                ? { ...o, payment: "Đã thanh toán" }
+                                                                : o
+                                                        )
+                                                    );
+                                                    toast.success(`Đã xác nhận thanh toán cho đơn hàng #${selectedOrder.orderNumber}`);
+                                                }
+                                            } catch (error) {
+                                                console.error('❌ Lỗi khi cập nhật trạng thái thanh toán:', error);
+                                                toast.error('Lỗi kết nối khi cập nhật trạng thái thanh toán');
+                                            }
                                         }}
                                     >
                                         Xác nhận đã thanh toán
@@ -576,9 +608,42 @@ export default function AdminOrdersPage() {
                                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                                 onClick={async () => {
                                     if (window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này?")) {
-                                        await fetch(`http://localhost:9003/api/orders/${selectedOrder.orderNumber}`, { method: "DELETE" });
-                                        setShowDetail(false);
-                                        window.location.reload();
+                                        try {
+                                            const response = await fetch(`http://localhost:9003/api/orders/${selectedOrder.id}`, { 
+                                                method: "DELETE" 
+                                            });
+                                            
+                                            if (response.ok) {
+                                                // Xóa đơn hàng khỏi state
+                                                setOrders(prev => prev.filter(order => order.orderNumber !== selectedOrder.orderNumber));
+                                                
+                                                // Đóng modal
+                                                setShowDetail(false);
+                                                
+                                                // Hiển thị thông báo thành công
+                                                toast.success(`Đơn hàng #${selectedOrder.orderNumber} đã được xóa.`);
+                                            } else {
+                                                // Thử parse JSON response, nếu không được thì dùng text
+                                                let errorMessage = "Lỗi khi xóa đơn hàng";
+                                                try {
+                                                    const errorData = await response.json();
+                                                    errorMessage = errorData.message || errorData.error || errorMessage;
+                                                } catch {
+                                                    // Nếu không parse được JSON, thử lấy text
+                                                    try {
+                                                        const errorText = await response.text();
+                                                        errorMessage = errorText || errorMessage;
+                                                    } catch {
+                                                        // Nếu không lấy được text, dùng status text
+                                                        errorMessage = response.statusText || errorMessage;
+                                                    }
+                                                }
+                                                throw new Error(errorMessage);
+                                            }
+                                        } catch (error) {
+                                            console.error("❌ Lỗi khi xóa đơn hàng:", error);
+                                            toast.error(error instanceof Error ? error.message : "Có lỗi xảy ra trong quá trình xóa đơn hàng.");
+                                        }
                                     }
                                 }}
                             >
@@ -614,26 +679,11 @@ export default function AdminOrdersPage() {
                                         }
 
                                         if (hasUpdate) {
-                                            toast({
-                                                title: "Cập nhật thành công",
-                                                description: `Thông tin đơn hàng #${selectedOrder.orderNumber} đã được cập nhật.`,
-                                                duration: 3000,
-                                                variant: "success",
-                                            });
+                                            toast.success(`Thông tin đơn hàng #${selectedOrder.orderNumber} đã được cập nhật.`);
                                         } else if (!hasUpdate) {
-                                            toast({
-                                                title: "Không có thay đổi",
-                                                description: "Bạn chưa chỉnh sửa gì để cập nhật.",
-                                                duration: 3000,
-                                                variant: "warning",
-                                            });
+                                            toast.warning("Bạn chưa chỉnh sửa gì để cập nhật.");
                                         } else {
-                                            toast({
-                                                title: "Lỗi nghiêm trọng",
-                                                description: "Vui lòng kiểm tra lại kết nối.",
-                                                variant: "error",
-                                                duration: Infinity, // sẽ tồn tại đến khi người dùng đóng
-                                            });
+                                            toast.error("Vui lòng kiểm tra lại kết nối.");
                                         }
 
 
@@ -653,11 +703,7 @@ export default function AdminOrdersPage() {
                                         setShowDetail(false);
                                     } catch (error) {
                                         console.error("❌ Lỗi khi cập nhật đơn hàng:", error);
-                                        toast({
-                                            variant: "destructive",
-                                            title: "Cập nhật thất bại",
-                                            description: "Có lỗi xảy ra trong quá trình cập nhật đơn hàng.",
-                                        });
+                                        toast.error("Có lỗi xảy ra trong quá trình cập nhật đơn hàng.");
                                     }
                                 }}
                             >

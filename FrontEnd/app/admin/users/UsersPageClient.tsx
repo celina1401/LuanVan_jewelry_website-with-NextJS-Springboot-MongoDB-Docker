@@ -341,10 +341,23 @@ const { user } = useUser();
       const response = await fetch(`/api/orders?userId=${selectedUser.userId}`);
       if (response.ok) {
         const ordersData = await response.json();
-        setOrders(ordersData);
+        // Check if the response is an error object
+        if (ordersData.error) {
+          console.error('Orders API error:', ordersData.error);
+          setOrders([]);
+        } else if (Array.isArray(ordersData)) {
+          setOrders(ordersData);
+        } else {
+          console.error("Unexpected orders data format:", ordersData);
+          setOrders([]);
+        }
+      } else {
+        console.error('Failed to fetch orders:', response.status);
+        setOrders([]);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setOrders([]);
     } finally {
       setOrdersLoading(false);
     }
@@ -361,6 +374,11 @@ const { user } = useUser();
       const response = await fetch(`/api/orders?orderNumber=${order.orderNumber}`);
       if (response.ok) {
         const orderDetail = await response.json();
+        // Check if the response is an error object
+        if (orderDetail.error) {
+          console.error('Order detail API error:', orderDetail.error);
+          return;
+        }
         setSelectedOrder(orderDetail);
         setShowOrderDetail(true);
       } else {
