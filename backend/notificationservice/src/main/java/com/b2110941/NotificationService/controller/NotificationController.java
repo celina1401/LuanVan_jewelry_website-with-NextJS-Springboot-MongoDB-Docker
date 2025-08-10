@@ -136,9 +136,24 @@ public class NotificationController {
         }
     }
 
-    // // Health check endpoint
-    // @GetMapping("/health")
-    // public ResponseEntity<String> health() {
-    //     return ResponseEntity.ok("NotificationService is running");
-    // }
+    @PostMapping("/admin-message")
+    public ResponseEntity<NotificationResponse> createAdminMessageNotification(
+            @RequestParam String userId,
+            @RequestParam String title,
+            @RequestParam String message,
+            @RequestParam String type,
+            @RequestParam String sender,
+            @RequestParam String content,
+            @RequestParam String timestamp) {
+        try {
+            NotificationResponse response = notificationService.createAdminMessageNotification(
+                    userId, title, message, type, sender, content, timestamp);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error creating admin message notification: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
 } 

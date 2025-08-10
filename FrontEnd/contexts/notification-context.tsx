@@ -8,17 +8,17 @@ import { Client, over } from 'stompjs';
 interface Notification {
   id: string;
   userId: string;
-  orderId: string;
-  orderNumber: string;
+  orderId?: string; // Optional for admin message
+  orderNumber?: string; // Optional for admin message
   title: string;
   message: string;
   type: string;
   status: 'READ' | 'UNREAD';
   createdAt: string;
   readAt?: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
+  customerName?: string; // Optional for admin message
+  customerEmail?: string; // Optional for admin message
+  customerPhone?: string; // Optional for admin message
 }
 
 interface NotificationContextType {
@@ -67,12 +67,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     for (const base of BASE_URLS) {
       try {
         const url = `${base.replace(/\/$/, '')}${path}`;
+        console.log('🌐 Trying notification service URL:', url);
         const res = await fetch(url, init);
         if (res.ok || (res.status >= 400 && res.status < 500)) {
+          console.log('🌐 Success with URL:', url, 'Status:', res.status);
           return res;
         }
+        console.log('🌐 Failed with URL:', url, 'Status:', res.status);
         lastError = new Error(`HTTP ${res.status}`);
       } catch (e) {
+        console.log('🌐 Error with URL:', base, 'Error:', e);
         lastError = e;
       }
     }
@@ -131,7 +135,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);
-        setUnreadCount(data.filter((n: Notification) => n.status === 'UNREAD').length);
+        const unreadCount = data.filter((n: Notification) => n.status === 'UNREAD').length;
+        setUnreadCount(unreadCount);
+        console.log('📋 Fetched notifications:', data);
+        console.log('📋 Total notifications:', data.length);
+        console.log('📋 Unread notifications:', unreadCount);
+        
+        // Log each notification type for debugging
+        data.forEach((n: Notification, index: number) => {
+          console.log(`📋 Notification ${index + 1}:`, {
+            id: n.id,
+            type: n.type,
+            status: n.status,
+            title: n.title
+          });
+        });
       } else if (response.status === 500) {
         console.warn('Notification service returned 500 error - service may not be running');
         setError('Notification service is not available');
@@ -180,6 +198,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (response.ok) {
         const count = await response.json();
         setUnreadCount(count);
+        console.log('🔢 Fetched unread count:', count);
       } else if (response.status === 500) {
         console.warn('Notification service returned 500 error for unread count');
         setUnreadCount(0);
@@ -197,6 +216,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   const markAsRead = async (notificationId: string) => {
+    console.log('✅ Marking notification as read:', notificationId);
     try {
       const response = await requestWithFallback(`/api/notifications/${notificationId}/read`, {
         method: 'PUT',
@@ -247,6 +267,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   const deleteNotification = async (notificationId: string) => {
+    console.log('🗑️ Deleting notification:', notificationId);
     try {
       const response = await requestWithFallback(`/api/notifications/${notificationId}`, {
         method: 'DELETE',
@@ -279,13 +300,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   const refreshNotifications = async () => {
+    console.log('🔄 Refreshing notifications...');
     await fetchNotifications();
   };
 
   useEffect(() => {
     if (userId) {
+      console.log('👤 User ID changed, fetching notifications for:', userId);
+      console.log('👤 Current notifications state:', { notifications: notifications.length, unreadCount });
       // Fetch once after a short delay; remove forced-failure retry logic
       const timer = setTimeout(async () => {
+        console.log('⏰ Timer fired, fetching notifications...');
         await fetchNotifications();
         await fetchUnreadCount();
       }, 1000);
@@ -296,49 +321,72 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // WebSocket connection for real-time notifications
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('🔌 No user ID, skipping WebSocket connection');
+      return;
+    }
+    console.log('🔌 Setting up WebSocket connection for user:', userId);
     let reconnectTimeout: NodeJS.Timeout | null = null;
 
     const connect = () => {
-      if (clientRef.current) return; // prevent duplicate connects (StrictMode)
+      if (clientRef.current) {
+        console.log('🔌 Client already exists, skipping connection');
+        return; // prevent duplicate connects (StrictMode)
+      }
+      console.log('🔌 Creating new WebSocket connection to:', WS_URL);
+      console.log('🔌 User ID for WebSocket:', userId);
       try {
         const sock = new SockJS(WS_URL);
         const stompClient = over(sock);
         clientRef.current = stompClient;
 
         stompClient.connect({}, () => {
-          console.log('Notification STOMP connected');
+          console.log('🔌 Notification STOMP connected to:', WS_URL);
           const topic = `/topic/notifications/${userId}`;
-          stompClient.subscribe(topic, (msg) => {
-            try {
-              const notification = JSON.parse(msg.body);
-              setNotifications(prev => [notification, ...prev]);
-              if (notification.status === 'UNREAD') {
-                setUnreadCount(prev => prev + 1);
-              }
-            } catch (e) {
-              console.error('Error parsing notification message', e);
+          console.log('🔌 Subscribing to topic:', topic);
+                  stompClient.subscribe(topic, (msg) => {
+          try {
+            console.log('🔔 WebSocket notification received:', msg.body);
+            const notification = JSON.parse(msg.body);
+            console.log('🔔 Parsed notification:', notification);
+            console.log('🔔 Notification type:', notification.type);
+            console.log('🔔 Notification status:', notification.status);
+            setNotifications(prev => [notification, ...prev]);
+            if (notification.status === 'UNREAD') {
+              setUnreadCount(prev => {
+                const newCount = prev + 1;
+                console.log('🔔 Unread count updated:', newCount);
+                return newCount;
+              });
             }
-          });
-        }, () => {
+          } catch (e) {
+            console.error('Error parsing notification message', e);
+          }
+        });
+        }, (error) => {
           // onError: attempt reconnect
+          console.error('🔌 Notification STOMP connection error:', error);
           reconnectTimeout = setTimeout(connect, 5000);
         });
       } catch (e) {
-        console.warn('Failed to connect STOMP for notifications', e);
+        console.error('🔌 Failed to connect STOMP for notifications:', e);
         reconnectTimeout = setTimeout(connect, 5000);
       }
     };
 
-    const timer = setTimeout(connect, 1000);
+    const timer = setTimeout(() => {
+      console.log('⏰ WebSocket timer fired, connecting...');
+      connect();
+    }, 1000);
 
     return () => {
+      console.log('🔌 Cleaning up WebSocket connection...');
       clearTimeout(timer);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       const client = clientRef.current;
       if (client && typeof client.disconnect === 'function') {
         client.disconnect(() => {
-          console.log('Notification STOMP disconnected');
+          console.log('🔌 Notification STOMP disconnected');
         });
       }
       clientRef.current = null;

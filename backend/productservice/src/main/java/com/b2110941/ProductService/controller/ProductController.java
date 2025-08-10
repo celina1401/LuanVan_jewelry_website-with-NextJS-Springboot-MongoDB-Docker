@@ -42,15 +42,15 @@ public class ProductController {
         Map<String, Object> ratingInfo = new HashMap<>();
         try {
             // Lấy average rating
-            String avgRatingUrl = "http://localhost:9008/api/reviews/product/" + productId + "/average-rating";
+            String avgRatingUrl = "http://reviewservice:9008/api/reviews/product/" + productId + "/average-rating";
             Double avgRating = restTemplate.getForObject(avgRatingUrl, Double.class);
             
             // Lấy review count
-            String countUrl = "http://localhost:9008/api/reviews/product/" + productId + "/count";
+            String countUrl = "http://reviewservice:9008/api/reviews/product/" + productId + "/count";
             Long reviewCount = restTemplate.getForObject(countUrl, Long.class);
             
             // Lấy rating distribution
-            String distributionUrl = "http://localhost:9008/api/reviews/product/" + productId + "/rating-distribution";
+            String distributionUrl = "http://reviewservice:9008/api/reviews/product/" + productId + "/rating-distribution";
             List<Integer> ratingDistribution = restTemplate.getForObject(distributionUrl, List.class);
             
             ratingInfo.put("rating", avgRating != null ? avgRating : 0.0);

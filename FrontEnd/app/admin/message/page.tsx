@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminChatDetail from "@/app/components/chatbox/AdminChatDetail";
+import AdminChatInbox from "@/app/components/chatbox/AdminChatInbox";
 
 interface ChatSummary {
   userId: string;
@@ -12,43 +13,11 @@ interface ChatSummary {
 }
 
 export default function AdminMessagePage() {
-  const [inbox, setInbox] = useState<ChatSummary[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(
     () => localStorage.getItem("selected_user_id") || null
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const savedInbox = localStorage.getItem("admin_inbox");
-    if (savedInbox) {
-      setInbox(JSON.parse(savedInbox));
-    }
-
-    const fetchInbox = async () => {
-      try {
-        const res = await fetch("http://localhost:9007/api/chat/inbox");
-        if (!res.ok) throw new Error(`Lỗi: ${res.statusText}`);
-        const data = await res.json();
-        if (data && data.length > 0) {
-          setInbox(data);
-          localStorage.setItem("admin_inbox", JSON.stringify(data));
-        } else {
-          // Nếu backend trả về rỗng (đã reset), xóa localStorage
-          localStorage.removeItem("admin_inbox");
-          localStorage.removeItem("selected_user_id");
-          setInbox([]);
-        }
-      } catch (err: any) {
-        console.error("❌ Lỗi khi tải hộp thư:", err);
-        setError("Không thể tải hộp thư");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInbox();
-  }, []);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [totalUnread, setTotalUnread] = useState(0);
 
   useEffect(() => {
     if (selectedUserId) {
@@ -56,56 +25,67 @@ export default function AdminMessagePage() {
     }
   }, [selectedUserId]);
 
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserId(userId);
+  };
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+    // Clear localStorage to force fresh data
+    localStorage.removeItem("admin_inbox");
+    localStorage.removeItem("selected_user_id");
+    setSelectedUserId(null);
+  };
+
+  const handleInboxUpdate = (inbox: ChatSummary[]) => {
+    const total = inbox.reduce((sum, chat) => sum + chat.unreadCount, 0);
+    setTotalUnread(total);
+  };
+
   return (
     <div className="p-6 bg-white dark:bg-black min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">📨 Tin nhắn từ khách hàng</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="border-r w-full overflow-y-auto max-h-[80vh]">
-          {loading ? (
-            <p className="p-4">Đang tải dữ liệu...</p>
-          ) : error ? (
-            <p className="p-4 text-red-500">{error}</p>
-          ) : inbox.length === 0 ? (
-            <p className="p-4 text-gray-500 italic">Chưa có khách hàng nào gửi tin nhắn.</p>
-          ) : (
-            inbox
-              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-              .map((chat) => (
-                <div
-                  key={chat.userId}
-                  onClick={() => setSelectedUserId(chat.userId)}
-                  className={`cursor-pointer px-4 py-3 border-b hover:bg-gray-100 dark:hover:bg-gray-800 flex justify-between items-center ${
-                    selectedUserId === chat.userId ? "bg-blue-100 dark:bg-blue-800" : ""
-                  }`}
-                >
-                  <div>
-                    <div className="font-semibold text-gray-900 dark:text-white">👤 {chat.username}</div>
-                    <div className="text-sm text-gray-500 mt-1 truncate">{chat.lastMessage}</div>
-                    <div className="text-xs text-gray-400">
-                      {new Date(chat.timestamp).toLocaleString()}
-                    </div>
-                  </div>
-                  {chat.unreadCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      {chat.unreadCount}
-                    </span>
-                  )}
-                </div>
-              ))
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">📨 Tin nhắn từ khách hàng</h1>
+          {totalUnread > 0 && (
+            <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full font-medium">
+              {totalUnread > 99 ? '99+' : totalUnread} tin nhắn chưa đọc
+            </span>
           )}
         </div>
+        <button
+          onClick={handleRefresh}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
+        >
+          <span>🔄</span>
+          Làm mới
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Chat Inbox - Left Sidebar */}
+        <div className="border-r border-gray-200 dark:border-gray-700">
+          <AdminChatInbox 
+            key={refreshKey}
+            onSelect={handleUserSelect}
+            onInboxUpdate={handleInboxUpdate}
+          />
+        </div>
 
-        <div className="lg:col-span-2 border rounded shadow p-4 min-h-[400px]">
+        {/* Chat Detail - Right Side */}
+        <div className="lg:col-span-2 border rounded-lg shadow-sm p-4 min-h-[600px] bg-gray-50 dark:bg-gray-900">
           {selectedUserId ? (
             <>
-              <div className="font-semibold mb-2 text-lg text-primary">
-                💬 Đang trò chuyện với: {inbox.find(c => c.userId === selectedUserId)?.username || selectedUserId}
+              <div className="font-semibold mb-4 text-lg text-primary border-b pb-2">
+                💬 Đang trò chuyện với: {selectedUserId}
               </div>
               <AdminChatDetail userId={selectedUserId} />
             </>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 italic">
-              Chọn một người dùng để bắt đầu trò chuyện
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+              <div className="text-6xl mb-4">💬</div>
+              <div className="text-xl font-medium mb-2">Chọn một người dùng</div>
+              <div className="text-sm">để bắt đầu trò chuyện</div>
             </div>
           )}
         </div>

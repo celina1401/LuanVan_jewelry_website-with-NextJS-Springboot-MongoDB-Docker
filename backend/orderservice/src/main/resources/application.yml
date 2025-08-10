@@ -19,11 +19,11 @@ eureka:
 # Service URLs for integration
 user:
   service:
-    url: http://localhost:9001
+    url: http://userservice:9001
 
 payment:
   service:
-    url: http://localhost:9006
+    url: http://paymentservice:9006
 
 # Logging configuration
 logging:

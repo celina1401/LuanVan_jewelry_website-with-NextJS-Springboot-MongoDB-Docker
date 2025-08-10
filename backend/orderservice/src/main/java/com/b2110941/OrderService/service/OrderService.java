@@ -370,7 +370,7 @@ public class OrderService {
             Order order = orderOpt.get();
             // Tạo URL hóa đơn (có thể là URL tới service tạo PDF hoặc URL tới file đã tạo)
             // Trong thực tế, đây sẽ là URL tới file PDF đã được tạo
-            String invoiceUrl = String.format("http://localhost:9003/api/orders/%s/invoice.pdf", order.getOrderNumber());
+            String invoiceUrl = String.format("http://orderservice:9003/api/orders/%s/invoice.pdf", order.getOrderNumber());
             
             // Lưu URL này vào database
             order.setInvoiceUrl(invoiceUrl);

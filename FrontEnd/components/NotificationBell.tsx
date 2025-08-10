@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Bell, X, Check, Trash2, AlertCircle } from 'lucide-react';
 import { useNotifications } from '../contexts/notification-context';
+import { useChat } from '../contexts/chat-context';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -12,7 +13,11 @@ import { Alert, AlertDescription } from './ui/alert';
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, deleteNotification, error, loading } = useNotifications();
+  const { openChat } = useChat();
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Debug logging
+  console.log('🔔 NotificationBell render:', { unreadCount, notificationsCount: notifications.length, error, loading });
 
   const handleMarkAsRead = async (notificationId: string) => {
     await markAsRead(notificationId);
@@ -20,6 +25,13 @@ export function NotificationBell() {
 
   const handleDelete = async (notificationId: string) => {
     await deleteNotification(notificationId);
+  };
+
+  const handleOpenChat = () => {
+    // Close notification modal
+    setIsOpen(false);
+    // Open chat box using context
+    openChat();
   };
 
   const formatDate = (dateString: string) => {
@@ -43,6 +55,8 @@ export function NotificationBell() {
         return '📦';
       case 'SHIPPING_STATUS':
         return '🚚';
+      case 'ADMIN_MESSAGE':
+        return '💬';
       default:
         return '🔔';
     }
@@ -134,26 +148,37 @@ export function NotificationBell() {
                               <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {formatDate(notification.createdAt)}
                               </span>
-                              <div className="flex items-center gap-1">
-                                {notification.status === 'UNREAD' && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleMarkAsRead(notification.id)}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <Check className="h-3 w-3 text-gray-900 dark:text-white" />
-                                  </Button>
-                                )}
+                                                          <div className="flex items-center gap-1">
+                              {/* Action button for admin messages */}
+                              {notification.type === 'ADMIN_MESSAGE' && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleDelete(notification.id)}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                  onClick={() => handleOpenChat()}
+                                  className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                                 >
-                                  <Trash2 className="h-3 w-3" />
+                                  Mở Chat
                                 </Button>
-                              </div>
+                              )}
+                              {notification.status === 'UNREAD' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMarkAsRead(notification.id)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Check className="h-3 w-3 text-gray-900 dark:text-white" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(notification.id)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                             </div>
                           </div>
                         </div>

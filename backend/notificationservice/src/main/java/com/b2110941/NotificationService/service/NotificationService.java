@@ -232,4 +232,22 @@ public class NotificationService {
 
         return createNotification(request);
     }
+
+    // Method to create admin message notification
+    public NotificationResponse createAdminMessageNotification(String userId, String title, String message, 
+                                                           String type, String sender, String content, String timestamp) {
+        NotificationRequest request = new NotificationRequest();
+        request.setUserId(userId);
+        request.setTitle(title);
+        request.setMessage(message);
+        request.setType(type);
+        // Không cần orderId, orderNumber cho admin message
+        request.setOrderId(null);
+        request.setOrderNumber(null);
+        request.setCustomerName(null);
+        request.setCustomerEmail(null);
+        request.setCustomerPhone(null);
+
+        return createNotification(request);
+    }
 }

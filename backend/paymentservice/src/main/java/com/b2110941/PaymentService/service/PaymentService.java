@@ -65,7 +65,7 @@ public class PaymentService {
         try {
             // ✅ Sửa tên parameter từ 'status' thành 'paymentStatus'
             // ✅ Sửa HTTP method từ POST thành PUT
-            String url = "http://localhost:9003/api/orders/payment/callback"
+            String url = "http://orderservice:9003/api/orders/payment/callback"
                     + "?orderNumber=" + orderNumber
                     + "&paymentStatus=" + URLEncoder.encode(paymentStatus, StandardCharsets.UTF_8)
                     + "&transactionId=" + transactionId;

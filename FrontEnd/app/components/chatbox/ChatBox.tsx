@@ -6,6 +6,8 @@ import SockJS from "sockjs-client";
 import { Client, over } from "stompjs";
 import { useUser } from "@clerk/nextjs";
 import { Message } from "@/lib/type";
+import { useChat } from "@/contexts/chat-context";
+
 
 let stompClient: Client | null = null;
 
@@ -14,10 +16,10 @@ export default function ChatBox() {
   const role = (user?.publicMetadata?.role as "user" | "admin") || "user";
   const userId = user?.id || "anonymous";
   const sender = role === "admin" ? "admin" : userId;
+  const { isChatOpen, openChat, closeChat } = useChat();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [open, setOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const receiverId = "admin";
@@ -42,7 +44,7 @@ export default function ChatBox() {
   };
 
   useEffect(() => {
-    if (role === "admin" || !open || !userId) return;
+    if (role === "admin" || !isChatOpen || !userId) return;
 
     const welcomeMsg: Message = {
       sender: "admin",
@@ -135,15 +137,16 @@ export default function ChatBox() {
         const msg: Message = JSON.parse(message.body);
         if (msg.receiver === userId) {
           setMessages((prev) => [...prev, msg]);
+          // ✅ Không hiển thị toast nữa - để notification system xử lý
         }
       });
       
       client.subscribe(`/topic/user/${userId}`, (message) => {
         const msg: Message = JSON.parse(message.body);
-        // if (msg.sender !== sender) {
-        //   setMessages((prev) => [...prev, msg]);
-        // }
         if (msg.sender !== sender) {
+          // ✅ Không hiển thị toast nữa - để notification system xử lý
+          // Admin messages sẽ hiển thị trong notification modal thay vì toast
+          
           setMessages((prev) => {
             const alreadyExists = prev.some(
               (m) => m.timestamp === msg.timestamp && m.content === msg.content
@@ -154,7 +157,6 @@ export default function ChatBox() {
             return updated;
           });
         }
-        
       });
     });
 
@@ -163,7 +165,7 @@ export default function ChatBox() {
         stompClient.disconnect(() => console.log("🛑 WebSocket user disconnected"));
       }
     };
-  }, [open, userId, role]);
+  }, [isChatOpen, userId, role]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -223,19 +225,19 @@ export default function ChatBox() {
 
   return (
     <>
-      {!open && (
+      {!isChatOpen && (
         <button
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-xl z-50 hover:bg-blue-600 transition text-3xl"
-          onClick={() => setOpen(true)}
+          onClick={openChat}
         >
           <FaComments />
         </button>
       )}
-      {open && (
+      {isChatOpen && (
         <div className="fixed bottom-6 right-6 w-[420px] max-h-[80vh] bg-white dark:bg-[#18181b] shadow-xl rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col z-50 animate-fade-in">
           <div className="flex items-center justify-between px-4 py-2 border-b dark:border-gray-700 font-bold text-lg bg-blue-500 text-white rounded-t-xl">
             <span>Hỏi đáp</span>
-            <button onClick={() => setOpen(false)} className="ml-2 text-white hover:text-gray-200 text-xl">
+            <button onClick={closeChat} className="ml-2 text-white hover:text-gray-200 text-xl">
               <FaTimes />
             </button>
           </div>

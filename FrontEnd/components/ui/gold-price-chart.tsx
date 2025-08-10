@@ -33,11 +33,11 @@ interface GoldPriceHistory {
 }
 
 // Thay thế mock data bằng fetch từ GoldAPI
-const GOLD_API_KEY = "goldapi-5p9h9smdppd1qi-io"; // <-- Điền API Key tại đây
+const GOLD_API_KEY = "goldapi-40qegsmdtz23aq-io"; // <-- Điền API Key tại đây
 // API dự phòng:
 
 // goldapi-5p9h9smdppd1qi-io         - Vicao              R
-// goldapi-40qegsmdtz23aq-io        - CongTri
+// goldapi-40qegsmdtz23aq-io        - CongTri             R
 // goldapi-k15ismdtz65qw-io         - GiaBao
 // goldapi-40qegsmdtz8uim-io        - BichTram
 // goldapi-8raw3zsme5b0qmf-io       - ThaiLe
