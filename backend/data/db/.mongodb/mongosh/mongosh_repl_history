@@ -1,3 +1,19 @@
+db.products.find().pretty()
+clear
+db.reviews.drop()
+db.products.find().pretty()
+show collections
+show products
+clear
+db.products.drop()
+db.product.drop()
+db.product_details.drop()
+db.chat_logs.find().pretty()
+show collections
+use jewelry_db
+show collections
+db.users.find().pretty()
+db.chat_logs.find().pretty()
 db.chat_logs.drop()
 db.chat_logs.find().pretty()
 db.chat_logs.drop()

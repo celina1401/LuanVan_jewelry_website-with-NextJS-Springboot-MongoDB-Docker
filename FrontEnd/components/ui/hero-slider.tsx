@@ -7,38 +7,16 @@ import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
+import { useEffect, useState } from "react"
 
-const slides = [
-  {
-    id: 1,
-    title: "Khám phá trang sức tinh xảo",
-    subtitle: "Chế tác với đam mê và sự tinh xảo",
-    image: "/images/slider/slide1.jpg",
-    link: "/slider",
-  },
-  {
-    id: 2,
-    title: "Vẻ đẹp vượt thời gian",
-    subtitle: "Tìm kiếm món trang sức hoàn hảo cho bạn",
-    image: "/images/slider/slide2.jpg",
-    link: "/slider",
-
-  },
-  {
-    id: 3,
-    title: "Món quà khó quên",
-    subtitle: "Khám phá các bộ sưu tập được tuyển chọn",
-    image: "/images/slider/slide3.jpg",
-    link: "/slider",
-
-  },
-]
+type Slide = { id: string; image: string; title?: string; subtitle?: string; link?: string }
 
 export function HeroSlider() {
   const { userId, isLoaded } = useAuth()
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
   const [selectedIndex, setSelectedIndex] = React.useState(0)
   const autoplayRef = React.useRef<NodeJS.Timeout>()
+  const [slides, setSlides] = useState<Slide[]>([])
 
   const scrollPrev = React.useCallback(() => {
     if (emblaApi) {
@@ -112,6 +90,29 @@ export function HeroSlider() {
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
 
+  // Load slider images from Cloudinary (folder: slider). Fallback to local images.
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/cloudinary/list?folder=slider&max=10', { cache: 'no-store' })
+        const data = await res.json()
+        const resources = (data.resources || []) as Array<{ secure_url: string; public_id: string }>
+        if (resources.length > 0) {
+          setSlides(resources.map((r) => ({ id: r.public_id, image: r.secure_url })))
+          return
+        }
+      } catch (e) {
+        // ignore
+      }
+      setSlides([
+        { id: '1', image: '/images/slider/slide1.jpg', title: 'Khám phá trang sức tinh xảo' },
+        { id: '2', image: '/images/slider/slide2.jpg', title: 'Vẻ đẹp vượt thời gian' },
+        { id: '3', image: '/images/slider/slide3.jpg', title: 'Món quà khó quên' },
+      ])
+    }
+    load()
+  }, [])
+
   return (
     <section className="relative w-full overflow-hidden rounded-lg shadow-xl md:rounded-2xl">
       <div className="embla" ref={emblaRef}>
@@ -120,7 +121,7 @@ export function HeroSlider() {
             <div key={slide.id} className="embla__slide relative flex-none w-full h-[400px]">
               <Image
                 src={slide.image}
-                alt={slide.title}
+                alt={slide.title ?? `Slide ${index + 1}`}
                 fill
                 className="object-cover"
                 priority={index === 0} // Thêm priority cho slide đầu tiên
@@ -131,9 +132,9 @@ export function HeroSlider() {
                   <p className="text-lg md:text-xl mb-6">{slide.subtitle}</p>
                   {isLoaded ? (
                     <Link href={userId ? "/products" : "/login"}>
-                      <Button size="lg" variant="secondary">
+                      {/* <Button size="lg" variant="secondary">
                         Mua ngay
-                      </Button>
+                      </Button> */}
                     </Link>
                   ) : (
                     <Button size="lg" variant="secondary" disabled>

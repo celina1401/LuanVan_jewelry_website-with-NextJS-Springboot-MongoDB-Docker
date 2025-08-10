@@ -18,9 +18,11 @@ public class Product {
     private String origin;
     private String goldAge;
     private String category;
+    private String gender; // Thêm trường gender
     private String sku;
     private String productCode;
     private String thumbnailUrl;
+    private List<String> images; // Hỗ trợ nhiều ảnh cho sản phẩm
     private List<String> tags;
     private Double weight;
     private Integer quantity;
@@ -49,12 +51,16 @@ public class Product {
     public void setGoldAge(String goldAge) { this.goldAge = goldAge; }
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }
     public String getProductCode() { return productCode; }
     public void setProductCode(String productCode) { this.productCode = productCode; }
     public String getThumbnailUrl() { return thumbnailUrl; }
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }
+    public List<String> getImages() { return images; }
+    public void setImages(List<String> images) { this.images = images; }
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
     public Double getWeight() { return weight; }

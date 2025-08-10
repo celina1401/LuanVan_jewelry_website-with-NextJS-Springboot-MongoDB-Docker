@@ -55,7 +55,7 @@ interface GoldPriceData {
 }
 
 // Constants
-const API_BASE_URL = "http://localhost:8080/api";
+// const API_BASE_URL = "http://localhost:8080/api";
 
 // Utility functions for time calculations
 const getVietnamTime = () => {
@@ -117,11 +117,11 @@ export default function AdminDashboard() {
       setLoading(true);
       
       // Fetch orders for revenue and sales calculations
-      const ordersResponse = await fetch(`${API_BASE_URL}/orders`);
+      const ordersResponse = await fetch(`http://localhost:9003/api/orders`);
       const orders: OrderData[] = ordersResponse.ok ? await ordersResponse.json() : [];
       
       // Fetch users for visitor count
-      const usersResponse = await fetch(`${API_BASE_URL}/users/users`);
+      const usersResponse = await fetch(`http://localhost:9001/users/users`);
       const users: UserData[] = usersResponse.ok ? await usersResponse.json() : [];
       
       // Calculate current period stats (this month) - Vietnam timezone

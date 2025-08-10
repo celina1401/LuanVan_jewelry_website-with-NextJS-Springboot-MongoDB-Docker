@@ -19,6 +19,8 @@ interface Product {
   description: string;
   price: number;
   image: string;
+  thumbnailUrl?: string; // URL ảnh chính từ Cloudinary
+  images?: string[]; // Danh sách ảnh từ Cloudinary
   category: string;
   rating: number;
   reviews: number;
@@ -40,7 +42,7 @@ interface ProductGridProps {
 
 // Hook quản lý danh sách sản phẩm yêu thích trong localStorage
 function useFavorites() {
-  const [favorites, setFavorites] = React.useState<number[]>(() => {
+  const [favorites, setFavorites] = React.useState<(string | number)[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
       return JSON.parse(localStorage.getItem('favorites') || '[]');
@@ -53,11 +55,11 @@ function useFavorites() {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = (id: string | number) => {
     setFavorites(favs => favs.includes(id) ? favs.filter(f => f !== id) : [...favs, id]);
   };
 
-  const isFavorite = (id: number) => favorites.includes(id);
+  const isFavorite = (id: string | number) => favorites.includes(id);
 
   return { favorites, toggleFavorite, isFavorite };
 }
@@ -97,24 +99,40 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
   React.useEffect(() => {
     async function fetchProducts() {
       try {
+        console.log('Fetching products from backend...');
         const res = await fetch('http://localhost:9004/api/products/all');
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const data = await res.json();
         console.log('Products from backend:', data);
         
-        // Debug: Kiểm tra từng sản phẩm
-        // data.forEach((product: any, index: number) => {
-        //   console.log(`[DEBUG] Product ${index + 1}:`, {
-        //     id: product.id,
-        //     name: product.name,
-        //     rating: product.rating,
-        //     reviews: product.reviews,
-        //     category: product.category
-        //   });
-        // });
+        // Debug: Kiểm tra từng sản phẩm và ảnh
+        if (data && Array.isArray(data)) {
+          data.forEach((product: any, index: number) => {
+            console.log(`[DEBUG] Product ${index + 1}:`, {
+              id: product.id,
+              name: product.name,
+              thumbnailUrl: product.thumbnailUrl,
+              images: product.images,
+              image: product.image,
+              category: product.category,
+              gender: product.gender
+            });
+          });
+        }
         
         setProducts(data);
       } catch (err) {
         console.error('Error fetching products:', err);
+        // Hiển thị thông báo lỗi cho user
+        toast({
+          title: "Lỗi tải dữ liệu",
+          description: "Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.",
+          variant: "destructive"
+        });
         setProducts([]);
       } finally {
         setLoading(false);
@@ -206,7 +224,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
         }
       })
     if (sortBy === "favorite") {
-      filtered = filtered.filter(product => favorites.includes(product.id as number));
+      filtered = filtered.filter(product => favorites.includes(product.id as string | number));
     }
     
     return filtered;
@@ -220,10 +238,40 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
     return <ProductsEmptyState />;
   }
 
+  // Debug: Hiển thị thông tin debug nếu cần
+  const showDebugInfo = process.env.NODE_ENV === 'development';
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredProducts.map((product, index) => {
-        const totalPrice = productGoldPrices[product.id] ?? product.price;
+    <div className="space-y-6">
+      {/* Debug Info */}
+      {showDebugInfo && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
+          <h3 className="font-semibold text-yellow-800 mb-2">Debug Info:</h3>
+          <p>Total products: {products.length}</p>
+          <p>Filtered products: {filteredProducts.length}</p>
+          <p>API endpoint: http://localhost:9004/api/products/all</p>
+          {filteredProducts.length > 0 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-yellow-700">Product details</summary>
+              <div className="mt-2 space-y-2">
+                {filteredProducts.slice(0, 3).map((product, idx) => (
+                  <div key={idx} className="text-xs bg-white p-2 rounded border">
+                    <p><strong>ID:</strong> {product.id}</p>
+                    <p><strong>Name:</strong> {product.name}</p>
+                    <p><strong>Thumbnail:</strong> {product.thumbnailUrl || 'N/A'}</p>
+                    <p><strong>Images:</strong> {product.images?.length || 0} images</p>
+                    <p><strong>Gender:</strong> {product.gender || 'N/A'}</p>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProducts.map((product, index) => {
+          const totalPrice = productGoldPrices[product.id] ?? product.price;
         return (
           <Card
             key={product.id}
@@ -238,6 +286,14 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                   priority={index < 6} // Thêm priority cho 6 sản phẩm đầu tiên
+                  onError={(e) => {
+                    console.error(`Failed to load image for product ${product.id}:`, e);
+                    // Fallback to default image if needed
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== "/default-avatar.png") {
+                      target.src = "/default-avatar.png";
+                    }
+                  }}
                 />
                 <Badge className="absolute top-2 right-2">
                   {translateProductTag(product.category)}
@@ -249,9 +305,9 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                 )}
                 {/* Icon tim yêu thích */}
                 <button
-                  className={`absolute bottom-2 right-2 text-xl z-10 transition-colors ${mounted && isFavorite(product.id as number) ? "text-rose-500" : "text-gray-300 hover:text-rose-400"}`}
-                  onClick={e => { e.stopPropagation(); toggleFavorite(product.id as number); }}
-                  title={mounted ? (isFavorite(product.id as number) ? "Bỏ yêu thích" : "Thêm vào yêu thích") : "Thêm vào yêu thích"}
+                  className={`absolute bottom-2 right-2 text-xl z-10 transition-colors ${mounted && isFavorite(product.id as string | number) ? "text-rose-500" : "text-gray-300 hover:text-rose-400"}`}
+                  onClick={e => { e.stopPropagation(); toggleFavorite(product.id as string | number); }}
+                  title={mounted ? (isFavorite(product.id as string | number) ? "Bỏ yêu thích" : "Thêm vào yêu thích") : "Thêm vào yêu thích"}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="28" height="28">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -264,65 +320,6 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
               <p className="text-sm text-muted-foreground mt-1">
                 {product.description}
               </p>
-              {/* <div className="flex items-center mt-2">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => {
-                    // Sử dụng rating từ backend (đã được tính từ ReviewService)
-                    const productRating = product.rating || 0;
-                    
-                    // Debug log cho sản phẩm đầu tiên
-                    if (product.id === products[0]?.id) {
-                      console.log(`[DEBUG] Product ${product.id}:`, {
-                        name: product.name,
-                        rating: product.rating,
-                        reviews: product.reviews
-                      });
-                    }
-                    
-                    const fullStars = Math.floor(productRating);
-                    const hasHalfStar = productRating - fullStars >= 0.25 && productRating - fullStars < 0.75;
-                    
-                    if (i < fullStars) {
-                      return (
-                        <svg
-                          key={i}
-                          className="w-4 h-4 text-yellow-400"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      );
-                    } else if (i === fullStars && hasHalfStar) {
-                      return (
-                        <svg key={i} className="w-4 h-4 text-yellow-400" viewBox="0 0 20 20">
-                          <defs>
-                            <linearGradient id={`half-star-${product.id}-${i}`}>
-                              <stop offset="50%" stopColor="#facc15" />
-                              <stop offset="50%" stopColor="#d1d5db" />
-                            </linearGradient>
-                          </defs>
-                          <path fill={`url(#half-star-${product.id}-${i})`} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      );
-                    } else {
-                      return (
-                        <svg
-                          key={i}
-                          className="w-4 h-4 text-gray-300"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8-2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      );
-                    }
-                  })}
-                </div>
-                <span className="text-sm text-muted-foreground ml-2">
-                  {(product.rating || 0).toFixed(1)} ({product.reviews || 0})
-                </span>
-              </div> */}
               <p className="text-lg font-semibold mt-2 text-rose-500">
                 {totalPrice ? totalPrice.toLocaleString() + '₫' : '-'}
               </p>
@@ -336,7 +333,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
                     id: product.id.toString(),
                     name: product.name,
                     price: product.price,
-                    image: getProductImageUrl(product)
+                    image: getProductImageUrl(product) // Sử dụng getProductImageUrl để lấy ảnh từ Cloudinary hoặc fallback
                   });
                   toast({
                     title: "Đã thêm vào giỏ hàng!",
@@ -349,7 +346,8 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
             </CardFooter>
           </Card>
         );
-      })}
+        })}
+      </div>
     </div>
   )
 } 

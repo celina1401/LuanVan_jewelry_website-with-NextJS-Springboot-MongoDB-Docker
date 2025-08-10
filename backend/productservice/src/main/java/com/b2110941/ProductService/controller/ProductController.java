@@ -91,6 +91,17 @@ public class ProductController {
             productWithRating.put("isNew", product.getCreatedAt() != null && 
                 product.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusDays(30)));
             
+            // Thêm thông tin ảnh từ Cloudinary
+            productWithRating.put("thumbnailUrl", product.getThumbnailUrl());
+            productWithRating.put("images", product.getImages());
+            
+            // Thêm các trường khác cần thiết
+            productWithRating.put("gender", product.getGender());
+            productWithRating.put("tags", product.getTags());
+            
+            // Thêm trường image để tương thích với frontend
+            productWithRating.put("image", product.getThumbnailUrl());
+            
             // Lấy rating từ ReviewService
             Map<String, Object> ratingInfo = getProductRating(product.getId());
             productWithRating.put("rating", ratingInfo.get("rating"));
@@ -133,6 +144,7 @@ public class ProductController {
             result.put("sku", product.getSku());
             result.put("productCode", product.getProductCode());
             result.put("thumbnailUrl", product.getThumbnailUrl());
+            result.put("images", product.getImages());
             result.put("tags", product.getTags());
             result.put("weight", product.getWeight());
             result.put("quantity", product.getQuantity());
@@ -253,21 +265,47 @@ public class ProductController {
             String newCode = prefix + String.format("%03d", maxCode + 1);
             product.setProductCode(newCode);
 
-            // Xử lý ảnh nếu có
-            if (image != null && !image.isEmpty()) {
+            // Xử lý ảnh - ưu tiên Cloudinary URLs từ frontend, fallback về local upload nếu cần
+            if (product.getImages() != null && !product.getImages().isEmpty()) {
+                // Frontend đã upload nhiều ảnh lên Cloudinary
+                System.out.println("[UPLOAD] Sử dụng Cloudinary images: " + product.getImages().size() + " ảnh");
+                
+                // Set thumbnailUrl từ ảnh đầu tiên nếu chưa có
+                if (product.getThumbnailUrl() == null || product.getThumbnailUrl().isEmpty()) {
+                    product.setThumbnailUrl(product.getImages().get(0));
+                    System.out.println("[UPLOAD] Set thumbnailUrl từ ảnh đầu tiên: " + product.getThumbnailUrl());
+                }
+            } else if (product.getThumbnailUrl() != null && !product.getThumbnailUrl().isEmpty()) {
+                // Frontend đã upload 1 ảnh lên Cloudinary
+                System.out.println("[UPLOAD] Sử dụng Cloudinary thumbnailUrl: " + product.getThumbnailUrl());
+                
+                // Tạo list images từ thumbnailUrl
+                List<String> images = new ArrayList<>();
+                images.add(product.getThumbnailUrl());
+                product.setImages(images);
+                System.out.println("[UPLOAD] Tạo list images từ thumbnailUrl");
+            } else if (image != null && !image.isEmpty()) {
+                // Fallback: upload local nếu không có Cloudinary URL
                 String filename = System.currentTimeMillis() + "_"
                         + Paths.get(image.getOriginalFilename()).getFileName().toString();
-                Path uploadPath = Paths.get("/uploads/products");
+                Path uploadPath = Paths.get("./uploads/products");
                 System.out.println("[UPLOAD] Tạo thư mục: " + uploadPath.toAbsolutePath());
-                Files.createDirectories(uploadPath); // Tạo thư mục nếu chưa có
+                Files.createDirectories(uploadPath);
                 Path filePath = uploadPath.resolve(filename);
                 System.out.println("[UPLOAD] Đường dẫn file sẽ lưu: " + filePath.toAbsolutePath());
                 Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("[UPLOAD] Đã lưu file ảnh: " + filePath.toAbsolutePath());
+                System.out.println("[UPLOAD] Đã lưu file ảnh local: " + filePath.toAbsolutePath());
 
-                // Lưu đường dẫn vào DB
-                product.setThumbnailUrl("/uploads/products/" + filename);
-                System.out.println("[UPLOAD] thumbnailUrl lưu vào DB: /uploads/products/" + filename);
+                // Lưu đường dẫn local vào DB
+                String localImagePath = "/uploads/products/" + filename;
+                product.setThumbnailUrl(localImagePath);
+                
+                // Tạo list images từ local file
+                List<String> images = new ArrayList<>();
+                images.add(localImagePath);
+                product.setImages(images);
+                
+                System.out.println("[UPLOAD] thumbnailUrl local lưu vào DB: " + localImagePath);
             }
 
             // Set ngày tạo và ngày cập nhật là thời điểm hiện tại
@@ -410,49 +448,121 @@ public class ProductController {
     }
 
     /**
-     * Cập nhật hình ảnh sản phẩm
+     * Cập nhật ảnh sản phẩm
      */
     @PutMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProductImage(
             @PathVariable String id,
             @RequestPart("image") MultipartFile image) {
+        try {
         Optional<Product> productOpt = productRepository.findById(id);
         if (!productOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy sản phẩm.");
+                return ResponseEntity.notFound().build();
         }
 
         Product product = productOpt.get();
 
-        try {
+            // Xóa ảnh cũ nếu có
+            if (product.getThumbnailUrl() != null && product.getThumbnailUrl().startsWith("/uploads/")) {
+                try {
+                    String fileName = product.getThumbnailUrl().substring(product.getThumbnailUrl().lastIndexOf("/") + 1);
+                    Path imagePath = Paths.get("./uploads/products/" + fileName);
+                    if (Files.exists(imagePath)) {
+                        Files.delete(imagePath);
+                        System.out.println("[UPDATE] Đã xóa ảnh cũ: " + imagePath);
+                    }
+                } catch (Exception e) {
+                    System.out.println("[UPDATE] Lỗi khi xóa ảnh cũ: " + e.getMessage());
+                }
+            }
+
             // Xử lý upload ảnh mới
-            String uploadsDir = "/uploads/products";
+            String uploadsDir = "./uploads/products"; // Changed to ./uploads/products
             Path uploadsPath = Paths.get(uploadsDir);
             if (!Files.exists(uploadsPath)) {
                 Files.createDirectories(uploadsPath);
             }
 
-            String originalFilename = Paths.get(image.getOriginalFilename()).getFileName().toString();
-            String fileName = System.currentTimeMillis() + "_" + originalFilename;
-            Path filePath = uploadsPath.resolve(fileName);
+            String filename = System.currentTimeMillis() + "_" + Paths.get(image.getOriginalFilename()).getFileName().toString();
+            Path filePath = uploadsPath.resolve(filename);
             Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Cập nhật URL hình ảnh
-            product.setThumbnailUrl("/uploads/products/" + fileName);
-            product.setUpdatedAt(LocalDateTime.now());
+            // Cập nhật thumbnailUrl
+            String newImagePath = "/uploads/products/" + filename;
+            product.setThumbnailUrl(newImagePath);
+            
+            // Cập nhật list images
+            List<String> images = new ArrayList<>();
+            images.add(newImagePath);
+            product.setImages(images);
 
-            // Lưu vào DB
-            Product updated = productRepository.save(product);
+            product.setUpdatedAt(java.time.LocalDateTime.now());
+            Product saved = productRepository.save(product);
 
-            // Trả về thông tin cập nhật
-            Map<String, Object> result = new HashMap<>();
-            result.put("id", updated.getId());
-            result.put("name", updated.getName());
-            result.put("thumbnailUrl", updated.getThumbnailUrl());
-            result.put("updatedAt", updated.getUpdatedAt());
+            // Cập nhật ProductDetail
+            List<ProductDetail> details = productDetailRepository.findByProductId(id);
+            if (!details.isEmpty()) {
+                ProductDetail detail = details.get(0);
+                detail.setImageUrl(newImagePath);
+                productDetailRepository.save(detail);
+            }
 
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi khi cập nhật hình ảnh: " + e.getMessage());
+            System.out.println("Lỗi khi cập nhật ảnh sản phẩm: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Cập nhật nhiều ảnh sản phẩm (Cloudinary URLs)
+     */
+    @PutMapping(value = "/{id}/images")
+    public ResponseEntity<?> updateProductImages(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> request) {
+        try {
+            Optional<Product> productOpt = productRepository.findById(id);
+            if (!productOpt.isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Product product = productOpt.get();
+            
+            @SuppressWarnings("unchecked")
+            List<String> newImages = (List<String>) request.get("images");
+            String newThumbnailUrl = (String) request.get("thumbnailUrl");
+            
+            if (newImages != null && !newImages.isEmpty()) {
+                product.setImages(newImages);
+                
+                // Set thumbnailUrl từ ảnh đầu tiên nếu không được chỉ định
+                if (newThumbnailUrl == null || newThumbnailUrl.isEmpty()) {
+                    product.setThumbnailUrl(newImages.get(0));
+                } else {
+                    product.setThumbnailUrl(newThumbnailUrl);
+                }
+                
+                System.out.println("[UPDATE] Cập nhật " + newImages.size() + " ảnh cho sản phẩm: " + id);
+            }
+            
+            product.setUpdatedAt(java.time.LocalDateTime.now());
+            Product saved = productRepository.save(product);
+
+            // Cập nhật ProductDetail
+            List<ProductDetail> details = productDetailRepository.findByProductId(id);
+            if (!details.isEmpty()) {
+                ProductDetail detail = details.get(0);
+                detail.setImageUrl(saved.getThumbnailUrl());
+                productDetailRepository.save(detail);
+            }
+
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            System.out.println("Lỗi khi cập nhật ảnh sản phẩm: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
         }
     }
 
@@ -584,7 +694,7 @@ public class ProductController {
                 try {
                     // Lấy tên file từ thumbnailUrl
                     String fileName = thumbnailUrl.substring(thumbnailUrl.lastIndexOf("/") + 1);
-                    Path imagePath = Paths.get("/uploads/products/" + fileName);
+                    Path imagePath = Paths.get("./uploads/products/" + fileName); // Changed to ./uploads/products
                     if (Files.exists(imagePath)) {
                         byte[] imageBytes = Files.readAllBytes(imagePath);
                         String contentType = Files.probeContentType(imagePath);
@@ -646,7 +756,7 @@ public class ProductController {
     @GetMapping("/test-image/{filename}")
     public ResponseEntity<?> testImage(@PathVariable String filename) {
         try {
-            Path imagePath = Paths.get("uploads/" + filename);
+            Path imagePath = Paths.get("./uploads/" + filename); // Changed to ./uploads/
             if (Files.exists(imagePath)) {
                 return ResponseEntity.ok("Image exists: " + imagePath.toAbsolutePath());
             } else {
@@ -664,7 +774,7 @@ public class ProductController {
     @GetMapping("/list-uploads")
     public ResponseEntity<?> listUploads() {
         try {
-            Path uploadsPath = Paths.get("uploads");
+            Path uploadsPath = Paths.get("./uploads"); // Changed to ./uploads
             List<String> files = new ArrayList<>();
             if (Files.exists(uploadsPath)) {
                 Files.list(uploadsPath).forEach(path -> {

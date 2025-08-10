@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import Barcode from "react-barcode";
 import { Edit, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export default function ProductPage() {
   const [form, setForm] = useState({
@@ -20,6 +21,7 @@ export default function ProductPage() {
     category: "",
     sku: "",
     image: "" as string | File,
+    images: [] as File[], // Hỗ trợ nhiều ảnh
     tags: [] as string[],
     wage: "", // Thêm trường tiền công
     quantity: "", // Thêm trường số lượng
@@ -28,6 +30,7 @@ export default function ProductPage() {
     description: "", // Thêm trường mô tả chi tiết
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]); // State cho nhiều ảnh
 
   // State cho popup chi tiết sản phẩm
   const [detailProduct, setDetailProduct] = useState<any | null>(null);
@@ -254,10 +257,66 @@ export default function ProductPage() {
       setForm({ ...form, image: "" });
     }
   }
-  // Sửa lại hàm handleSubmit để gửi FormData (multipart/form-data) khi thêm sản phẩm mới, phù hợp với backend nhận @RequestPart product (JSON) và @RequestPart image (file).
+
+  // Hàm xử lý chọn nhiều ảnh
+  function handleMultipleImagesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      // Giới hạn tối đa 5 ảnh
+      if (fileArray.length > 5) {
+        toast.error("Chỉ được chọn tối đa 5 ảnh");
+        return;
+      }
+      
+      // Validate file size (5MB) và type
+      const validFiles: File[] = [];
+      const maxFileSize = 5 * 1024 * 1024; // 5MB
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      
+      for (const file of fileArray) {
+        if (file.size > maxFileSize) {
+          toast.error(`File ${file.name} quá lớn (${(file.size / 1024 / 1024).toFixed(1)}MB). Kích thước tối đa là 5MB`);
+          continue;
+        }
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`File ${file.name} không đúng định dạng. Chỉ chấp nhận JPG, PNG, WEBP`);
+          continue;
+        }
+        validFiles.push(file);
+      }
+      
+      if (validFiles.length > 0) {
+        setSelectedImages(validFiles);
+        setForm({ ...form, images: validFiles });
+        toast.success(`Đã chọn ${validFiles.length} ảnh hợp lệ`);
+      }
+    }
+  }
+
+  // Hàm xóa ảnh đã chọn
+  function removeSelectedImage(index: number) {
+    const newImages = selectedImages.filter((_, i) => i !== index);
+    setSelectedImages(newImages);
+    setForm({ ...form, images: newImages });
+    toast.info("Đã xóa ảnh");
+  }
+
+  // Ngăn chặn memory leak từ object URLs
+  useEffect(() => {
+    return () => {
+      selectedImages.forEach(file => {
+        if (file) {
+          URL.revokeObjectURL(URL.createObjectURL(file));
+        }
+      });
+    };
+  }, [selectedImages]);
+
+  // Sửa lại hàm handleSubmit để upload ảnh lên Cloudinary trước, rồi gửi FormData (chỉ phần product JSON) về backend hiện tại
   async function handleSubmit(e: any) {
     e.preventDefault();
-    const { image, weight: weightStr, ...productData } = form;
+    const { image, images, weight: weightStr, ...productData } = form;
     // Xử lý weight - chuyển đổi thành double
     let weight: number | null = null;
     if (weightStr && !isNaN(Number(weightStr))) {
@@ -266,12 +325,51 @@ export default function ProductPage() {
       // Chuyển thành double
       weight = parseFloat(cleanWeightStr);
     }
-    const formData = new FormData();
-    formData.append('product', JSON.stringify({ ...productData, weight }));
-    if (form.image && typeof form.image !== "string") {
-      formData.append('image', form.image); // form.image là file
-    }
+    
+    // Upload ảnh (nếu có) lên Cloudinary để lấy URL
+    let thumbnailUrl: string | null = null;
+    let imageUrls: string[] = [];
+    
     try {
+      // Upload nhiều ảnh nếu có
+      if (images && images.length > 0) {
+        toast.info(`Đang upload ${images.length} ảnh lên Cloudinary...`);
+        for (let i = 0; i < images.length; i++) {
+          const file = images[i];
+          try {
+            const result = await uploadToCloudinary(file, { folder: 'products' });
+            imageUrls.push(result.secure_url);
+            toast.info(`Đã upload ảnh ${i + 1}/${images.length}`);
+          } catch (err) {
+            toast.error(`Upload ảnh ${file.name} thất bại`);
+            return;
+          }
+        }
+        // Set thumbnailUrl từ ảnh đầu tiên
+        thumbnailUrl = imageUrls[0];
+        toast.success(`Đã upload thành công ${imageUrls.length} ảnh!`);
+      } else if (image && typeof image !== 'string') {
+        // Fallback: upload 1 ảnh nếu không có nhiều ảnh
+        try {
+          const result = await uploadToCloudinary(image as File, { folder: 'products' });
+          thumbnailUrl = result.secure_url;
+          imageUrls = [thumbnailUrl];
+        } catch (err) {
+          toast.error('Upload ảnh thất bại');
+          return;
+        }
+      }
+      
+      // Gửi theo định dạng backend hiện tại: multipart/form-data với @RequestPart("product")
+      const formData = new FormData();
+      formData.append('product', JSON.stringify({
+        ...productData,
+        weight,
+        // Đính kèm URL Cloudinary để backend lưu vào DB
+        thumbnailUrl,
+        images: imageUrls,
+      }));
+      // KHÔNG gửi trường 'image' nữa để tránh backend ghi đè ảnh local
       const res = await fetch('http://localhost:9004/api/products/add', {
         method: 'POST',
         body: formData,
@@ -291,6 +389,7 @@ export default function ProductPage() {
           category: "",
           sku: "",
           image: "",
+          images: [],
           tags: [],
           wage: "",
           quantity: "",
@@ -299,6 +398,7 @@ export default function ProductPage() {
           description: "",
         });
         setImagePreview(null);
+        setSelectedImages([]);
         setShowAdd(false); // Đóng popup khi thêm thành công
         toast.success("Thêm sản phẩm thành công!", {
           description: "Sản phẩm đã được thêm vào hệ thống"
@@ -447,12 +547,18 @@ export default function ProductPage() {
   // Hàm cập nhật hình ảnh sản phẩm
   const updateProductImage = async (productId: string, imageFile: File) => {
     try {
-      const formData = new FormData();
-      formData.append('image', imageFile);
+      // Upload lên Cloudinary trước
+      const result = await uploadToCloudinary(imageFile, { folder: 'products' });
+      const imageUrl = result.secure_url;
 
-      const res = await fetch(`http://localhost:9004/api/products/${productId}/image`, {
+      // Cập nhật qua API JSON
+      const res = await fetch(`http://localhost:9004/api/products/${productId}`, {
         method: 'PUT',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          thumbnailUrl: imageUrl,
+          images: [imageUrl] // Cập nhật cả list images
+        }),
       });
 
       if (res.ok) {
@@ -461,7 +567,7 @@ export default function ProductPage() {
         setProducts((prev: any[]) =>
           prev.map((p: any) =>
             (p.id || p.product_id) === productId
-              ? { ...p, thumbnailUrl: result.thumbnailUrl }
+              ? { ...p, thumbnailUrl: result.thumbnailUrl, images: result.images }
               : p
           )
         );
@@ -481,6 +587,60 @@ export default function ProductPage() {
     }
   };
 
+  // Hàm cập nhật nhiều ảnh sản phẩm
+  const updateProductImages = async (productId: string, imageFiles: File[]) => {
+    try {
+      toast.info(`Đang upload ${imageFiles.length} ảnh lên Cloudinary...`);
+      const imageUrls: string[] = [];
+      
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        try {
+          const result = await uploadToCloudinary(file, { folder: 'products' });
+          imageUrls.push(result.secure_url);
+          toast.info(`Đã upload ảnh ${i + 1}/${imageFiles.length}`);
+        } catch (err) {
+          toast.error(`Upload ảnh ${file.name} thất bại`);
+          return;
+        }
+      }
+      
+      // Cập nhật qua API mới cho nhiều ảnh
+      const res = await fetch(`http://localhost:9004/api/products/${productId}/images`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          images: imageUrls,
+          thumbnailUrl: imageUrls[0] // Set thumbnail từ ảnh đầu tiên
+        }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        // Cập nhật danh sách sản phẩm
+        setProducts((prev: any[]) =>
+          prev.map((p: any) =>
+            (p.id || p.product_id) === productId
+              ? { ...p, thumbnailUrl: result.thumbnailUrl, images: result.images }
+              : p
+          )
+        );
+        toast.success("Cập nhật ảnh thành công!", {
+          description: `${imageUrls.length} ảnh sản phẩm đã được cập nhật`
+        });
+        return result;
+      } else {
+        throw new Error('Failed to update images');
+      }
+    } catch (error) {
+      console.error('Error updating product images:', error);
+      toast.error("Lỗi khi cập nhật ảnh!", {
+        description: "Vui lòng thử lại sau"
+      });
+      throw error;
+    }
+  };
+
   // Hàm xóa hình ảnh sản phẩm
   const deleteProductImage = async (productId: string) => {
     try {
@@ -493,7 +653,7 @@ export default function ProductPage() {
         setProducts((prev: any[]) =>
           prev.map((p: any) =>
             (p.id || p.product_id) === productId
-              ? { ...p, thumbnailUrl: null }
+              ? { ...p, thumbnailUrl: null, images: [] }
               : p
           )
         );
@@ -798,12 +958,56 @@ export default function ProductPage() {
                   <label className="font-semibold text-base">Ảnh sản phẩm</label>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
+                    multiple
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleMultipleImagesChange}
                     className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tối đa 5 ảnh, mỗi ảnh tối đa 5MB. Định dạng: JPG, PNG, WEBP</p>
                 </div>
-                {imagePreview && (
+                
+                {/* Preview nhiều ảnh */}
+                {selectedImages.length > 0 && (
+                  <div className="mt-4 w-full max-w-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ảnh đã chọn ({selectedImages.length}/5):</span>
+                      <button 
+                        onClick={() => {
+                          setSelectedImages([]);
+                          setForm({ ...form, images: [] });
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded text-sm"
+                      >
+                        Xóa tất cả
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedImages.map((file, index) => (
+                        <div key={index} className="relative group">
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt={`Preview ${index + 1}`} 
+                            className="w-full h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600 group-hover:border-blue-400 transition-colors" 
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
+                            <button 
+                              onClick={() => removeSelectedImage(index)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="absolute bottom-1 left-1 right-1">
+                            <p className="text-xs text-white bg-black bg-opacity-70 rounded px-1 py-0.5 truncate">{file.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Fallback preview cho ảnh đơn */}
+                {imagePreview && selectedImages.length === 0 && (
                   <img
                     src={imagePreview}
                     alt="Preview"
@@ -833,22 +1037,23 @@ export default function ProductPage() {
                   className="w-full mt-2 bg-gray-400 text-white px-4 py-3 rounded-lg text-lg font-bold hover:bg-gray-500 border border-gray-300 shadow-sm"
                   onClick={() => {
                     setShowAdd(false);
-                    setForm({
-                      name: "",
-                      weight: "",
-                      origin: "",
-                      brand: "",
-                      goldAge: "",
-                      category: "",
-                      sku: "",
-                      image: "",
-                      tags: [],
-                      wage: "",
-                      quantity: "",
-                      productCode: "",
-                      price: "",
-                      description: "",
-                    });
+                            setForm({
+          name: "",
+          weight: "",
+          origin: "",
+          brand: "",
+          goldAge: "",
+          category: "",
+          sku: "",
+          image: "",
+          images: [],
+          tags: [],
+          wage: "",
+          quantity: "",
+          productCode: "",
+          price: "",
+          description: "",
+        });
                     setImagePreview(null);
                   }}
                 >
@@ -900,15 +1105,20 @@ export default function ProductPage() {
                   <div className="col-span-1 text-rose-600 font-bold">{product.wage?.toLocaleString() || '-'}</div>
                   <div className="col-span-1 flex justify-center">
                     {(product.id || product.product_id) ? (
-                      <img
-                        // src={`http://localhost:9004/api/products/image/${product.id || product.product_id}`}
-                        src={`http://localhost:9004/api/products/image/${product.id || product.product_id}?t=${Date.now()}`}
-                        alt="thumb"
-                        className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
-                        onError={(e) => {
-                          e.currentTarget.src = '/default-avatar.png';
-                        }}
-                      />
+                      product.thumbnailUrl ? (
+                        <img
+                          src={product.thumbnailUrl}
+                          alt="thumb"
+                          className="w-12 h-12 object-cover rounded-lg shadow-md border-2 border-rose-200 group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            e.currentTarget.src = '/default-avatar.png';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-xs">
+                          No img
+                        </div>
+                      )
                     ) : (
                       <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-xs">
                         No img
@@ -985,15 +1195,39 @@ export default function ProductPage() {
             <div className="flex flex-col md:flex-row gap-8">
               {/* Ảnh sản phẩm */}
               <div className="flex flex-col items-center gap-4 md:w-1/3 w-full">
-                {(detailProduct.id || detailProduct.product_id) ? (
-                  <img
-                    src={`http://localhost:9004/api/products/image/${detailProduct.id || detailProduct.product_id}`}
-                    alt={detailProduct.name}
-                    className="w-64 h-64 object-cover rounded-xl shadow-lg border-2 border-rose-200"
-                    onError={(e) => {
-                      e.currentTarget.src = '/default-avatar.png';
-                    }}
-                  />
+                {detailProduct.thumbnailUrl ? (
+                  <div className="space-y-4">
+                    {/* Ảnh chính */}
+                    <img
+                      src={detailProduct.thumbnailUrl}
+                      alt={detailProduct.name}
+                      className="w-64 h-64 object-cover rounded-xl shadow-lg border-2 border-rose-200"
+                      onError={(e) => {
+                        e.currentTarget.src = '/default-avatar.png';
+                      }}
+                    />
+                    
+                    {/* Hiển thị tất cả ảnh nếu có nhiều */}
+                    {detailProduct.images && detailProduct.images.length > 1 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {detailProduct.images.map((imageUrl: string, index: number) => (
+                          <img
+                            key={index}
+                            src={imageUrl}
+                            alt={`${detailProduct.name} - Ảnh ${index + 1}`}
+                            className="w-20 h-20 object-cover rounded-lg border border-rose-200 hover:scale-105 transition-transform cursor-pointer"
+                            onClick={() => {
+                              // Có thể thêm logic để xem ảnh full size
+                              window.open(imageUrl, '_blank');
+                            }}
+                            onError={(e) => {
+                              e.currentTarget.src = '/default-avatar.png';
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="w-64 h-64 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
                     Không có ảnh
@@ -1351,42 +1585,96 @@ export default function ProductPage() {
               </div>
               {/* Phần upload ảnh ở cuối form */}
               <div className="flex flex-col items-center justify-center w-full mt-4">
-                <div className="space-y-2 w-full max-w-xs text-center">
+                <div className="space-y-4 w-full max-w-md text-center">
                   <label className="font-semibold text-base">Ảnh sản phẩm</label>
-                  {(editProduct.id || editProduct.product_id) ? (
-                    <img
-                      src={`http://localhost:9004/api/products/image/${editProduct.id || editProduct.product_id}?t=${Date.now()}`}
-                      alt={editProduct.name}
-                      className="w-28 h-28 object-cover rounded-xl border border-border mt-2"
-                      onError={(e) => {
-                        e.currentTarget.src = '/default-avatar.png';
-                      }}
-                    />
+                  
+                  {/* Hiển thị ảnh hiện tại */}
+                  {editProduct.thumbnailUrl ? (
+                    <div className="space-y-3">
+                      {/* Ảnh chính */}
+                      <img
+                        src={editProduct.thumbnailUrl}
+                        alt={editProduct.name}
+                        className="w-32 h-32 object-cover rounded-xl border border-border mx-auto"
+                        onError={(e) => {
+                          e.currentTarget.src = '/default-avatar.png';
+                        }}
+                      />
+                      
+                      {/* Hiển thị tất cả ảnh nếu có nhiều */}
+                      {editProduct.images && editProduct.images.length > 1 && (
+                        <div className="grid grid-cols-3 gap-2">
+                          {editProduct.images.map((imageUrl: string, index: number) => (
+                            <img
+                              key={index}
+                              src={imageUrl}
+                              alt={`${editProduct.name} - Ảnh ${index + 1}`}
+                              className="w-16 h-16 object-cover rounded-lg border border-rose-200"
+                              onError={(e) => {
+                                e.currentTarget.src = '/default-avatar.png';
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <div className="w-28 h-28 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 mt-2">
+                    <div className="w-32 h-32 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 mx-auto">
                       Không có ảnh
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file && editProduct) {
-                        try {
-                          await updateProductImage(editProduct.id || editProduct.product_id, file);
-                          // Cập nhật editProduct với ảnh mới
-                          const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
-                          if (updatedProduct) {
-                            setEditProduct(updatedProduct);
+                  
+                  {/* Upload ảnh đơn */}
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-600">Thay đổi ảnh chính</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file && editProduct) {
+                          try {
+                            await updateProductImage(editProduct.id || editProduct.product_id, file);
+                            // Cập nhật editProduct với ảnh mới
+                            const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
+                            if (updatedProduct) {
+                              setEditProduct(updatedProduct);
+                            }
+                          } catch (error) {
+                            toast.error('Lỗi khi cập nhật ảnh!');
                           }
-                        } catch (error) {
-                          toast.error('Lỗi khi cập nhật ảnh!');
                         }
-                      }
-                    }}
-                    className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
-                  />
+                      }}
+                      className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
+                    />
+                  </div>
+                  
+                  {/* Upload nhiều ảnh */}
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-600">Thêm nhiều ảnh</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length > 0 && editProduct) {
+                          try {
+                            await updateProductImages(editProduct.id || editProduct.product_id, files);
+                            // Cập nhật editProduct với ảnh mới
+                            const updatedProduct = await fetchProductDetail(editProduct.id || editProduct.product_id);
+                            if (updatedProduct) {
+                              setEditProduct(updatedProduct);
+                            }
+                          } catch (error) {
+                            toast.error('Lỗi khi cập nhật ảnh!');
+                          }
+                        }
+                      }}
+                      className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 bg-background border border-border"
+                    />
+                  </div>
+                  
                   {/* Nút xóa ảnh */}
                   {editProduct.thumbnailUrl && (
                     <button
@@ -1407,7 +1695,7 @@ export default function ProductPage() {
                       }}
                       className="text-red-500 text-sm hover:text-red-700 underline mt-2"
                     >
-                      Xóa ảnh
+                      Xóa tất cả ảnh
                     </button>
                   )}
                 </div>

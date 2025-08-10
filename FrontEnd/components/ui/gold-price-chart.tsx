@@ -40,6 +40,9 @@ const GOLD_API_KEY = "goldapi-5p9h9smdppd1qi-io"; // <-- Điền API Key tại �
 // goldapi-40qegsmdtz23aq-io        - CongTri
 // goldapi-k15ismdtz65qw-io         - GiaBao
 // goldapi-40qegsmdtz8uim-io        - BichTram
+// goldapi-8raw3zsme5b0qmf-io       - ThaiLe
+// goldapi-1cey8cmsme5bmw4g-io      - MinhHao
+// goldapi-8raw3zsme5cim88-io       - KKD
 
 
 const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";

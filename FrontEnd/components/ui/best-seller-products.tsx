@@ -11,7 +11,7 @@ import useEmblaCarousel from "embla-carousel-react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useCart } from "../../contexts/cart-context"
 import { useAuth } from "@clerk/nextjs"
-import { translateProductTag } from "../../lib/utils";
+import { translateProductTag, getProductImageUrl } from "../../lib/utils";
 
 const bestSellerProducts = [
   {
@@ -98,7 +98,7 @@ export function BestSellerProducts() {
       id: product.id.toString(),
       name: product.name,
       price: product.price,
-      image: product.image
+      image: getProductImageUrl(product)
     })
   }
 
@@ -147,7 +147,7 @@ export function BestSellerProducts() {
                     <CardHeader className="p-0">
                       <div className="relative aspect-square">
                         <Image
-                          src={product.image}
+                          src={getProductImageUrl(product)}
                           alt={product.name}
                           fill
                           className="object-cover"

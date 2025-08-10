@@ -1,24 +1,237 @@
-version: '3.8'
+# version: '3.8'
+
+# services:
+#   frontend:
+#     build:
+#       context: ./FrontEnd
+#       dockerfile: Dockerfile
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       - NODE_ENV=production
+#       - NEXT_TELEMETRY_DISABLED=1
+#       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+#       - NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+#       - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+#       - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL}
+#       - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL}
+#       - NEXT_PUBLIC_API_URL=http://localhost:8080/api
+#       - NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8080/api
+#       - NEXT_PUBLIC_JWKS_URL=${NEXT_PUBLIC_JWKS_URL}
+#       - NEXT_PUBLIC_JWKS_PUBLIC_KEY=${NEXT_PUBLIC_JWKS_PUBLIC_KEY}
+#       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+#       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+#       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+#       - CLOUDINARY_UPLOAD_FOLDER=ecommerce/uploads
+#     depends_on:
+#       - apigateway
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   discoveryserver:
+#     build:
+#       context: ./BackEnd/discoveryserver
+#       dockerfile: Dockerfile
+#     ports:
+#       - "8761:8761"
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   apigateway:
+#     build:
+#       context: ./BackEnd/apigateway
+#       dockerfile: Dockerfile
+#     ports:
+#       - "8080:8080"
+#     depends_on:
+#       - discoveryserver
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   userservice:
+#     build:
+#       context: ./BackEnd/userservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9001:9001"
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   orderservice:
+#     build:
+#       context: ./BackEnd/orderservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9003:9003"
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   productservice:
+#     build:
+#       context: ./BackEnd/productservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9004:9004"
+#     volumes:
+#       - ./BackEnd/productservice/uploads:/uploads
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   cartservice:
+#     build:
+#       context: ./BackEnd/cartservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9005:9005"
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - SPRING_PROFILES_ACTIVE=dev
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   notificationservice:
+#     build:
+#       context: ./BackEnd/notificationservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9002:9002"
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   paymentservice:
+#     build:
+#       context: ./BackEnd/paymentservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9006:9006"
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   chatservice:
+#     build:
+#       context: ./BackEnd/chatservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9007:9007"
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   reviewservice:
+#     build:
+#       context: ./BackEnd/reviewservice
+#       dockerfile: Dockerfile
+#     ports:
+#       - "9008:9008"
+#     depends_on:
+#       - discoveryserver
+#       - mongodb
+#     environment:
+#       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
+#       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+#   mongodb:
+#     image: mongo:latest
+#     container_name: mongodb
+#     ports:
+#       - "27017:27017"
+#     environment:
+#       MONGO_INITDB_DATABASE: jewelry_db
+#     volumes:
+#       - ./BackEnd/data/db:/data/db
+#       - ./BackEnd/data/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
+#     networks:
+#       - microservice-networks
+#     restart: unless-stopped
+
+# networks:
+#   microservice-networks:
+#     driver: bridge
+version: "3.8"
 
 services:
   frontend:
     build:
       context: ./FrontEnd
       dockerfile: Dockerfile
+      # Nếu đã sửa Dockerfile để nhận build args, có thể thêm:
+      # args:
+      #   NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      #   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
+
+      # Clerk (public)
       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       - NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
       - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
       - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL}
       - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL}
-      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
-      - NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8080/api
+
+      # API endpoints
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api     # dùng trên browser
+      - INTERNAL_API_URL=http://apigateway:8080/api       # dùng trên SSR/Node
       - NEXT_PUBLIC_JWKS_URL=${NEXT_PUBLIC_JWKS_URL}
       - NEXT_PUBLIC_JWKS_PUBLIC_KEY=${NEXT_PUBLIC_JWKS_PUBLIC_KEY}
+
+      # (Không nên để API_SECRET ở frontend)
     depends_on:
       - apigateway
     networks:
@@ -28,7 +241,6 @@ services:
   discoveryserver:
     build:
       context: ./BackEnd/discoveryserver
-      dockerfile: Dockerfile
     ports:
       - "8761:8761"
     networks:
@@ -38,7 +250,6 @@ services:
   apigateway:
     build:
       context: ./BackEnd/apigateway
-      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
@@ -52,7 +263,6 @@ services:
   userservice:
     build:
       context: ./BackEnd/userservice
-      dockerfile: Dockerfile
     ports:
       - "9001:9001"
     depends_on:
@@ -68,7 +278,6 @@ services:
   orderservice:
     build:
       context: ./BackEnd/orderservice
-      dockerfile: Dockerfile
     ports:
       - "9003:9003"
     depends_on:
@@ -84,7 +293,6 @@ services:
   productservice:
     build:
       context: ./BackEnd/productservice
-      dockerfile: Dockerfile
     ports:
       - "9004:9004"
     volumes:
@@ -95,6 +303,11 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      # Cloudinary cho backend
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - CLOUDINARY_UPLOAD_FOLDER=ecommerce/uploads
     networks:
       - microservice-networks
     restart: unless-stopped
@@ -102,7 +315,6 @@ services:
   cartservice:
     build:
       context: ./BackEnd/cartservice
-      dockerfile: Dockerfile
     ports:
       - "9005:9005"
     depends_on:
@@ -119,7 +331,6 @@ services:
   notificationservice:
     build:
       context: ./BackEnd/notificationservice
-      dockerfile: Dockerfile
     ports:
       - "9002:9002"
     depends_on:
@@ -135,7 +346,6 @@ services:
   paymentservice:
     build:
       context: ./BackEnd/paymentservice
-      dockerfile: Dockerfile
     ports:
       - "9006:9006"
     depends_on:
@@ -151,7 +361,6 @@ services:
   chatservice:
     build:
       context: ./BackEnd/chatservice
-      dockerfile: Dockerfile
     ports:
       - "9007:9007"
     depends_on:
@@ -167,7 +376,6 @@ services:
   reviewservice:
     build:
       context: ./BackEnd/reviewservice
-      dockerfile: Dockerfile
     ports:
       - "9008:9008"
     depends_on:
@@ -176,6 +384,11 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discoveryserver:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      # Cloudinary cho backend
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - CLOUDINARY_UPLOAD_FOLDER=ecommerce/uploads
     networks:
       - microservice-networks
     restart: unless-stopped

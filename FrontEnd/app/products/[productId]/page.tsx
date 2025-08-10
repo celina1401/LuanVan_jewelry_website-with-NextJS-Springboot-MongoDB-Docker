@@ -12,17 +12,18 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/chatbox/ChatBox";
-import { translateProductTag } from "@/lib/utils";
+import { translateProductTag, getProductImageUrl } from "@/lib/utils";
 import { MagnifierImage } from "@/app/components/MagnifierImage";
 import ReviewSection from "@/components/ReviewSection";
 import ReviewSummary from "@/components/ReviewSummary";
 
 
 type Product = {
-  id: number;
+  id: string;
   name: string;
   tags: string[];
   images: string[];
+  thumbnailUrl?: string; // URL ảnh chính từ Cloudinary
   description: string;
   price: number;
   rating?: number; // sẽ tính động
@@ -53,7 +54,7 @@ type Comment = {
 // Giả lập dữ liệu sản phẩm (bạn nên thay bằng fetch từ API hoặc DB thực tế)
 const mockProducts: Product[] = [
   {
-    id: 1,
+    id: "1",
     name: "Nhẫn đính hôn kim cương",
     tags: ["Nhẫn", "Mới"],
     images: [
@@ -61,6 +62,7 @@ const mockProducts: Product[] = [
       "/images/products/ring1-2.jpg",
       "/images/products/ring1-3.jpg"
     ],
+    thumbnailUrl: "/images/products/ring1.jpg",
     description: "Nhẫn cầu hôn Vàng 14K đá CZ",
     price: 5971000,
     reviews: 128,
@@ -77,13 +79,14 @@ const mockProducts: Product[] = [
     wage: 100000,
   },
   {
-    id: 2,
+    id: "2",
     name: "Vòng tay vàng",
     tags: ["Vòng tay"],
     images: [
       "/images/products/bracelet1.jpg",
       "/images/products/bracelet1-2.jpg"
     ],
+    thumbnailUrl: "/images/products/bracelet1.jpg",
     description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
     price: 2999000,
     reviews: 95,
@@ -98,32 +101,6 @@ const mockProducts: Product[] = [
   },
 ];
 
-// Giả lập user đăng nhập (bạn nên thay bằng context Clerk thực tế)
-const mockUser = {
-  id: "user1",
-  name: "Alice",
-  avatar: "/images/users/alice.jpg"
-};
-
-// Giả lập bình luận
-const mockComments: Comment[] = [
-  {
-    id: 1,
-    user: "Alice",
-    avatar: "/images/users/alice.jpg",
-    content: "Sản phẩm rất đẹp!",
-    images: ["/images/products/ring1-2.jpg"],
-    createdAt: "2024-06-21T10:00:00Z"
-  },
-  {
-    id: 2,
-    user: "Bob",
-    avatar: "/images/users/bob.jpg",
-    content: "Chất lượng tuyệt vời, sẽ ủng hộ tiếp!",
-    images: [],
-    createdAt: "2024-06-21T12:00:00Z"
-  }
-];
 
 function CommentForm({ onSubmit }: { onSubmit: (data: { content: string; images: File[] }) => void }) {
   const [content, setContent] = useState("");
@@ -210,7 +187,7 @@ export default function ProductDetailPage() {
   const [selectedImg, setSelectedImg] = useState<string | undefined>(undefined);
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
-  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
   const router = useRouter();
@@ -220,7 +197,7 @@ export default function ProductDetailPage() {
   const handleReviewAdded = async () => {
     try {
       // Fetch lại thông tin sản phẩm để cập nhật rating
-      const response = await fetch(`http://localhost:9004/api/products/profile/${productId}`);
+      const response = await fetch(`http://localhost:9004/api/products/${productId}`);
       if (response.ok) {
         const updatedProduct = await response.json();
         setProduct(updatedProduct);
@@ -244,15 +221,18 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!productId) return;
     setLoading(true);
-    fetch(`http://localhost:9004/api/products/profile/${productId}`)
+    fetch(`http://localhost:9004/api/products/${productId}`)
       .then(res => res.json())
-      .then((data: Product) => {
-        // console.log('[DEBUG] Product data from backend:', data);
-        setProduct(data);
-        setSelectedImg((data.images && data.images.length > 0) ? data.images[0] : "/images/no-image.png");
-        setSelectedColor(data.colors?.[0] || "");
-        setLoading(false);
-      })
+              .then((data: Product) => {
+          console.log('[DEBUG] Product data from backend:', data);
+          console.log('[DEBUG] thumbnailUrl:', data.thumbnailUrl);
+          console.log('[DEBUG] images array:', data.images);
+          setProduct(data);
+          // Ưu tiên sử dụng thumbnailUrl từ Cloudinary, fallback về images[0] hoặc ảnh mặc định
+          setSelectedImg(data.thumbnailUrl || (data.images && data.images.length > 0) ? data.images[0] : "/images/no-image.png");
+          setSelectedColor(data.colors?.[0] || "");
+          setLoading(false);
+        })
       .catch((error) => {
         // console.error('[DEBUG] Error fetching product:', error);
         setProduct(null);
@@ -288,7 +268,7 @@ export default function ProductDetailPage() {
       return;
     }
     addItem({
-      id: product.id.toString(),
+      id: product.id,
       name: product.name,
       price: product.price,
       image: getProductImageUrl(product),
@@ -311,8 +291,8 @@ export default function ProductDetailPage() {
   const handleCommentSubmit = ({ content, images }: { content: string; images: File[] }) => {
     const newComment: Comment = {
       id: comments.length + 1,
-      user: mockUser.name,
-      avatar: mockUser.avatar,
+      user: "Anonymous",
+      avatar: "/default-avatar.png",
       content,
       images: images.map(img => URL.createObjectURL(img)),
       createdAt: new Date().toISOString()
@@ -329,13 +309,7 @@ export default function ProductDetailPage() {
       p.tags.some(tag => product.tags!.includes(tag))
   );
 
-  // Hàm lấy URL ảnh sản phẩm giống trang admin
-  function getProductImageUrl(product: any): string {
-    if (product.id || product.product_id) {
-      return `http://localhost:9004/api/products/image/${product.id || product.product_id}`;
-    }
-    return "/no-image.png";
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -344,31 +318,59 @@ export default function ProductDetailPage() {
         <div className="flex flex-col md:flex-row gap-10 items-start">
           {/* Ảnh sản phẩm */}
           <div className="flex-1 flex flex-col items-center">
-            {/* <img
-              src={getProductImageUrl(product)}
-              alt={product.name}
-              className="w-full max-w-lg h-[480px] object-contain rounded-2xl shadow-2xl border-2 border-white bg-white"
-            /> */}
 
             <MagnifierImage
-              src={getProductImageUrl(product)}
+              src={selectedImg || getProductImageUrl(product)}
               alt={product.name}
               width={480}
               height={480}
               zoom={1.5} // Tăng zoom rõ hơn một chút
               lensSize={320} // Thu nhỏ vùng kính lúp xuống 80x80 pixel
             />
+            {/* Debug info */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                <p>Debug - selectedImg: {selectedImg}</p>
+                <p>Debug - getProductImageUrl: {getProductImageUrl(product)}</p>
+                <p>Debug - product.thumbnailUrl: {product.thumbnailUrl}</p>
+                <p>Debug - product.images: {JSON.stringify(product.images)}</p>
+              </div>
+            )}
             <div className="flex gap-4 mt-6">
-              {[getProductImageUrl(product)].map((img) => (
+              {/* Hiển thị ảnh chính */}
+              <img
+                src={getProductImageUrl(product)}
+                alt=""
+                className={`w-20 h-20 object-cover rounded-xl border-4 cursor-pointer transition-all duration-150 shadow ${selectedImg === getProductImageUrl(product)
+                    ? "border-blue-500 ring-4 ring-blue-200 scale-105"
+                    : "border-gray-200 hover:border-blue-300"
+                  }`}
+                onClick={() => setSelectedImg(getProductImageUrl(product))}
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  if (!img.src.includes("default-avatar.png")) {
+                    img.src = "/default-avatar.png";
+                  }
+                }}
+              />
+              
+              {/* Hiển thị tất cả ảnh nếu có nhiều */}
+              {product.images && product.images.length > 1 && product.images.map((img, index) => (
                 <img
-                  key={img}
+                  key={index}
                   src={img}
-                  alt=""
+                  alt={`${product.name} - Ảnh ${index + 1}`}
                   className={`w-20 h-20 object-cover rounded-xl border-4 cursor-pointer transition-all duration-150 shadow ${selectedImg === img
                       ? "border-blue-500 ring-4 ring-blue-200 scale-105"
                       : "border-gray-200 hover:border-blue-300"
                     }`}
                   onClick={() => setSelectedImg(img)}
+                  onError={(e) => {
+                    const imgElement = e.target as HTMLImageElement;
+                    if (!imgElement.src.includes("default-avatar.png")) {
+                      imgElement.src = "/default-avatar.png";
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -378,8 +380,8 @@ export default function ProductDetailPage() {
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">{product.name}</h1>
               <button
-                className={`text-2xl transition-colors ${mounted && isFavorite(product.id.toString()) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
-                onClick={() => toggleFavorite(product.id.toString())}
+                className={`text-2xl transition-colors ${mounted && isFavorite(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                onClick={() => toggleFavorite(product.id)}
               >
                 <FaRegHeart />
               </button>
@@ -512,7 +514,7 @@ export default function ProductDetailPage() {
                   <CardHeader className="p-0">
                     <div className="relative aspect-square">
                       <img
-                        src={item.images[0]}
+                        src={getProductImageUrl(item)}
                         alt={item.name}
                         className="object-cover w-full h-full"
                       />

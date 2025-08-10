@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star, Send, Image as ImageIcon, MessageCircle, ThumbsUp, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
@@ -38,6 +39,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [comment, setComment] = useState("");
   const [rating, setRating] = useState(5);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -55,6 +57,18 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
       // Cleanup will be handled by the SSE connection itself
     };
   }, []);
+
+  // Cleanup object URLs when component unmounts or files change
+  useEffect(() => {
+    return () => {
+      // Cleanup object URLs to prevent memory leaks
+      selectedFiles.forEach(file => {
+        if (file) {
+          URL.revokeObjectURL(URL.createObjectURL(file));
+        }
+      });
+    };
+  }, [selectedFiles]);
 
   const setupSSEConnection = () => {
     const eventSource = new EventSource(`http://localhost:9008/api/reviews/sse/${productId}`);
@@ -157,13 +171,43 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
-      if (e.target.files.length > 0) {
-        toast.info(`Đã chọn ${e.target.files.length} ảnh`, {
+      const files = Array.from(e.target.files);
+      
+      // Validate file count
+      if (files.length > 5) {
+        toast.error("Chỉ được chọn tối đa 5 ảnh");
+        return;
+      }
+      
+      // Validate each file
+      const validFiles: File[] = [];
+      const maxFileSize = 5 * 1024 * 1024; // 5MB
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      
+      for (const file of files) {
+        if (file.size > maxFileSize) {
+          toast.error(`File ${file.name} quá lớn (${(file.size / 1024 / 1024).toFixed(1)}MB). Kích thước tối đa là 5MB`);
+          continue;
+        }
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`File ${file.name} không đúng định dạng. Chỉ chấp nhận JPG, PNG, WEBP`);
+          continue;
+        }
+        validFiles.push(file);
+      }
+      
+      if (validFiles.length > 0) {
+        setSelectedFiles(validFiles);
+        toast.success(`Đã chọn ${validFiles.length} ảnh hợp lệ`, {
           description: "Bạn có thể xem preview bên dưới"
         });
       }
     }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(files => files.filter((_, i) => i !== index));
+    toast.info("Đã xóa ảnh");
   };
 
   const handleSubmitReview = async () => {
@@ -176,32 +220,49 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
       toast.error("Vui lòng nhập nội dung bình luận");
       return;
     }
+
+    // Validate file size and type
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    
+    for (const file of selectedFiles) {
+      if (file.size > maxFileSize) {
+        toast.error(`File ${file.name} quá lớn. Kích thước tối đa là 5MB`);
+        return;
+      }
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`File ${file.name} không đúng định dạng. Chỉ chấp nhận JPG, PNG, WEBP`);
+        return;
+      }
+    }
   
     setSubmitting(true);
     try {
-      // Upload images first (if any)
+      // Upload images first (if any) directly to Cloudinary
       const imageUrls: string[] = [];
       if (selectedFiles.length > 0) {
+        setUploadingImages(true);
         toast.info("Đang tải ảnh lên...", {
-          description: "Vui lòng chờ trong giây lát"
+          description: `Đang upload ${selectedFiles.length} ảnh, vui lòng chờ trong giây lát`
         });
-      }
-      
-      for (const file of selectedFiles) {
-        const formData = new FormData();
-        formData.append("image", file);
-  
-        const uploadResponse = await fetch("http://localhost:9008/api/reviews/upload", {
-          method: "POST",
-          body: formData,
-        });
-  
-        if (uploadResponse.ok) {
-          const uploadData = await uploadResponse.json();
-          imageUrls.push(uploadData.url);
-        } else {
-          throw new Error("Failed to upload image");
+        
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          try {
+            toast.info(`Đang upload ảnh ${i + 1}/${selectedFiles.length}...`);
+            const result = await uploadToCloudinary(file, { folder: "reviews" });
+            imageUrls.push(result.secure_url);
+            console.log(`Uploaded image ${i + 1}:`, result.secure_url);
+          } catch (uploadError) {
+            console.error(`Error uploading image ${file.name}:`, uploadError);
+            toast.error(`Không thể upload ảnh ${file.name}. Vui lòng thử lại.`);
+            setUploadingImages(false);
+            return;
+          }
         }
+        
+        setUploadingImages(false);
+        toast.success(`Đã upload thành công ${imageUrls.length} ảnh!`);
       }
   
       // Create review
@@ -213,6 +274,8 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
         rating,
         images: imageUrls,
       };
+
+      console.log("Submitting review data:", reviewData);
   
       const response = await fetch("http://localhost:9008/api/reviews", {
         method: "POST",
@@ -224,14 +287,20 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
   
       if (response.ok) {
         const newReview = await response.json();
+        console.log("Review created successfully:", newReview);
+        
         toast.success("Gửi bình luận thành công!", {
           description: "Bình luận của bạn đã được đăng và admin sẽ được thông báo"
         });
+        
+        // Reset form
         setComment("");
         setRating(5);
         setSelectedFiles([]);
         setShowReviewForm(false);
-        fetchReviews();
+        
+        // Refresh reviews
+        await fetchReviews();
         
         // Gọi callback để cập nhật rating
         if (onReviewAdded) {
@@ -248,11 +317,18 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
       } else {
         const errorText = await response.text();
         console.error("Error response:", errorText);
-        throw new Error("Failed to submit review");
+        
+        // Try to parse error as JSON for better error messages
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.message || errorData.error || "Failed to submit review");
+        } catch {
+          throw new Error("Failed to submit review");
+        }
       }
     } catch (error) {
       console.error("Error submitting review:", error);
-      toast.error("Không thể gửi bình luận. Vui lòng thử lại.");
+      toast.error(error instanceof Error ? error.message : "Không thể gửi bình luận. Vui lòng thử lại.");
     } finally {
       setSubmitting(false);
     }
@@ -359,30 +435,58 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
                   <ImageIcon className="w-4 h-4" />
                   Hình ảnh (tùy chọn):
                 </label>
-                <Input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="cursor-pointer"
-                />
+                <div className="space-y-2">
+                  <Input
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Tối đa 5 ảnh, mỗi ảnh tối đa 5MB. Định dạng: JPG, PNG, WEBP
+                  </p>
+                </div>
+                
                 {selectedFiles.length > 0 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`Preview ${index + 1}`}
-                          className="w-16 h-16 object-cover rounded border"
-                        />
-                        <button
-                          onClick={() => setSelectedFiles(files => files.filter((_, i) => i !== index))}
-                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center hover:bg-red-600"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Ảnh đã chọn ({selectedFiles.length}/5):
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedFiles([])}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        Xóa tất cả
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600 group-hover:border-blue-400 transition-colors"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="absolute bottom-1 left-1 right-1">
+                            <p className="text-xs text-white bg-black bg-opacity-70 rounded px-1 py-0.5 truncate">
+                              {file.name}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -390,11 +494,25 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
               <div className="flex gap-2">
                 <Button
                   onClick={handleSubmitReview}
-                  disabled={submitting || !comment.trim()}
+                  disabled={submitting || !comment.trim() || uploadingImages}
                   className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold"
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  {submitting ? "Đang gửi..." : "Gửi đánh giá"}
+                  {uploadingImages ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                      Đang upload ảnh...
+                    </>
+                  ) : submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                      Đang gửi...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Gửi đánh giá
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="outline"
@@ -404,6 +522,7 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
                     setRating(5);
                     setSelectedFiles([]);
                   }}
+                  disabled={submitting || uploadingImages}
                 >
                   Hủy
                 </Button>
@@ -499,17 +618,30 @@ export default function ReviewSection({ productId, onReviewAdded }: ReviewSectio
                               : image;
                             
                             return (
-                              <img
-                                key={index}
-                                src={imageUrl}
-                                alt={`Review image ${index + 1}`}
-                                className="w-20 h-20 object-cover rounded-lg border shadow-sm hover:scale-105 transition-transform cursor-pointer"
-                                onClick={() => window.open(imageUrl, '_blank')}
-                                onError={(e) => {
-                                  console.error('Failed to load image:', imageUrl);
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
+                              <div key={index} className="relative group">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Review image ${index + 1}`}
+                                  className="w-20 h-20 object-cover rounded-lg border shadow-sm hover:scale-105 transition-transform cursor-pointer"
+                                  onClick={() => window.open(imageUrl, '_blank')}
+                                  onError={(e) => {
+                                    console.error('Failed to load image:', imageUrl);
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                  onLoad={() => {
+                                    console.log(`Image ${index + 1} loaded successfully:`, imageUrl);
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <div className="bg-white bg-opacity-90 rounded-full p-1">
+                                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
