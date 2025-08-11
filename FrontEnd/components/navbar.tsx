@@ -77,9 +77,6 @@ export function Navbar() {
               <Link href="/contact" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/contact") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 Liên hệ
               </Link>
-              <Link href="/test-notification" className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith("/test-notification") ? "bg-rose-300 text-black dark:bg-rose-300 dark:text-black" : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
-                Test Notifications
-              </Link>
               <SignedIn>
                 <Link
                   href="/dashboard"

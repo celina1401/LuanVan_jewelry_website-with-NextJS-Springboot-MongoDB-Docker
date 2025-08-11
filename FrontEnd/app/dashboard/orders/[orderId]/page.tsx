@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { generateInvoicePDF } from "@/lib/invoice-generator";
 import { toast } from "sonner";
+import { getProductImageUrl } from "@/lib/utils";
 
 interface OrderItem {
   productId: string;
@@ -287,13 +288,17 @@ export default function OrderDetailPage() {
                 <div className="space-y-4">
                   {order.items.map((item, index) => (
                     <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                      {item.productImage && (
-                        <img
-                          src={item.productImage}
-                          alt={item.productName}
-                          className="w-16 h-16 object-cover rounded"
-                        />
-                      )}
+                      <img
+                         src={getProductImageUrl(item)}
+                         alt={item.productName}
+                         className="w-16 h-16 object-cover rounded"
+                        //  onError={(e) => {
+                        //    const img = e.currentTarget as HTMLImageElement;
+                        //    if (!img.src.includes("default-avatar.png")) {
+                        //      img.src = "/default-avatar.png";
+                        //    }
+                        //  }}
+                       />
                       <div className="flex-1">
                         <h4 className="font-semibold">{item.productName}</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -302,6 +307,16 @@ export default function OrderDetailPage() {
                         {item.weight && (
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             Trọng lượng: {item.weight}
+                          </p>
+                        )}
+                        {item.goldAge && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Tuổi vàng: {item.goldAge}
+                          </p>
+                        )}
+                        {item.category && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Loại: {item.category}
                           </p>
                         )}
                       </div>
@@ -328,6 +343,9 @@ export default function OrderDetailPage() {
                   <p><strong>Số điện thoại:</strong> {order.customerPhone}</p>
                   {order.note && (
                     <p><strong>Ghi chú:</strong> {order.note}</p>
+                  )}
+                  {order.orderStatus === "Đã hủy" && order.cancelReason && (
+                    <p><strong>Lý do hủy:</strong> <span className="text-red-600">{order.cancelReason}</span></p>
                   )}
                 </div>
               </CardContent>
@@ -397,6 +415,12 @@ export default function OrderDetailPage() {
               <CardContent>
                 <div className="space-y-2 text-sm">
                   <p><strong>Tạo đơn:</strong> {new Date(order.createdAt).toLocaleString("vi-VN")}</p>
+                  {order.updatedAt && order.updatedAt !== order.createdAt && (
+                    <p><strong>Cập nhật:</strong> {new Date(order.updatedAt).toLocaleString("vi-VN")}</p>
+                  )}
+                  {order.paidAt && (
+                    <p><strong>Thanh toán:</strong> {new Date(order.paidAt).toLocaleString("vi-VN")}</p>
+                  )}
                   {order.shippedAt && (
                     <p><strong>Giao hàng:</strong> {new Date(order.shippedAt).toLocaleString("vi-VN")}</p>
                   )}

@@ -214,6 +214,12 @@ services:
       #   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
     ports:
       - "3000:3000"
+    volumes:
+      # Persist gold history outside container
+      - ./FrontEnd/data:/app/data
+      # Optionally expose province/ward seeds from repo to container data dir (read-only)
+      - ./FrontEnd/public/province.json:/app/data/province.json:ro
+      - ./FrontEnd/public/ward.json:/app/data/ward.json:ro
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
@@ -230,6 +236,8 @@ services:
       - INTERNAL_API_URL=http://apigateway:8080/api       # dùng trên SSR/Node
       - NEXT_PUBLIC_JWKS_URL=${NEXT_PUBLIC_JWKS_URL}
       - NEXT_PUBLIC_JWKS_PUBLIC_KEY=${NEXT_PUBLIC_JWKS_PUBLIC_KEY}
+      # Gold history persistence dir inside container
+      - DATA_DIR=/app/data
 
       # (Không nên để API_SECRET ở frontend)
     depends_on:

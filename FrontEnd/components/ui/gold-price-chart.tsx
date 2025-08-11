@@ -194,7 +194,8 @@ export function GoldPriceChart() {
   React.useEffect(() => {
     async function fetchHistory() {
       try {
-        const res = await fetch('/gold-history.json');
+        // Ưu tiên đọc từ API để tương thích Docker (ghi file ở /data)
+        const res = await fetch('/api/gold-history');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) setHistory(data);

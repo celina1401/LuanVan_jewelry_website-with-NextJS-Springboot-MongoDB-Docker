@@ -797,4 +797,83 @@ public class ProductController {
         List<Product> products = productRepository.findByIdIn(idList);
         return ResponseEntity.ok(products);
     }
+
+    /**
+     * Lấy danh sách sản phẩm bán chạy
+     */
+    @GetMapping("/best-seller")
+    public ResponseEntity<List<Map<String, Object>>> getBestSellerProducts() {
+        try {
+            // Lấy tất cả sản phẩm và sắp xếp theo rating và số lượng bán
+            List<Product> allProducts = productRepository.findAll();
+            List<Map<String, Object>> productsWithRating = new ArrayList<>();
+            
+            for (Product product : allProducts) {
+                Map<String, Object> productWithRating = new HashMap<>();
+                
+                // Copy tất cả thuộc tính của product
+                productWithRating.put("id", product.getId());
+                productWithRating.put("name", product.getName());
+                productWithRating.put("description", product.getDescription());
+                productWithRating.put("price", product.getPrice());
+                productWithRating.put("category", product.getCategory());
+                productWithRating.put("goldAge", product.getGoldAge());
+                productWithRating.put("karat", product.getKarat());
+                productWithRating.put("weight", product.getWeight());
+                productWithRating.put("wage", product.getWage());
+                productWithRating.put("stockQuantity", product.getStockQuantity());
+                productWithRating.put("isNew", product.getCreatedAt() != null && 
+                    product.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusDays(30)));
+                
+                // Thêm thông tin ảnh từ Cloudinary
+                productWithRating.put("thumbnailUrl", product.getThumbnailUrl());
+                productWithRating.put("images", product.getImages());
+                
+                // Thêm các trường khác cần thiết
+                productWithRating.put("gender", product.getGender());
+                productWithRating.put("tags", product.getTags());
+                
+                // Thêm trường image để tương thích với frontend
+                productWithRating.put("image", product.getThumbnailUrl());
+                
+                // Lấy rating từ ReviewService
+                Map<String, Object> ratingInfo = getProductRating(product.getId());
+                productWithRating.put("rating", ratingInfo.get("rating"));
+                productWithRating.put("reviews", ratingInfo.get("reviews"));
+                productWithRating.put("ratings", ratingInfo.get("ratings"));
+                
+                productsWithRating.add(productWithRating);
+            }
+            
+            // Sắp xếp theo rating (cao nhất trước) và số lượng review
+            productsWithRating.sort((a, b) -> {
+                Double ratingA = (Double) a.get("rating");
+                Double ratingB = (Double) b.get("rating");
+                Long reviewsA = (Long) a.get("reviews");
+                Long reviewsB = (Long) b.get("reviews");
+                
+                if (ratingA == null) ratingA = 0.0;
+                if (ratingB == null) ratingB = 0.0;
+                if (reviewsA == null) reviewsA = 0L;
+                if (reviewsB == null) reviewsB = 0L;
+                
+                // So sánh rating trước, nếu bằng nhau thì so sánh số review
+                int ratingCompare = Double.compare(ratingB, ratingA);
+                if (ratingCompare != 0) {
+                    return ratingCompare;
+                }
+                return Long.compare(reviewsB, reviewsA);
+            });
+            
+            // Trả về 4 sản phẩm đầu tiên (bán chạy nhất)
+            List<Map<String, Object>> bestSellerProducts = productsWithRating.subList(0, Math.min(4, productsWithRating.size()));
+            
+            return ResponseEntity.ok(bestSellerProducts);
+            
+        } catch (Exception e) {
+            System.out.println("Error getting best seller products: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
+        }
+    }
 }

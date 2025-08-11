@@ -30,13 +30,13 @@ export default function VietMapAddressPicker({ onChange }: VietMapAddressPickerP
   const [selectedWard, setSelectedWard] = useState<string>("");
 
   useEffect(() => {
-    fetch('/province.json')
+    fetch('/api/locations/provinces')
       .then(res => res.json())
       .then((data) => {
         // data là object, chuyển thành array
         setProvinces(Object.values(data));
       });
-    fetch('/ward.json')
+    fetch('/api/locations/wards')
       .then(res => res.json())
       .then((data) => {
         setWards(Object.values(data));

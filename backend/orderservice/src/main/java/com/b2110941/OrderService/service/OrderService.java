@@ -36,8 +36,11 @@ public class OrderService {
     @Value("${user.service.url:http://localhost:9001}")
     private String userServiceUrl;
 
-    @Value("${payment.service.url:http://localhost:9004}")
+    @Value("${payment.service.url:http://localhost:9006}")
     private String paymentServiceUrl;
+
+    @Value("${product.service.url:http://productservice:9004}")
+    private String productServiceUrl;
 
     public OrderResponse createOrder(CreateOrderRequest request) {
         try {
@@ -264,6 +267,35 @@ public class OrderService {
     }
 
     private OrderItemResponse convertToOrderItemResponse(OrderItem item) {
+        try {
+            // Gọi ProductService để lấy thông tin sản phẩm mới nhất
+            String productUrl = productServiceUrl + "/api/products/" + item.getProductId();
+            ResponseEntity<Map> productResponse = restTemplate.getForEntity(productUrl, Map.class);
+            
+            if (productResponse.getStatusCode().is2xxSuccessful() && productResponse.getBody() != null) {
+                Map<String, Object> product = productResponse.getBody();
+                String updatedImage = (String) product.get("thumbnailUrl");
+                String updatedName = (String) product.get("name");
+                
+                return new OrderItemResponse(
+                        item.getProductId(),
+                        updatedName != null ? updatedName : item.getProductName(),
+                        updatedImage != null ? updatedImage : item.getProductImage(),
+                        item.getQuantity(),
+                        item.getPrice(),
+                        item.getTotalPrice(),
+                        item.getWeight(),
+                        item.getGoldAge(),
+                        item.getWage(),
+                        item.getCategory(),
+                        item.getBrand()
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch product info for productId {}: {}", item.getProductId(), e.getMessage());
+        }
+        
+        // Fallback to stored data if ProductService call fails
         return new OrderItemResponse(
                 item.getProductId(),
                 item.getProductName(),

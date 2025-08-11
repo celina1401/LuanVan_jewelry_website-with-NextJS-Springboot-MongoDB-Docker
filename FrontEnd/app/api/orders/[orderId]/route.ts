@@ -49,86 +49,47 @@ async function makeOrderServiceRequest(path: string, options: RequestInit = {}) 
 
 // GET /api/orders/[orderId]
 export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  request: NextRequest,
+  { params }: { params: { orderId: string } }
 ) {
   try {
-    const { orderId } = await params;
-
-    if (!orderId) {
-      return NextResponse.json({ error: 'Thiếu mã đơn hàng' }, { status: 400 });
-    }
-
-    console.log(`Fetching order: ${orderId}`);
-
-    // Determine the correct endpoint based on orderId format
-    let path = '/api/orders';
+    const orderId = params.orderId;
     
+    // Kiểm tra xem orderId có phải là orderNumber (bắt đầu bằng chữ) hay không
+    let endpoint = '';
     if (/^[A-Z]/.test(orderId)) {
-      // If it starts with a letter, treat as orderNumber
-      path = `/api/orders/number/${orderId}`;
+      // Nếu bắt đầu bằng chữ (như M20250729090842), đây là orderNumber
+      endpoint = `/api/orders/number/${orderId}`;
     } else {
-      // Otherwise, treat as id
-      path = `/api/orders/${orderId}`;
+      // Nếu không, đây là orderId từ CSDL
+      endpoint = `/api/orders/${orderId}`;
+    }
+    
+    console.log(`Fetching order with endpoint: ${endpoint}`);
+    
+    // Sử dụng helper function để gọi OrderService với fallback URLs
+    const response = await makeOrderServiceRequest(endpoint, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json(
+          { error: 'Order not found' },
+          { status: 404 }
+        );
+      }
+      throw new Error(`OrderService responded with ${response.status}`);
     }
 
-    try {
-      const response = await makeOrderServiceRequest(path, {
-        method: 'GET'
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-        }
-        
-        const errorText = await response.text();
-        console.error(`OrderService GET error: ${response.status} - ${errorText}`);
-        
-        if (response.status === 500) {
-          return NextResponse.json(
-            { error: 'Order service internal error - please try again later' },
-            { status: 503 }
-          );
-        }
-        
-        throw new Error(`OrderService error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      return NextResponse.json(data);
-    } catch (fetchError) {
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        console.error('Request timeout when fetching order');
-        return NextResponse.json(
-          { error: 'Request timeout - Order service may be unavailable' },
-          { status: 503 }
-        );
-      }
-      
-      if (fetchError instanceof Error && fetchError.message.includes('ECONNREFUSED')) {
-        console.error('Connection refused - Order service may not be running');
-        return NextResponse.json(
-          { error: 'Order service is not available. Please ensure the backend services are running. You can start them with: docker-compose up -d' },
-          { status: 503 }
-        );
-      }
-      
-      // Handle other network errors
-      if (fetchError instanceof Error) {
-        console.error('Network error when fetching order:', fetchError.message);
-        return NextResponse.json(
-          { error: 'Network error - please check your connection and ensure backend services are running' },
-          { status: 503 }
-        );
-      }
-      
-      throw fetchError;
-    }
+    const orderData = await response.json();
+    return NextResponse.json(orderData);
   } catch (error) {
-    console.error('[GET Order Error]', { orderId: params, message: (error as Error).message });
+    console.error('Error fetching order:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch order' },
+      { error: 'Failed to fetch order' },
       { status: 500 }
     );
   }
@@ -149,8 +110,18 @@ export async function PUT(
     const body = await request.json();
     console.log(`Updating order: ${orderId}`);
 
+    // Kiểm tra xem orderId có phải là orderNumber hay không
+    let endpoint = '';
+    if (/^[A-Z]/.test(orderId)) {
+      // Nếu bắt đầu bằng chữ (như M20250729090842), đây là orderNumber
+      endpoint = `/api/orders/number/${orderId}`;
+    } else {
+      // Nếu không, đây là orderId từ CSDL
+      endpoint = `/api/orders/${orderId}`;
+    }
+
     try {
-      const response = await makeOrderServiceRequest(`/api/orders/${orderId}`, {
+      const response = await makeOrderServiceRequest(endpoint, {
         method: 'PUT',
         body: JSON.stringify(body),
       });
@@ -201,8 +172,18 @@ export async function DELETE(
 
     console.log(`Deleting order: ${orderId}`);
 
+    // Kiểm tra xem orderId có phải là orderNumber hay không
+    let endpoint = '';
+    if (/^[A-Z]/.test(orderId)) {
+      // Nếu bắt đầu bằng chữ (như M20250729090842), đây là orderNumber
+      endpoint = `/api/orders/number/${orderId}`;
+    } else {
+      // Nếu không, đây là orderId từ CSDL
+      endpoint = `/api/orders/${orderId}`;
+    }
+
     try {
-      const response = await makeOrderServiceRequest(`/api/orders/${orderId}`, {
+      const response = await makeOrderServiceRequest(endpoint, {
         method: 'DELETE',
       });
 

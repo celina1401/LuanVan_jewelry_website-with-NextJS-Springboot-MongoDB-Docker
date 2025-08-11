@@ -13,48 +13,20 @@ import { useCart } from "../../contexts/cart-context"
 import { useAuth } from "@clerk/nextjs"
 import { translateProductTag, getProductImageUrl } from "../../lib/utils";
 
-const bestSellerProducts = [
-  {
-    id: 1,
-    name: "Nhẫn đính hôn kim cương",
-    description: "Nhẫn kim cương solitaire cổ điển với viên chủ 1 carat",
-    price: 4999,
-    image: "/images/products/ring1.jpg",
-    category: "Nhẫn",
-    rating: 4.9,
-    reviews: 128
-  },
-  {
-    id: 2,
-    name: "Vòng tay vàng",
-    description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
-    price: 2999,
-    image: "/images/products/bracelet1.jpg",
-    category: "Vòng tay",
-    rating: 4.8,
-    reviews: 95
-  },
-  {
-    id: 3,
-    name: "Dây chuyền ngọc trai",
-    description: "Dây chuyền ngọc trai nước ngọt cao cấp với khóa vàng",
-    price: 1999,
-    image: "/images/products/necklace1.jpg",
-    category: "Dây chuyền",
-    rating: 4.7,
-    reviews: 76
-  },
-  {
-    id: 4,
-    name: "Bông tai kim cương",
-    description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
-    price: 3499,
-    image: "/images/products/earrings1.jpg",
-    category: "Bông tai",
-    rating: 4.9,
-    reviews: 112
-  }
-]
+// Interface cho sản phẩm từ database
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  thumbnailUrl?: string;
+  images?: string[];
+  category: string;
+  rating?: number;
+  reviews?: number;
+  isNew?: boolean;
+  bestSeller?: boolean;
+}
 
 export function BestSellerProducts() {
   const { addItem } = useCart()
@@ -71,6 +43,78 @@ export function BestSellerProducts() {
 
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  // Fetch sản phẩm từ database
+  React.useEffect(() => {
+    const fetchBestSellerProducts = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Gọi API để lấy sản phẩm bán chạy
+        const response = await fetch('/api/products/best-seller')
+        if (!response.ok) {
+          throw new Error('Failed to fetch products')
+        }
+        
+        const data = await response.json()
+        setProducts(data)
+      } catch (err) {
+        console.error('Error fetching best seller products:', err)
+        setError('Không thể tải sản phẩm bán chạy')
+        // Fallback: sử dụng dữ liệu mẫu nếu API fail
+        setProducts([
+          {
+            id: "1",
+            name: "Nhẫn đính hôn kim cương",
+            description: "Nhẫn kim cương solitaire cổ điển với viên chủ 1 carat",
+            price: 4999,
+            thumbnailUrl: "/images/products/ring1.jpg",
+            category: "ring",
+            rating: 4.9,
+            reviews: 128
+          },
+          {
+            id: "2",
+            name: "Vòng tay vàng",
+            description: "Vòng tay vàng 14k sang trọng đính kim cương cắt tròn",
+            price: 2999,
+            thumbnailUrl: "/images/products/bracelet1.jpg",
+            category: "bracelet",
+            rating: 4.8,
+            reviews: 95
+          },
+          {
+            id: "3",
+            name: "Dây chuyền ngọc trai",
+            description: "Dây chuyền ngọc trai nước ngọt cao cấp với khóa vàng",
+            price: 1999,
+            thumbnailUrl: "/images/products/necklace1.jpg",
+            category: "necklace",
+            rating: 4.7,
+            reviews: 76
+          },
+          {
+            id: "4",
+            name: "Bông tai kim cương",
+            description: "Bông tai kim cương cổ điển tổng trọng lượng 1 carat",
+            price: 3499,
+            thumbnailUrl: "/images/products/earrings1.jpg",
+            category: "earring",
+            rating: 4.9,
+            reviews: 112
+          }
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBestSellerProducts()
+  }, [])
 
   const onSelect = React.useCallback(() => {
     if (!emblaApi) return
@@ -89,17 +133,80 @@ export function BestSellerProducts() {
     }
   }, [emblaApi, onSelect])
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: Product) => {
     if (!isLoaded || !userId) {
       router.push('/login')
       return
     }
     addItem({
-      id: product.id.toString(),
+      id: product.id,
       name: product.name,
       price: product.price,
       image: getProductImageUrl(product)
     })
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <section className="w-full py-6 md:py-12 lg:py-16 bg-background">
+        <div className="container px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <div className="space-y-2">
+              <h2 className="text-3xl text-black dark:text-white font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Sản phẩm bán chạy
+              </h2>
+              <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                Khám phá những mẫu trang sức được yêu thích và đánh giá cao nhất
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-center mt-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section className="w-full py-6 md:py-12 lg:py-16 bg-background">
+        <div className="container px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <div className="space-y-2">
+              <h2 className="text-3xl text-black dark:text-white font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Sản phẩm bán chạy
+              </h2>
+              <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Không có sản phẩm
+  if (products.length === 0) {
+    return (
+      <section className="w-full py-6 md:py-12 lg:py-16 bg-background">
+        <div className="container px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <div className="space-y-2">
+              <h2 className="text-3xl text-black dark:text-white font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Sản phẩm bán chạy
+              </h2>
+              <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                Không có sản phẩm bán chạy nào
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -117,7 +224,7 @@ export function BestSellerProducts() {
         </div>
 
         <div className="relative mt-8">
-          {bestSellerProducts.length > 4 && (
+          {products.length > 4 && (
             <>
               <Button
                 variant="outline"
@@ -141,7 +248,7 @@ export function BestSellerProducts() {
           )}
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-4">
-              {bestSellerProducts.map((product, index) => (
+              {products.map((product, index) => (
                 <div key={product.id} className="flex-[0_0_calc(25%-12px)] min-w-0">
                   <Card className="overflow-hidden h-full">
                     <CardHeader className="p-0">
@@ -151,11 +258,21 @@ export function BestSellerProducts() {
                           alt={product.name}
                           fill
                           className="object-cover"
-                          priority={index < 4} // Thêm priority cho tất cả sản phẩm bán chạy
+                          priority={index < 4}
+                          onError={(e) => {
+                            // Fallback nếu ảnh lỗi
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/images/products/ring1.jpg";
+                          }}
                         />
                         <Badge className="absolute top-2 right-2">
                           {translateProductTag(product.category)}
                         </Badge>
+                        {product.isNew && (
+                          <Badge variant="secondary" className="absolute top-2 left-2">
+                            Mới
+                          </Badge>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="p-4">
@@ -168,7 +285,7 @@ export function BestSellerProducts() {
                           {[...Array(5)].map((_, i) => (
                             <svg
                               key={i}
-                              className={`w-4 h-4 ${i < Math.floor(product.rating)
+                              className={`w-4 h-4 ${i < Math.floor(product.rating || 0)
                                   ? "text-yellow-400"
                                   : "text-gray-300"
                                 }`}
@@ -180,7 +297,7 @@ export function BestSellerProducts() {
                           ))}
                         </div>
                         <span className="text-sm text-muted-foreground ml-2">
-                          ({product.reviews})
+                          ({product.reviews || 0})
                         </span>
                       </div>
                       <p className="text-lg font-semibold mt-2">

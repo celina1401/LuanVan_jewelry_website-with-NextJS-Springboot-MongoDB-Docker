@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Package, CreditCard, Truck, CheckCircle } from "lucide-react";
+import { getProductImageUrl } from "@/lib/utils";
 
 interface OrderItem {
     productId: string;
@@ -69,7 +70,7 @@ export default function AdminOrderDetailPage() {
         const fetchOrder = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`http://localhost:9003/api/orders/${params.orderId}`);
+                const response = await fetch(`/api/orders/${params.orderId}`);
                 if (response.ok) {
                     const orderData = await response.json();
                     setOrder(orderData);
@@ -219,6 +220,12 @@ export default function AdminOrderDetailPage() {
                                 <p className="text-sm text-gray-500">Trạng thái thanh toán</p>
                                 <p className="font-medium">{order.paymentStatus}</p>
                             </div>
+                            {order.orderStatus === "Đã hủy" && order.cancelReason && (
+                                <div>
+                                    <p className="text-sm text-gray-500">Lý do hủy</p>
+                                    <p className="font-medium text-red-600">{order.cancelReason}</p>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -245,6 +252,12 @@ export default function AdminOrderDetailPage() {
                             <p className="text-sm text-gray-500">Địa chỉ giao hàng</p>
                             <p className="font-medium">{order.shippingAddress}</p>
                         </div>
+                        {order.note && (
+                            <div>
+                                <p className="text-sm text-gray-500">Ghi chú</p>
+                                <p className="font-medium">{order.note}</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -258,7 +271,7 @@ export default function AdminOrderDetailPage() {
                             {order.items.map((item, index) => (
                                 <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
                                     <img 
-                                        src={item.productImage} 
+                                        src={getProductImageUrl(item)} 
                                         alt={item.productName}
                                         className="w-16 h-16 object-cover rounded"
                                     />
@@ -267,6 +280,21 @@ export default function AdminOrderDetailPage() {
                                         <p className="text-sm text-gray-500">
                                             Số lượng: {item.quantity} x {formatCurrency(item.price)}
                                         </p>
+                                        {item.weight && (
+                                            <p className="text-sm text-gray-500">
+                                                Trọng lượng: {item.weight}
+                                            </p>
+                                        )}
+                                        {item.goldAge && (
+                                            <p className="text-sm text-gray-500">
+                                                Tuổi vàng: {item.goldAge}
+                                            </p>
+                                        )}
+                                        {item.category && (
+                                            <p className="text-sm text-gray-500">
+                                                Loại: {item.category}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="text-right">
                                         <p className="font-medium">{formatCurrency(item.totalPrice)}</p>
@@ -302,6 +330,30 @@ export default function AdminOrderDetailPage() {
                                 <span>Tổng cộng:</span>
                                 <span>{formatCurrency(order.total)}</span>
                             </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Timestamps */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Thông tin thời gian</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2 text-sm">
+                            <p><strong>Tạo đơn:</strong> {formatDate(order.createdAt)}</p>
+                            {order.updatedAt && order.updatedAt !== order.createdAt && (
+                                <p><strong>Cập nhật:</strong> {formatDate(order.updatedAt)}</p>
+                            )}
+                            {order.paidAt && (
+                                <p><strong>Thanh toán:</strong> {formatDate(order.paidAt)}</p>
+                            )}
+                            {order.shippedAt && (
+                                <p><strong>Giao hàng:</strong> {formatDate(order.shippedAt)}</p>
+                            )}
+                            {order.deliveredAt && (
+                                <p><strong>Hoàn thành:</strong> {formatDate(order.deliveredAt)}</p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

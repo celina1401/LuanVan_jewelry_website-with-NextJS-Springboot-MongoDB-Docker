@@ -2,13 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const DATA_FILE = path.join(process.cwd(), 'public', 'gold-history.json');
+function getDataFilePath() {
+  const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
+  return path.join(dataDir, 'gold-history.json');
+}
 
 export async function GET(req: NextRequest) {
   try {
-    // Đọc giá vàng mới nhất từ file json
-    const file = await fs.readFile(DATA_FILE, 'utf-8');
-    const history = JSON.parse(file);
+    // Đọc giá vàng mới nhất từ file json (ưu tiên DATA_DIR; fallback public)
+    let history: any[] = [];
+    try {
+      const file = await fs.readFile(getDataFilePath(), 'utf-8');
+      history = JSON.parse(file);
+    } catch {
+      try {
+        const publicFile = await fs.readFile(path.join(process.cwd(), 'public', 'gold-history.json'), 'utf-8');
+        history = JSON.parse(publicFile);
+      } catch {
+        history = [];
+      }
+    }
     const latest = Array.isArray(history) && history.length > 0 ? history[history.length - 1].price : null;
     if (!latest) return NextResponse.json({ error: 'No gold price' }, { status: 404 });
 

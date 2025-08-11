@@ -1,3 +1,5 @@
+db.orders.drop()
+db.orders.find().pretty()
 db.products.find().pretty()
 clear
 db.reviews.drop()
