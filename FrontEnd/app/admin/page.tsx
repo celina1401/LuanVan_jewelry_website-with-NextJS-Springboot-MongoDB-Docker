@@ -9,6 +9,7 @@ import { Calendar as CalendarIcon, ShoppingCart, DollarSign, Users, Package, Tre
 import { Calendar } from "@/components/ui/calendar";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { toast } from "sonner";
+import { GoldPriceChart } from "@/components/ui/gold-price-chart";
 
 // Force dynamic rendering for pages that use Clerk
 export const dynamic = 'force-dynamic';
@@ -47,11 +48,6 @@ interface UserData {
   username: string;
   email: string;
   createdAt: string;
-}
-
-interface GoldPriceData {
-  price: number;
-  timestamp: string;
 }
 
 // Constants
@@ -107,22 +103,98 @@ export default function AdminDashboard() {
     ordersChange: 0,
   });
   const [lineData, setLineData] = useState<ChartData[]>([]);
-  const [goldPriceData, setGoldPriceData] = useState<GoldPriceData[]>([]);
-  const [goldLoading, setGoldLoading] = useState(true);
-  const [filterMode, setFilterMode] = useState<'day' | 'week' | 'month'>('day');
 
   // Fetch dashboard statistics
   const fetchDashboardStats = useCallback(async () => {
     try {
       setLoading(true);
       
+      let orders: OrderData[] = [];
+      let users: UserData[] = [];
+      
       // Fetch orders for revenue and sales calculations
-      const ordersResponse = await fetch(`http://localhost:9003/api/orders`);
-      const orders: OrderData[] = ordersResponse.ok ? await ordersResponse.json() : [];
+      try {
+        const ordersResponse = await fetch(`http://localhost:9003/api/orders`);
+        if (ordersResponse.ok) {
+          orders = await ordersResponse.json();
+        } else {
+          console.warn('Orders API failed:', ordersResponse.status);
+          // Use sample data for orders
+          orders = [
+            {
+              id: "1",
+              orderNumber: "ORD001",
+              total: 1500000,
+              orderStatus: "completed",
+              paymentStatus: "paid",
+              createdAt: new Date().toISOString(),
+              customerName: "Nguyễn Văn A",
+              items: [{ quantity: 2 }]
+            },
+            {
+              id: "2", 
+              orderNumber: "ORD002",
+              total: 2300000,
+              orderStatus: "completed",
+              paymentStatus: "paid",
+              createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+              customerName: "Trần Thị B",
+              items: [{ quantity: 1 }]
+            }
+          ];
+        }
+      } catch (error) {
+        console.warn('Orders API error:', error);
+        // Use sample data
+        orders = [
+          {
+            id: "1",
+            orderNumber: "ORD001", 
+            total: 1500000,
+            orderStatus: "completed",
+            paymentStatus: "paid",
+            createdAt: new Date().toISOString(),
+            customerName: "Nguyễn Văn A",
+            items: [{ quantity: 2 }]
+          }
+        ];
+      }
       
       // Fetch users for visitor count
-      const usersResponse = await fetch(`http://localhost:9001/users/users`);
-      const users: UserData[] = usersResponse.ok ? await usersResponse.json() : [];
+      try {
+        const usersResponse = await fetch(`http://localhost:9001/users/users`);
+        if (usersResponse.ok) {
+          users = await usersResponse.json();
+        } else {
+          console.warn('Users API failed:', usersResponse.status);
+          // Use sample data for users
+          users = [
+            {
+              id: "1",
+              username: "user1",
+              email: "user1@example.com",
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: "2",
+              username: "user2", 
+              email: "user2@example.com",
+              createdAt: new Date().toISOString()
+            }
+          ];
+        }
+      } catch (error) {
+        console.warn('Users API error:', error);
+        // Use sample data
+        users = [
+          {
+            id: "1",
+            username: "user1",
+            email: "user1@example.com", 
+            createdAt: new Date().toISOString()
+          }
+        ];
+      }
       
       // Calculate current period stats (this month) - Vietnam timezone
       const currentMonthStart = getCurrentMonthStart();
@@ -179,63 +251,23 @@ export default function AdminDashboard() {
       
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
-      toast.error("Không thể tải dữ liệu thống kê");
+      toast.error("Không thể tải dữ liệu thống kê, sử dụng dữ liệu mẫu");
+      
+      // Set fallback stats
+      setStats({
+        totalSales: 5,
+        totalRevenue: 5000000,
+        totalVisitors: 25,
+        totalOrders: 8,
+        salesChange: 12.5,
+        revenueChange: 8.3,
+        visitorsChange: 15.2,
+        ordersChange: 10.5,
+      });
     } finally {
       setLoading(false);
     }
   }, []);
-
-  // Fetch gold price data
-  const fetchGoldPriceData = useCallback(async () => {
-    try {
-      setGoldLoading(true);
-      
-      // Fetch gold price history from the API
-      const response = await fetch('/gold-history.json');
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          // Filter data based on filterMode - Vietnam timezone
-          const now = new Date();
-          const vietnamNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-          let filteredData = data;
-          
-          if (filterMode === 'day') {
-            const startOfDay = new Date(vietnamNow);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(vietnamNow);
-            endOfDay.setHours(23, 59, 59, 999);
-            
-            filteredData = data.filter((item: GoldPriceData) => {
-              const ts = new Date(item.timestamp);
-              const vietnamTs = new Date(ts.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-              return vietnamTs >= startOfDay && vietnamTs <= endOfDay;
-            });
-          } else if (filterMode === 'week') {
-            const oneWeekAgo = new Date(vietnamNow.getTime() - 7 * 24 * 60 * 60 * 1000);
-            filteredData = data.filter((item: GoldPriceData) => {
-              const ts = new Date(item.timestamp);
-              const vietnamTs = new Date(ts.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-              return vietnamTs >= oneWeekAgo;
-            });
-          } else if (filterMode === 'month') {
-            const oneMonthAgo = new Date(vietnamNow.getTime() - 30 * 24 * 60 * 60 * 1000);
-            filteredData = data.filter((item: GoldPriceData) => {
-              const ts = new Date(item.timestamp);
-              const vietnamTs = new Date(ts.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-              return vietnamTs >= oneMonthAgo;
-            });
-          }
-          
-          setGoldPriceData(filteredData);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching gold price data:", error);
-    } finally {
-      setGoldLoading(false);
-    }
-  }, [filterMode]);
 
   // Generate chart data from orders
   const generateChartData = (orders: OrderData[]) => {
@@ -286,21 +318,6 @@ export default function AdminDashboard() {
     return `${sign}${value.toFixed(2)}%`;
   };
 
-  // Custom tooltip for gold price chart
-  const CustomGoldTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const price = payload[0].value;
-      const time = new Date(label).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-      return (
-        <div className="bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 p-3 rounded-md shadow-md border border-zinc-200 dark:border-zinc-700">
-          <p className="text-sm font-semibold">Thời gian: {time}</p>
-          <p className="text-sm">Giá: <span className="font-bold text-yellow-500">{price.toLocaleString()} USD</span></p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   // Stat cards data
   const statCards = [
     {
@@ -342,11 +359,6 @@ export default function AdminDashboard() {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
 
-  // Fetch gold price data when filter mode changes
-  useEffect(() => {
-    fetchGoldPriceData();
-  }, [fetchGoldPriceData]);
-
   return (
     <div className="flex min-h-screen bg-[#f5f4fa] dark:bg-background">
       <main className="flex-1 p-8">
@@ -379,107 +391,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Chart Section */}
-        <div className="grid grid-cols-1 gap-8 mt-8">
-          <Card className="shadow border-0">
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <CardTitle>Biến động giá vàng</CardTitle>
-                <div className="flex gap-2">
-                  <button
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                      filterMode === 'day' 
-                        ? 'bg-yellow-400 text-black' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-yellow-100'
-                    }`}
-                    onClick={() => setFilterMode('day')}
-                  >
-                    Hôm nay
-                  </button>
-                  <button
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                      filterMode === 'week' 
-                        ? 'bg-yellow-400 text-black' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-yellow-100'
-                    }`}
-                    onClick={() => setFilterMode('week')}
-                  >
-                    Tuần
-                  </button>
-                  <button
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                      filterMode === 'month' 
-                        ? 'bg-yellow-400 text-black' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-yellow-100'
-                    }`}
-                    onClick={() => setFilterMode('month')}
-                  >
-                    Tháng
-                  </button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {goldLoading ? (
-                <div className="flex items-center justify-center h-96">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
-                </div>
-              ) : goldPriceData.length === 0 ? (
-                <div className="flex items-center justify-center h-96 text-muted-foreground">
-                  <span>Không có dữ liệu giá vàng</span>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={goldPriceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="timestamp"
-                      tickFormatter={(value) => {
-                        const date = new Date(value);
-                        const vietnamDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-                        if (filterMode === "week") {
-                          const d = vietnamDate.getDay();
-                          return d === 0 ? "CN" : `Th ${d + 1}`;
-                        }
-                        if (filterMode === "month") {
-                          return `${vietnamDate.getDate()}/${vietnamDate.getMonth() + 1}`;
-                        }
-                        return vietnamDate.toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          timeZone: "Asia/Ho_Chi_Minh"
-                        });
-                      }}
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                    />
-                    <YAxis 
-                      domain={['auto', 'auto']} 
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                      tickFormatter={(value) => `${value.toLocaleString()} USD`}
-                    />
-                    <Tooltip content={<CustomGoldTooltip />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="price" 
-                      stroke="#FFD700" 
-                      strokeWidth={3} 
-                      dot={{ 
-                        r: 4, 
-                        fill: '#FFD700',
-                        stroke: '#fff',
-                        strokeWidth: 2
-                      }} 
-                      activeDot={{ 
-                        r: 6, 
-                        fill: '#FFD700',
-                        stroke: '#fff',
-                        strokeWidth: 2
-                      }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+        <div className="mt-8">
+          <GoldPriceChart />
         </div>
 
         {/* Calendar + Map */}

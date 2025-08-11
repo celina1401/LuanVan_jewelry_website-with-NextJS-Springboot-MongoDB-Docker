@@ -79,11 +79,9 @@ export function GoldPriceChart() {
 
   // Hàm tính giá vàng theo các đơn vị
   function goldPriceInVND(priceUSD: number, exchangeRate: number, purity: number) {
-    const perGram = (priceUSD / 31.1035) * exchangeRate * purity;
-    const perChi = perGram * 3.75 + 200000;
+    const perChi = (priceUSD / 31.1035) * exchangeRate * purity * 3.75 + 200000;
     const perLuong = perChi * 10;
     return {
-      gram: Math.round(perGram),
       chi: Math.round(perChi),
       luong: Math.round(perLuong),
     };
@@ -113,7 +111,6 @@ export function GoldPriceChart() {
             return {
               ...g,
               pricePerChi: data?.pricePerChi || 0,
-              pricePerGram: data?.pricePerGram || 0,
               pricePerLuong: (data?.pricePerChi || 0) * 10,
             };
           })
@@ -211,10 +208,10 @@ export function GoldPriceChart() {
   // Lọc dữ liệu history theo filterMode
   const now = Date.now();
   let filteredHistory = history;
+  
   if (filterMode === 'day') {
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
-
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
@@ -223,18 +220,68 @@ export function GoldPriceChart() {
       return ts >= startOfDay.getTime() && ts <= endOfDay.getTime();
     });
   } else if (filterMode === 'week') {
-    const oneWeekData = history.filter(h => now - new Date(h.timestamp).getTime() <= 7 * 24 * 60 * 60 * 1000);
-
-    // Nhóm theo thứ
-    const seen = new Set<string>();
-    filteredHistory = oneWeekData.filter(h => {
-      const day = dayjs(h.timestamp).format("dddd"); // "Monday", "Tuesday", ...
-      if (seen.has(day)) return false;
-      seen.add(day);
-      return true;
+    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    
+    // Lấy dữ liệu từ 7 ngày trước
+    const weekData = history.filter(h => {
+      const ts = new Date(h.timestamp).getTime();
+      return ts >= oneWeekAgo.getTime();
     });
+
+    // Nhóm theo ngày và lấy điểm dữ liệu mới nhất cho mỗi ngày
+    const dailyData = new Map<string, any>();
+    weekData.forEach(h => {
+      const date = new Date(h.timestamp);
+      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Giữ lại timestamp mới nhất cho mỗi ngày
+      if (!dailyData.has(dayKey) || new Date(h.timestamp) > new Date(dailyData.get(dayKey).timestamp)) {
+        dailyData.set(dayKey, h);
+      }
+    });
+
+    // Chuyển về array và sắp xếp theo thời gian
+    filteredHistory = Array.from(dailyData.values()).sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
   } else if (filterMode === 'month') {
-    filteredHistory = history.filter(h => now - new Date(h.timestamp).getTime() <= 30 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    
+    // Lấy dữ liệu từ 30 ngày trước
+    const monthData = history.filter(h => {
+      const ts = new Date(h.timestamp).getTime();
+      return ts >= oneMonthAgo.getTime();
+    });
+
+    // Nhóm theo ngày và lấy điểm dữ liệu mới nhất cho mỗi ngày
+    const dailyData = new Map<string, any>();
+    monthData.forEach(h => {
+      const date = new Date(h.timestamp);
+      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Giữ lại timestamp mới nhất cho mỗi ngày
+      if (!dailyData.has(dayKey) || new Date(h.timestamp) > new Date(dailyData.get(dayKey).timestamp)) {
+        dailyData.set(dayKey, h);
+      }
+    });
+
+    // Chuyển về array và sắp xếp theo thời gian
+    filteredHistory = Array.from(dailyData.values()).sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  }
+
+  // Debug: Log filtered data
+  console.log(`Filter mode: ${filterMode}, Filtered data count: ${filteredHistory.length}`);
+  if (filteredHistory.length > 0) {
+    console.log('First data point:', filteredHistory[0]);
+    console.log('Last data point:', filteredHistory[filteredHistory.length - 1]);
+  }
+
+  // Nếu không có dữ liệu sau khi filter, sử dụng dữ liệu gốc (tối đa 50 điểm)
+  if (filteredHistory.length === 0 && history.length > 0) {
+    console.log('No filtered data, using original data');
+    filteredHistory = history.slice(-50); // Lấy 50 điểm dữ liệu gần nhất
   }
 
   // Nếu muốn lọc nhiều loại vàng, cần fetch nhiều endpoint và map thành mảng. Ở đây chỉ có 1 loại XAU/USD.
@@ -273,9 +320,21 @@ export function GoldPriceChart() {
   if (filterMode === "day") {
     filterInfoText = `Hôm nay: ${formatToday()}`;
   } else if (filterMode === "week") {
-    filterInfoText = `Tuần ${getWeekNumber(today)} năm ${today.getFullYear()}`;
+    if (filteredHistory.length > 0) {
+      const firstDate = new Date(filteredHistory[0].timestamp);
+      const lastDate = new Date(filteredHistory[filteredHistory.length - 1].timestamp);
+      filterInfoText = `Tuần từ ${firstDate.toLocaleDateString('vi-VN')} đến ${lastDate.toLocaleDateString('vi-VN')} (${filteredHistory.length} ngày)`;
+    } else {
+      filterInfoText = `Tuần ${getWeekNumber(today)} năm ${today.getFullYear()}`;
+    }
   } else if (filterMode === "month") {
-    filterInfoText = `Tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+    if (filteredHistory.length > 0) {
+      const firstDate = new Date(filteredHistory[0].timestamp);
+      const lastDate = new Date(filteredHistory[filteredHistory.length - 1].timestamp);
+      filterInfoText = `Tháng từ ${firstDate.toLocaleDateString('vi-VN')} đến ${lastDate.toLocaleDateString('vi-VN')} (${filteredHistory.length} ngày)`;
+    } else {
+      filterInfoText = `Tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+    }
   }
 
 
@@ -347,67 +406,67 @@ export function GoldPriceChart() {
       <div className="w-full md:w-1/2 flex flex-col min-h-0">
         <Card className="flex flex-col h-full min-h-0 rounded-xl shadow bg-white dark:bg-black border border-zinc-200 dark:border-zinc-700">
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col gap-4">
               <CardTitle className="whitespace-nowrap text-zinc-900 dark:text-zinc-100">Bảng giá vàng</CardTitle>
-              <div className="flex flex-row items-center gap-4 flex-nowrap">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   placeholder="Tìm theo loại..."
                   value={searchTerm}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                  className="w-[200px] bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                  className="w-full sm:w-[180px] bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                 />
-                <div className="flex flex-row items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                   <Input
                     type="number"
                     min={0}
                     value={exchangeRate}
                     readOnly
-                    className="w-[120px] bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                    className="w-full sm:w-[100px] bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                     placeholder="Tỷ giá USD/VND"
                   />
-                  <span className="text-xs text-muted-foreground dark:text-zinc-400">Tỷ giá tự động lấy từ Vietcombank.</span>
+                  <span className="text-xs text-muted-foreground dark:text-zinc-400 whitespace-normal">
+                    Tỷ giá tự động lấy từ Vietcombank
+                  </span>
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-4">
             <div className="flex flex-col">
-              <div className="overflow-y-auto max-h-[400px]">
-                <Table className="bg-white dark:bg-black text-zinc-900 dark:text-zinc-100">
+              <div className="overflow-x-auto">
+                <Table className="bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-w-[600px]">
                   <TableHeader>
                     <TableRow className="border-b border-zinc-200 dark:border-zinc-700">
-                      <TableHead className="text-left font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tuổi vàng</TableHead>
-                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Tỷ lệ</TableHead>
-                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/gram (VNĐ)</TableHead>
-                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/chỉ (VNĐ)</TableHead>
-                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100">Giá/lượng (VNĐ)</TableHead>
+                      <TableHead className="text-left font-semibold py-2 text-zinc-900 dark:text-zinc-100 min-w-[80px]">Tuổi vàng</TableHead>
+                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100 min-w-[80px]">Tỷ lệ</TableHead>
+                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100 min-w-[120px]">Giá/chỉ (VNĐ)</TableHead>
+                      <TableHead className="text-right font-semibold py-2 text-zinc-900 dark:text-zinc-100 min-w-[120px]">Giá/lượng (VNĐ)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={5}>Đang tải...</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-4">Đang tải...</TableCell></TableRow>
                     ) : error ? (
-                      <TableRow><TableCell colSpan={5} className="text-red-500">{error}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-4 text-red-500">{error}</TableCell></TableRow>
                     ) : goldData && goldData.length > 0 ? (
                       goldData.filter((g: any) => g.label.toLowerCase().includes(searchTerm.toLowerCase())).map((g: any) => (
                         <TableRow key={g.label}>
                           <TableCell className="font-medium py-2 text-zinc-900 dark:text-zinc-100">{g.label}</TableCell>
                           <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.ratio}</TableCell>
-                          <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerGram.toLocaleString()}</TableCell>
                           <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerChi.toLocaleString()}</TableCell>
                           <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerLuong.toLocaleString()}</TableCell>
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow><TableCell colSpan={5}>Không có dữ liệu</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-4">Không có dữ liệu</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
               </div>
             </div>
-            <div className="mt-4 text-sm text-muted-foreground dark:text-zinc-400">
-              <p>Cập nhật lần cuối: {lastUpdated}</p>
-              <p className="mt-1">Giá tính theo USD/ounce, tỷ giá: {exchangeRate.toLocaleString()} VND/USD</p>
+            <div className="mt-4 text-sm text-muted-foreground dark:text-zinc-400 space-y-1">
+              <p className="break-words">Cập nhật lần cuối: {lastUpdated}</p>
+              <p className="break-words">Giá tính theo USD/ounce, tỷ giá: {exchangeRate.toLocaleString()} VND/USD</p>
             </div>
           </CardContent>
         </Card>

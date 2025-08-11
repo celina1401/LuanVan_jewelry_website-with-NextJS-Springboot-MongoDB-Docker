@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { useUser, useAuth } from "@clerk/nextjs";
 // import type { Address } from "@/app/dashboard/page";
 import AddAddressForm, { Address } from "@/app/components/AddAddressForm";
+import { toast } from "sonner";
 
 
 const paymentMethods = [
@@ -36,6 +37,7 @@ export default function OrderPage() {
   const [sms, setSms] = useState(false);
   const [invoice, setInvoice] = useState(false);
   const [promo, setPromo] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // Thêm loading state
 
   // ✅ Tự động load thông tin người dùng
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -114,15 +116,52 @@ export default function OrderPage() {
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agree) return;
+    if (!agree) {
+      toast.error('Vui lòng đồng ý với điều khoản', {
+        description: 'Bạn cần đồng ý với điều khoản để tiếp tục'
+      });
+      return;
+    }
 
-    const orderId = `ORD${Date.now()}`; // mã đơn hàng ngẫu nhiên
+    // Validation cơ bản
+    if (!name.trim()) {
+      toast.error('Vui lòng nhập tên', {
+        description: 'Tên không được để trống'
+      });
+      return;
+    }
 
-    if (payment === "vnpay") {
-      try {
+    if (!phone.trim()) {
+      toast.error('Vui lòng nhập số điện thoại', {
+        description: 'Số điện thoại không được để trống'
+      });
+      return;
+    }
+
+    if (!address.trim()) {
+      toast.error('Vui lòng nhập địa chỉ', {
+        description: 'Địa chỉ không được để trống'
+      });
+      return;
+    }
+
+    if (items.length === 0) {
+      toast.error('Giỏ hàng trống', {
+        description: 'Vui lòng thêm sản phẩm vào giỏ hàng'
+      });
+      return;
+    }
+
+    setIsSubmitting(true); // Bắt đầu loading
+
+    try {
+      const orderId = `ORD${Date.now()}`; // mã đơn hàng ngẫu nhiên
+
+      if (payment === "vnpay") {
         const token = await getToken();
 
         // Bước 1: Gửi đơn hàng lên OrderService
+        console.log('🔄 Đang tạo đơn hàng VNPay...');
         const orderRes = await fetch("http://localhost:9003/api/orders", {
           method: "POST",
           headers: {
@@ -167,12 +206,16 @@ export default function OrderPage() {
 
         if (!orderRes.ok) {
           const text = await orderRes.text();
-          alert("Lỗi khi tạo đơn hàng: " + text);
+          console.error('❌ Lỗi khi tạo đơn hàng:', text);
+          toast.error('Lỗi khi tạo đơn hàng', {
+            description: text || 'Vui lòng thử lại sau'
+          });
           return;
         }
 
         const savedOrder = await orderRes.json();
         const createdOrderId = savedOrder.orderNumber; // Hoặc orderNumber nếu bạn dùng
+        console.log('✅ Đã tạo đơn hàng thành công:', createdOrderId);
 
         // Nếu có invoiceUrl và người dùng chọn xuất hóa đơn
         if (invoice && savedOrder.invoiceUrl) {
@@ -184,29 +227,98 @@ export default function OrderPage() {
           document.body.removeChild(link);
         }
 
-        // Bước 2: Lấy URL thanh toán từ PaymentService
-        const res = await fetch(
-          `http://localhost:9006/api/payment/vnpay?orderId=${createdOrderId}&amount=${finalTotal}`
-        );
-        const data = await res.json();
+        // Bước 2: Lấy URL thanh toán từ PaymentService với retry logic
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        // Chuyển đổi amount thành số nguyên VND (không có xu)
+        const amountInVND = Math.round(finalTotal);
+        console.log(`💰 Số tiền thanh toán: ${finalTotal} → ${amountInVND} VND (đã làm tròn)`);
+        
+        while (retryCount < maxRetries) {
+          try {
+            console.log(`🔄 Đang kết nối PaymentService cho đơn hàng #${createdOrderId}... (Lần thử ${retryCount + 1}/${maxRetries})`);
+            console.log(`📊 Tham số: orderId=${createdOrderId}, amount=${amountInVND}`);
+            
+            const res = await fetch(
+              `http://localhost:9006/api/payment/vnpay?orderId=${createdOrderId}&amount=${amountInVND}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                // Thêm timeout để tránh chờ quá lâu
+                signal: AbortSignal.timeout(10000) // 10 giây timeout
+              }
+            );
 
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          alert("Không nhận được URL VNPay");
+            if (!res.ok) {
+              const errorText = await res.text();
+              console.error(`❌ PaymentService trả về lỗi ${res.status}:`, errorText);
+              
+              // Xử lý lỗi cụ thể cho vấn đề amount
+              if (res.status === 400 && errorText.includes('amount')) {
+                throw new Error(`Lỗi định dạng số tiền: ${errorText}`);
+              }
+              
+              throw new Error(`PaymentService trả về lỗi: ${res.status} ${res.statusText}`);
+            }
+
+            const data = await res.json();
+            console.log('✅ Nhận được response từ PaymentService:', data);
+
+            if (data.url && data.url.startsWith('http')) {
+              console.log('🔄 Chuyển hướng đến VNPay...');
+              window.location.href = data.url;
+              return; // Thoát khỏi function
+            } else if (data.paymentUrl && data.paymentUrl.startsWith('http')) {
+              // Fallback cho trường hợp backend trả về paymentUrl thay vì url
+              console.log('🔄 Chuyển hướng đến VNPay (fallback)...');
+              window.location.href = data.paymentUrl;
+              return; // Thoát khỏi function
+            } else {
+              console.error('❌ Response không hợp lệ từ PaymentService:', data);
+              throw new Error('Không nhận được URL thanh toán hợp lệ từ PaymentService');
+            }
+
+          } catch (paymentError) {
+            retryCount++;
+            console.error(`❌ Lỗi khi kết nối PaymentService (Lần thử ${retryCount}/${maxRetries}):`, paymentError);
+            
+            if (retryCount >= maxRetries) {
+              // Đã hết số lần thử, hiển thị lỗi cuối cùng
+              let errorMessage = 'Không thể kết nối PaymentService sau nhiều lần thử';
+              
+              if (paymentError instanceof Error) {
+                if (paymentError.name === 'AbortError') {
+                  errorMessage = 'Kết nối PaymentService bị timeout. Vui lòng thử lại.';
+                } else if (paymentError.message.includes('PaymentService trả về lỗi')) {
+                  errorMessage = paymentError.message;
+                } else if (paymentError.message.includes('Failed to fetch')) {
+                  errorMessage = 'PaymentService không khả dụng. Vui lòng thử lại sau.';
+                }
+              }
+              
+              // Hiển thị thông báo lỗi với toast
+              toast.error(errorMessage, {
+                description: 'Đơn hàng đã được tạo nhưng không thể chuyển đến trang thanh toán. Vui lòng liên hệ admin.',
+                duration: 8000
+              });
+              
+              // Vẫn hiển thị thành công vì đơn hàng đã được tạo
+              setSuccess(true);
+              clearCart();
+              return;
+            }
+            
+            // Chờ một chút trước khi thử lại
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
         }
 
-        return;
-      } catch (err) {
-        console.error("VNPay error:", err);
-        alert("Không thể kết nối VNPay");
-        return;
-      }
-    }
-
-    else {
-      if (payment === "cod") {
+      } else if (payment === "cod") {
         try {
+          console.log('🔄 Đang tạo đơn hàng COD...');
           const token = await getToken();
           const res = await fetch("http://localhost:9003/api/orders", {
             method: "POST",
@@ -251,24 +363,34 @@ export default function OrderPage() {
           });
 
           if (res.ok) {
+            console.log('✅ Đã tạo đơn hàng COD thành công');
+            toast.success('Đặt hàng thành công!', {
+              description: 'Cảm ơn bạn đã mua sắm tại T&C Jewelry'
+            });
             setSuccess(true);
             clearCart();
           } else {
             const text = await res.text();
-            alert("Lỗi khi tạo đơn hàng: " + text);
+            console.error('❌ Lỗi khi tạo đơn hàng COD:', text);
+            toast.error('Lỗi khi tạo đơn hàng', {
+              description: text || 'Vui lòng thử lại sau'
+            });
           }
         } catch (err) {
-          console.error("Lỗi tạo đơn hàng COD:", err);
-          alert("Không thể kết nối server để đặt hàng COD.");
+          console.error("❌ Lỗi tạo đơn hàng COD:", err);
+          toast.error('Không thể kết nối server', {
+            description: 'Vui lòng kiểm tra kết nối mạng và thử lại'
+          });
         }
-        return;
       }
-
+    } catch (error) {
+      console.error('❌ Lỗi chung khi xử lý đơn hàng:', error);
+      toast.error('Có lỗi xảy ra', {
+        description: 'Vui lòng thử lại sau hoặc liên hệ admin'
+      });
+    } finally {
+      setIsSubmitting(false); // Kết thúc loading
     }
-
-    // Xử lý COD như cũ
-    setSuccess(true);
-    clearCart();
   };
 
   const handleAddAddress = (newAddress: Address) => {
@@ -286,8 +408,23 @@ export default function OrderPage() {
       <div className="max-w-3xl mx-auto py-10 px-4">
         <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Thông tin đặt hàng</h1>
         {success ? (
-          <div className="bg-green-100 text-green-700 p-4 rounded">
-            Đặt hàng thành công! Cảm ơn bạn đã mua sắm tại T&C Jewelry.
+          <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-6 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="text-center">
+              <div className="text-4xl mb-4">🎉</div>
+              <h2 className="text-2xl font-bold mb-2">Đặt hàng thành công!</h2>
+              <p className="text-lg mb-4">Cảm ơn bạn đã mua sắm tại T&C Jewelry.</p>
+              <div className="space-y-2 text-sm text-green-600 dark:text-green-400">
+                <p>• Đơn hàng của bạn đã được ghi nhận</p>
+                <p>• Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất</p>
+                <p>• Bạn có thể theo dõi đơn hàng trong trang Dashboard</p>
+              </div>
+              <button
+                onClick={() => window.location.href = '/dashboard'}
+                className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Xem đơn hàng
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleOrder} className="space-y-6">
@@ -309,7 +446,7 @@ export default function OrderPage() {
                             <span className="w-8 text-center text-gray-900 dark:text-white">{item.quantity}</span>
                             <button type="button" onClick={() => updateQuantity(item.id, item.quantity + 1, item.metadata)} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">+</button>
                           </div>
-                          <span className="text-gray-900 dark:text-white">{(unitPrice * item.quantity).toLocaleString()}₫</span>
+                          <span className="text-gray-900 dark:text-white">{Math.round(unitPrice * item.quantity).toLocaleString()}₫</span>
                         </div>
                         {/* Thông tin khối lượng × giá vàng + tiền công */}
                         <div className="ml-20 text-xs text-gray-600 dark:text-gray-300">ID
@@ -323,13 +460,13 @@ export default function OrderPage() {
                             if (weight && pricePerChi !== null && pricePerChi !== undefined) {
                               return (
                                 <span>
-                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng: <b className="text-gray-900 dark:text-white">{pricePerChi.toLocaleString()}₫</b> + Tiền công: <b className="text-gray-900 dark:text-white">{wage.toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng: <b className="text-gray-900 dark:text-white">{Math.round(pricePerChi).toLocaleString()}₫</b> + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
                                 </span>
                               );
                             } else if (weight && goldAge) {
                               return (
                                 <span>
-                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng + Tiền công: <b className="text-gray-900 dark:text-white">{wage.toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
                                 </span>
                               );
                             } else {
@@ -343,10 +480,10 @@ export default function OrderPage() {
                 </ul>
               )}
               <div className="mt-4 flex flex-col gap-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Tạm tính</span><span className="text-gray-900 dark:text-white">{finalTotal.toLocaleString()}₫</span></div>
+                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Tạm tính</span><span className="text-gray-900 dark:text-white">{Math.round(finalTotal).toLocaleString()}₫</span></div>
                 <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Giao hàng</span><span className="text-gray-900 dark:text-white">{shipping === 0 ? "Miễn phí" : shipping + "₫"}</span></div>
                 <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Giảm giá</span><span className="text-gray-900 dark:text-white">- {discount}₫</span></div>
-                <div className="flex justify-between font-bold text-lg"><span className="text-gray-900 dark:text-white">Tổng tiền</span><span className="text-gray-900 dark:text-white">{finalTotal.toLocaleString()}₫</span></div>
+                <div className="flex justify-between font-bold text-lg"><span className="text-gray-900 dark:text-white">Tổng tiền</span><span className="text-gray-900 dark:text-white">{Math.round(finalTotal).toLocaleString()}₫</span></div>
               </div>
               <div className="mt-4 flex gap-2 items-center">
                 <input className="border rounded p-2 flex-1 text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Nhập mã ưu đãi" value={promo} onChange={e => setPromo(e.target.value)} />
@@ -514,9 +651,9 @@ export default function OrderPage() {
               <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Ghi chú đơn hàng (Không bắt buộc)</h2>
               <textarea className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Vui lòng ghi chú thêm để T&C Jewelry hỗ trợ tốt nhất cho Quý khách!" value={note} onChange={e => setNote(e.target.value)} />
             </div>
-            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={items.length === 0 || !agree}
+            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={items.length === 0 || !agree || isSubmitting}
             >
-              Xác nhận đặt hàng
+              {isSubmitting ? "Đang xử lý..." : "Xác nhận đặt hàng"}
             </button>
           </form>
         )}
