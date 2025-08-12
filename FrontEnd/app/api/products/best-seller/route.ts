@@ -76,7 +76,10 @@ export async function GET(request: NextRequest) {
         category: "ring",
         rating: 4.9,
         reviews: 128,
-        isNew: true
+        isNew: true,
+        goldAge: "18k",
+        weight: 3.5,
+        wage: 500
       },
       {
         id: "2",
@@ -87,7 +90,10 @@ export async function GET(request: NextRequest) {
         category: "bracelet",
         rating: 4.8,
         reviews: 95,
-        bestSeller: true
+        bestSeller: true,
+        goldAge: "14k",
+        weight: 8.2,
+        wage: 300
       },
       {
         id: "3",
@@ -97,7 +103,10 @@ export async function GET(request: NextRequest) {
         thumbnailUrl: "/images/products/necklace1.jpg",
         category: "necklace",
         rating: 4.7,
-        reviews: 76
+        reviews: 76,
+        goldAge: "18k",
+        weight: 2.1,
+        wage: 200
       },
       {
         id: "4",
@@ -108,7 +117,10 @@ export async function GET(request: NextRequest) {
         category: "earring",
         rating: 4.9,
         reviews: 112,
-        bestSeller: true
+        bestSeller: true,
+        goldAge: "18k",
+        weight: 4.8,
+        wage: 400
       }
     ];
     

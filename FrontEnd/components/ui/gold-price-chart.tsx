@@ -33,21 +33,21 @@ interface GoldPriceHistory {
 }
 
 // Thay thế mock data bằng fetch từ GoldAPI
-const GOLD_API_KEY = "goldapi-40qegsmdtz23aq-io"; // <-- Điền API Key tại đây
+const GOLD_API_KEY = "goldapi-k15ismdtz65qw-io"; // <-- Điền API Key tại đây
 // API dự phòng:
 
 // goldapi-5p9h9smdppd1qi-io         - Vicao              R
 // goldapi-40qegsmdtz23aq-io        - CongTri             R
-// goldapi-k15ismdtz65qw-io         - GiaBao
+// goldapi-k15ismdtz65qw-io         - GiaBao              R 
 // goldapi-40qegsmdtz8uim-io        - BichTram
 // goldapi-8raw3zsme5b0qmf-io       - ThaiLe
 // goldapi-1cey8cmsme5bmw4g-io      - MinhHao
 // goldapi-8raw3zsme5cim88-io       - KKD
-
+// goldapi-grta9sme89c0ge-io        - AnhPhuc1
+// goldapi-krl2sme89hruk-io         - AnhPhuc2
 
 const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
-// const GOLD_API_KEY = "YfPgzfA7EvMU4Y0X6UdiwEzWxR9mQ5kK"; // <-- Điền API Key tại đây
-// const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
+
 
 export function GoldPriceChart() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -68,7 +68,7 @@ export function GoldPriceChart() {
     // { label: '9999', ratio: 0.9999 },
     { label: '999', ratio: 0.999 },
     { label: '99', ratio: 0.99 },
-    { label: '24k', ratio: 1.0 },
+    { label: '24k', ratio: 0.9999 },
     { label: '23k', ratio: 0.958 },
     { label: '17k', ratio: 0.708 },
     { label: '16k', ratio: 0.666 },
@@ -79,11 +79,25 @@ export function GoldPriceChart() {
 
   // Hàm tính giá vàng theo các đơn vị
   function goldPriceInVND(priceUSD: number, exchangeRate: number, purity: number) {
-    const perChi = (priceUSD / 31.1035) * exchangeRate * purity * 3.75 + 200000;
-    const perLuong = perChi * 10;
+    // Công thức từ hình ảnh:
+    // 1. USD/oz → USD/g: priceUSD / 31.1035
+    // 2. USD/g → VND/g: (priceUSD / 31.1035) * exchangeRate
+    // 3. VND/g → VND/lượng: (priceUSD / 31.1035) * exchangeRate * 37.5
+    // 4. Áp dụng hệ số tuổi vàng: * purity
+    // 5. Cộng thêm 10% VAT và 3% lợi nhuận
+    
+    const pricePerGramVND = (priceUSD / 31.1035) * exchangeRate;
+    const pricePerLuongVND = pricePerGramVND * 37.5 * purity;
+    const pricePerChiVND = pricePerLuongVND / 10;
+    
+    // Áp dụng VAT (10%) và lợi nhuận (3%)
+    const vatAndProfit = 1.03// 10% VAT + 3% profit
+    const finalPricePerChi = pricePerChiVND * vatAndProfit;
+    const finalPricePerLuong = pricePerLuongVND * vatAndProfit;
+    
     return {
-      chi: Math.round(perChi),
-      luong: Math.round(perLuong),
+      chi: Math.round(finalPricePerChi),
+      luong: Math.round(finalPricePerLuong),
     };
   }
 
@@ -105,16 +119,31 @@ export function GoldPriceChart() {
       setLoading(true);
       setError(null);
       try {
-        const results = await Promise.all(
-          goldRatios.map(async (g) => {
-            const data = await fetchGoldPriceByAge(g.label);
-            return {
-              ...g,
-              pricePerChi: data?.pricePerChi || 0,
-              pricePerLuong: (data?.pricePerChi || 0) * 10,
-            };
-          })
-        );
+        // Lấy giá vàng quốc tế từ GoldAPI
+        const goldRes = await fetch(GOLD_API_URL, {
+          headers: {
+            'x-access-token': GOLD_API_KEY,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!goldRes.ok) {
+          throw new Error('Không lấy được giá vàng từ GoldAPI');
+        }
+        
+        const goldData = await goldRes.json();
+        const internationalPrice = goldData.price; // USD/ounce
+        
+        // Tính toán giá cho từng loại tuổi vàng
+        const results = goldRatios.map((g) => {
+          const prices = goldPriceInVND(internationalPrice, exchangeRate, g.ratio);
+          return {
+            ...g,
+            pricePerChi: prices.chi,
+            pricePerLuong: prices.luong,
+          };
+        });
+        
         setGoldData(results);
         setLastUpdated(new Date().toLocaleString());
       } catch (err: any) {
@@ -450,7 +479,7 @@ export function GoldPriceChart() {
                       <TableRow><TableCell colSpan={4} className="text-center py-4 text-red-500">{error}</TableCell></TableRow>
                     ) : goldData && goldData.length > 0 ? (
                       goldData.filter((g: any) => g.label.toLowerCase().includes(searchTerm.toLowerCase())).map((g: any) => (
-                        <TableRow key={g.label}>
+                        <TableRow key={g.label} className={g.label === '24k' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}>
                           <TableCell className="font-medium py-2 text-zinc-900 dark:text-zinc-100">{g.label}</TableCell>
                           <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.ratio}</TableCell>
                           <TableCell className="text-right py-2 text-zinc-900 dark:text-zinc-100">{g.pricePerChi.toLocaleString()}</TableCell>
@@ -467,6 +496,8 @@ export function GoldPriceChart() {
             <div className="mt-4 text-sm text-muted-foreground dark:text-zinc-400 space-y-1">
               <p className="break-words">Cập nhật lần cuối: {lastUpdated}</p>
               <p className="break-words">Giá tính theo USD/ounce, tỷ giá: {exchangeRate.toLocaleString()} VND/USD</p>
+              {/* <p className="break-words">Giá đã bao gồm: 10% VAT + 3% lợi nhuận</p>
+              <p className="break-words text-xs">Công thức: (USD/oz ÷ 31.1035) × Tỷ giá × 37.5 × Hệ số tuổi vàng × 1.133</p> */}
             </div>
           </CardContent>
         </Card>

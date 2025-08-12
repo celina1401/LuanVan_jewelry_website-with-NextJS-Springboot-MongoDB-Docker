@@ -29,9 +29,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ClerkProvider
       publishableKey={clerkPublishableKey ?? ''}
     >
-      {/* <html lang="en" suppressHydrationWarning> */}
-      {/* <link rel="icon" href="images/logo.png" />
-        <body className={inter.className} suppressHydrationWarning> */}
       <html lang="en" suppressHydrationWarning>
         <head>
           <link rel="icon" href="/images/logo.png" />

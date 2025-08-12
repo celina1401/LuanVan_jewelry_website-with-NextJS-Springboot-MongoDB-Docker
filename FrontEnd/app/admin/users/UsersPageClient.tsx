@@ -111,7 +111,7 @@ const { user } = useUser();
     
     setLockingId(userId);
     try {
-      const response = await fetch(`/api/users/${userId}/toggle-lock`, {
+      const response = await fetch(`http://localhost:9001/api/users/${userId}/toggle-lock`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

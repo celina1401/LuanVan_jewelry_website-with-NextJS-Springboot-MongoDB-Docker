@@ -26,6 +26,10 @@ interface Product {
   reviews?: number;
   isNew?: boolean;
   bestSeller?: boolean;
+  goldAge?: string;
+  karat?: string;
+  weight?: number;
+  wage?: number;
 }
 
 export function BestSellerProducts() {
@@ -46,6 +50,8 @@ export function BestSellerProducts() {
   const [products, setProducts] = React.useState<Product[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [productGoldPrices, setProductGoldPrices] = React.useState<{ [id: string]: number }>({})
+  const [goldPricesLoading, setGoldPricesLoading] = React.useState(false)
 
   // Fetch sản phẩm từ database
   React.useEffect(() => {
@@ -75,7 +81,10 @@ export function BestSellerProducts() {
             thumbnailUrl: "/images/products/ring1.jpg",
             category: "ring",
             rating: 4.9,
-            reviews: 128
+            reviews: 128,
+            goldAge: "18k",
+            weight: 3.5,
+            wage: 500
           },
           {
             id: "2",
@@ -85,7 +94,10 @@ export function BestSellerProducts() {
             thumbnailUrl: "/images/products/bracelet1.jpg",
             category: "bracelet",
             rating: 4.8,
-            reviews: 95
+            reviews: 95,
+            goldAge: "14k",
+            weight: 8.2,
+            wage: 300
           },
           {
             id: "3",
@@ -95,7 +107,10 @@ export function BestSellerProducts() {
             thumbnailUrl: "/images/products/necklace1.jpg",
             category: "necklace",
             rating: 4.7,
-            reviews: 76
+            reviews: 76,
+            goldAge: "18k",
+            weight: 2.1,
+            wage: 200
           },
           {
             id: "4",
@@ -105,7 +120,10 @@ export function BestSellerProducts() {
             thumbnailUrl: "/images/products/earrings1.jpg",
             category: "earring",
             rating: 4.9,
-            reviews: 112
+            reviews: 112,
+            goldAge: "18k",
+            weight: 4.8,
+            wage: 400
           }
         ])
       } finally {
@@ -115,6 +133,29 @@ export function BestSellerProducts() {
 
     fetchBestSellerProducts()
   }, [])
+
+  // Fetch giá vàng động cho từng sản phẩm
+  React.useEffect(() => {
+    async function fetchAllGoldPrices() {
+      setGoldPricesLoading(true);
+      const prices: { [id: string]: number } = {};
+      await Promise.all(products.map(async (product) => {
+        const age = product.goldAge || product.karat;
+        if (age && product.weight) {
+          try {
+            const res = await fetch(`/api/gold-price/latest?age=${age}`);
+            const data = await res.json();
+            if (data.pricePerChi) {
+              prices[product.id] = data.pricePerChi * product.weight + (product.wage || 0);
+            }
+          } catch {}
+        }
+      }));
+      setProductGoldPrices(prices);
+      setGoldPricesLoading(false);
+    }
+    if (products.length > 0) fetchAllGoldPrices();
+  }, [products])
 
   const onSelect = React.useCallback(() => {
     if (!emblaApi) return
@@ -280,29 +321,22 @@ export function BestSellerProducts() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {product.description}
                       </p>
-                      <div className="flex items-center mt-2">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-4 h-4 ${i < Math.floor(product.rating || 0)
-                                  ? "text-yellow-400"
-                                  : "text-gray-300"
-                                }`}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
-                        </div>
-                        <span className="text-sm text-muted-foreground ml-2">
-                          ({product.reviews || 0})
-                        </span>
+                      <div className="mt-2">
+                        {goldPricesLoading ? (
+                          <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                            <span className="text-sm text-gray-500">Đang cập nhật giá vàng...</span>
+                          </div>
+                        ) : productGoldPrices[product.id] ? (
+                          <p className="text-lg font-semibold text-rose-500">
+                            {productGoldPrices[product.id].toLocaleString()}₫
+                          </p>
+                        ) : (
+                          <p className="text-lg font-semibold">
+                            {product.price.toLocaleString()}₫
+                          </p>
+                        )}
                       </div>
-                      <p className="text-lg font-semibold mt-2">
-                        ${product.price.toLocaleString()}
-                      </p>
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
                       <Button
