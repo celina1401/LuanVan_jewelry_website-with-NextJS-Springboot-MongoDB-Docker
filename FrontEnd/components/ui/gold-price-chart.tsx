@@ -91,7 +91,7 @@ export function GoldPriceChart() {
     const pricePerChiVND = pricePerLuongVND / 10;
     
     // Áp dụng VAT (10%) và lợi nhuận (3%)
-    const vatAndProfit = 1.03// 10% VAT + 3% profit
+    const vatAndProfit = 1.03// 3% profit
     const finalPricePerChi = pricePerChiVND * vatAndProfit;
     const finalPricePerLuong = pricePerLuongVND * vatAndProfit;
     
@@ -407,8 +407,9 @@ export function GoldPriceChart() {
                   tickFormatter={(value) => {
                     const date = new Date(value);
                     if (filterMode === "week") {
-                      const d = date.getDay(); // 0 = CN
-                      return d === 0 ? "CN" : `Th ${d + 1}`;
+                      const d = date.getDay(); // 0 = CN, 1 = T2, 2 = T3, 3 = T4, 4 = T5, 5 = T6, 6 = T7
+                      const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                      return dayNames[d];
                     }
                     if (filterMode === "month") {
                       return `${date.getDate()}/${date.getMonth() + 1}`;

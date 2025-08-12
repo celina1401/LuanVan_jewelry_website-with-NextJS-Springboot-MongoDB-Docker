@@ -14,7 +14,14 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [sidebarWidth, setSidebarWidth] = useState('20rem');
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    // Initialize sidebarWidth based on localStorage state
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('adminSidebarCollapsed');
+      return savedState === 'true' ? '5rem' : '20rem';
+    }
+    return '20rem'; // Default to expanded
+  });
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -26,6 +33,14 @@ export default function AdminLayout({
       const isCollapsed = e.detail.isCollapsed;
       setSidebarWidth(isCollapsed ? '5rem' : '20rem');
     };
+
+    // Set initial width based on current localStorage state
+    const savedState = localStorage.getItem('adminSidebarCollapsed');
+    if (savedState === 'true') {
+      setSidebarWidth('5rem');
+    } else {
+      setSidebarWidth('20rem');
+    }
 
     window.addEventListener('sidebarToggle', handleSidebarChange as EventListener);
     return () => {

@@ -4,6 +4,7 @@ export interface Message {
   role: "user" | "admin";
   content: string;
   timestamp: string;
+  type?: string; // Thêm trường type để phân biệt loại tin nhắn
 }
 
 export interface OrderDetails {

@@ -23,6 +23,7 @@ export default function AdminChatInbox({ onSelect, onInboxUpdate }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [stompClient, setStompClient] = useState<any>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [newMessageCount, setNewMessageCount] = useState(0);
 
   const fetchInbox = async () => {
     try {
@@ -31,10 +32,6 @@ export default function AdminChatInbox({ onSelect, onInboxUpdate }: Props) {
       const data = await res.json();
       setInbox(data);
       localStorage.setItem("admin_inbox", JSON.stringify(data));
-      // Notify parent component of inbox update
-      if (onInboxUpdate) {
-        onInboxUpdate(data);
-      }
     } catch (err: any) {
       console.error("❌ Lỗi khi tải hộp thư:", err);
       setError("Không thể tải hộp thư");
@@ -51,6 +48,27 @@ export default function AdminChatInbox({ onSelect, onInboxUpdate }: Props) {
     fetchInbox();
   }, []);
 
+  // Notify parent component when inbox changes
+  useEffect(() => {
+    if (onInboxUpdate && inbox.length > 0) {
+      onInboxUpdate(inbox);
+    }
+    // Reset new message counter when inbox is updated
+    if (newMessageCount > 0) {
+      setNewMessageCount(0);
+    }
+  }, [inbox, onInboxUpdate, newMessageCount]);
+
+  // Auto-refresh inbox every 30 seconds as fallback
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("🔄 Auto-refreshing inbox...");
+      fetchInbox();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [fetchInbox]);
+
   useEffect(() => {
     const socket = new SockJS("http://localhost:9007/ws");
     const client = over(socket);
@@ -58,9 +76,23 @@ export default function AdminChatInbox({ onSelect, onInboxUpdate }: Props) {
     client.connect({ userId: "admin" }, () => {
       console.log("✅ WebSocket connected to /topic/admin");
 
+      // Subscribe to chat messages topic để nhận tin nhắn mới
+      client.subscribe("/topic/chat-messages", (message: any) => {
+        const msg = JSON.parse(message.body);
+        console.log("📥 WebSocket chat message:", msg);
+
+        // Nếu là tin nhắn mới từ user, cập nhật inbox ngay lập tức
+        if (msg.role === "user" && msg.sender !== "admin") {
+          console.log("🆕 Tin nhắn mới từ user:", msg.sender);
+          setNewMessageCount(prev => prev + 1);
+          fetchInbox();
+        }
+      });
+
+      // Subscribe to admin topic để nhận thông báo hệ thống
       client.subscribe("/topic/admin", (message: any) => {
         const msg = JSON.parse(message.body);
-        console.log("📥 WebSocket message:", msg);
+        console.log("📥 WebSocket admin message:", msg);
 
         if (msg.type === "new-message" || msg.type === "read-update") {
           fetchInbox();
@@ -93,10 +125,7 @@ export default function AdminChatInbox({ onSelect, onInboxUpdate }: Props) {
           chat.userId === userId ? { ...chat, unreadCount: 0 } : chat
         );
         localStorage.setItem("admin_inbox", JSON.stringify(newInbox));
-        // Notify parent component of inbox update
-        if (onInboxUpdate) {
-          onInboxUpdate(newInbox);
-        }
+
         return newInbox;
       });
 
@@ -132,7 +161,25 @@ export default function AdminChatInbox({ onSelect, onInboxUpdate }: Props) {
   return (
     <div className="w-full h-full">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <h3 className="font-semibold text-gray-900 dark:text-white">💬 Hộp thư ({inbox.length})</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900 dark:text-white">💬 Hộp thư ({inbox.length})</h3>
+          {newMessageCount > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                🆕 {newMessageCount} tin nhắn mới
+              </span>
+              <button
+                onClick={() => {
+                  setNewMessageCount(0);
+                  fetchInbox();
+                }}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
+              >
+                Làm mới
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="overflow-y-auto max-h-[calc(100vh-200px)]">

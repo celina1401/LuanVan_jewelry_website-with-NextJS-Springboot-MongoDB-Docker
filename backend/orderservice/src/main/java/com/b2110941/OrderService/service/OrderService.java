@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,6 +99,16 @@ public class OrderService {
             
             // Save order
             Order savedOrder = orderRepository.save(order);
+            
+            // ✅ Cập nhật số lượng tồn kho sau khi tạo đơn hàng thành công
+            try {
+                updateProductStockQuantities(items);
+                log.info("✅ Đã cập nhật số lượng tồn kho cho đơn hàng: {}", orderNumber);
+            } catch (Exception e) {
+                log.error("❌ Lỗi khi cập nhật số lượng tồn kho: {}", e.getMessage());
+                // Không throw exception để tránh làm hỏng flow tạo đơn hàng
+                // Có thể gửi notification cho admin để xử lý thủ công
+            }
             
             // If payment method is not COD, create payment
             if (!"cod".equalsIgnoreCase(request.getPaymentMethod())) {
@@ -248,6 +259,54 @@ public class OrderService {
         LocalDateTime now = LocalDateTime.now();
         String timestamp = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         return "M" + timestamp;
+    }
+
+    /**
+     * Cập nhật số lượng tồn kho cho các sản phẩm trong đơn hàng
+     * Gọi ProductService để trừ số lượng hàng trong kho
+     */
+    private void updateProductStockQuantities(List<OrderItem> items) {
+        try {
+            // Chuẩn bị danh sách cập nhật số lượng
+            List<Map<String, Object>> stockUpdates = items.stream()
+                    .map(item -> {
+                        Map<String, Object> update = new HashMap<>();
+                        update.put("productId", item.getProductId());
+                        update.put("quantity", item.getQuantity());
+                        return update;
+                    })
+                    .collect(Collectors.toList());
+
+            // Gọi API batch update stock của ProductService
+            String updateStockUrl = productServiceUrl + "/api/products/batch-update-stock";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+            
+            HttpEntity<List<Map<String, Object>>> request = new HttpEntity<>(stockUpdates, headers);
+            
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    updateStockUrl,
+                    HttpMethod.PUT,
+                    request,
+                    Map.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> result = response.getBody();
+                if (result != null && Boolean.TRUE.equals(result.get("success"))) {
+                    log.info("✅ Cập nhật số lượng tồn kho thành công cho {} sản phẩm", items.size());
+                } else {
+                    log.warn("⚠️ Cập nhật số lượng tồn kho không thành công: {}", result);
+                }
+            } else {
+                log.error("❌ Lỗi HTTP khi cập nhật số lượng tồn kho: {}", response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Lỗi khi gọi API cập nhật số lượng tồn kho: {}", e.getMessage());
+            throw new RuntimeException("Không thể cập nhật số lượng tồn kho: " + e.getMessage());
+        }
     }
 
     private OrderItem convertToOrderItem(OrderItemRequest request) {

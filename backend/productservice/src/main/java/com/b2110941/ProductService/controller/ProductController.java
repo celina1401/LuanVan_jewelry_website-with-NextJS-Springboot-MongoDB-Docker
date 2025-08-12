@@ -876,4 +876,125 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
         }
     }
+
+    /**
+     * Cập nhật số lượng tồn kho sau khi đặt hàng
+     * API này được gọi từ OrderService để trừ số lượng hàng trong kho
+     */
+    @PutMapping("/{id}/update-stock")
+    public ResponseEntity<?> updateProductStock(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> request) {
+        try {
+            Optional<Product> productOpt = productRepository.findById(id);
+            if (!productOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy sản phẩm.");
+            }
+
+            Product product = productOpt.get();
+            Integer quantityToReduce = (Integer) request.get("quantity");
+            
+            if (quantityToReduce == null || quantityToReduce <= 0) {
+                return ResponseEntity.badRequest().body("Số lượng phải lớn hơn 0");
+            }
+
+            // Kiểm tra số lượng tồn kho hiện tại
+            Integer currentStock = product.getStockQuantity();
+            if (currentStock == null) currentStock = 0;
+            
+            if (currentStock < quantityToReduce) {
+                return ResponseEntity.badRequest().body("Số lượng tồn kho không đủ. Hiện tại: " + currentStock + ", Yêu cầu: " + quantityToReduce);
+            }
+
+            // Trừ số lượng hàng trong kho
+            Integer newStock = currentStock - quantityToReduce;
+            product.setStockQuantity(newStock);
+            product.setUpdatedAt(java.time.LocalDateTime.now());
+
+            // Lưu sản phẩm
+            Product saved = productRepository.save(product);
+
+            // Cập nhật ProductDetail
+            List<ProductDetail> details = productDetailRepository.findByProductId(id);
+            if (!details.isEmpty()) {
+                for (ProductDetail detail : details) {
+                    detail.setStockQuantity(newStock);
+                    productDetailRepository.save(detail);
+                }
+            }
+
+            System.out.println("[STOCK UPDATE] Sản phẩm " + id + ": " + currentStock + " -> " + newStock + " (-" + quantityToReduce + ")");
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "productId", id,
+                "oldStock", currentStock,
+                "newStock", newStock,
+                "reducedQuantity", quantityToReduce
+            ));
+
+        } catch (Exception e) {
+            System.out.println("Lỗi khi cập nhật số lượng tồn kho: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Cập nhật số lượng tồn kho cho nhiều sản phẩm (batch update)
+     * API này được gọi từ OrderService để trừ số lượng hàng cho toàn bộ đơn hàng
+     */
+    @PutMapping("/batch-update-stock")
+    public ResponseEntity<?> batchUpdateProductStock(@RequestBody List<Map<String, Object>> stockUpdates) {
+        try {
+            List<Map<String, Object>> results = new ArrayList<>();
+            
+            for (Map<String, Object> update : stockUpdates) {
+                String productId = (String) update.get("productId");
+                Integer quantity = (Integer) update.get("quantity");
+                
+                if (productId == null || quantity == null || quantity <= 0) {
+                    results.add(Map.of(
+                        "productId", productId,
+                        "success", false,
+                        "error", "Dữ liệu không hợp lệ"
+                    ));
+                    continue;
+                }
+
+                try {
+                    ResponseEntity<?> result = updateProductStock(productId, Map.of("quantity", quantity));
+                    if (result.getStatusCode().is2xxSuccessful()) {
+                        results.add(Map.of(
+                            "productId", productId,
+                            "success", true,
+                            "quantity", quantity
+                        ));
+                    } else {
+                        results.add(Map.of(
+                            "productId", productId,
+                            "success", false,
+                            "error", "Lỗi cập nhật"
+                        ));
+                    }
+                } catch (Exception e) {
+                    results.add(Map.of(
+                        "productId", productId,
+                        "success", false,
+                        "error", e.getMessage()
+                    ));
+                }
+            }
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "results", results
+            ));
+
+        } catch (Exception e) {
+            System.out.println("Lỗi khi cập nhật số lượng tồn kho hàng loạt: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
+        }
+    }
 }

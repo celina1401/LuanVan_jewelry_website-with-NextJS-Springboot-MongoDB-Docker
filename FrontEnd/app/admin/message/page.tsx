@@ -42,6 +42,12 @@ export default function AdminMessagePage() {
     setTotalUnread(total);
   };
 
+  const handleMarkAsRead = (userId: string) => {
+    console.log("🔄 AdminMessagePage: Tin nhắn đã được đánh dấu đã đọc cho user:", userId);
+    // Trigger refresh để cập nhật UI
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="p-6 bg-white dark:bg-black min-h-screen">
       <div className="flex justify-between items-center mb-6">
@@ -79,7 +85,7 @@ export default function AdminMessagePage() {
               <div className="font-semibold mb-4 text-lg text-primary border-b pb-2">
                 💬 Đang trò chuyện với: {selectedUserId}
               </div>
-              <AdminChatDetail userId={selectedUserId} />
+              <AdminChatDetail userId={selectedUserId} onMarkAsRead={handleMarkAsRead} />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">

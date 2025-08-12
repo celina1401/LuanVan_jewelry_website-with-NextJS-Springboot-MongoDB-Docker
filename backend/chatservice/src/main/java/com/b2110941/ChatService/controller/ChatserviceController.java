@@ -89,9 +89,9 @@ public class ChatserviceController {
                     System.err.println("❌ Lỗi gửi notification: " + e.getMessage());
                 }
             } else {
-                // ✅ Thêm type để admin client biết là tin mới => reload inbox
+                // ✅ Gửi tin nhắn user đến topic riêng biệt để tránh xung đột với read-update
                 message.setType("new-message");
-                messagingTemplate.convertAndSend("/topic/admin", message);
+                messagingTemplate.convertAndSend("/topic/chat-messages", message);
             }
 
         } catch (Exception e) {
@@ -168,7 +168,8 @@ public class ChatserviceController {
         ChatMessage signal = new ChatMessage();
         signal.setReceiver(userId);
         signal.setType("read-update");
-        messagingTemplate.convertAndSend("/topic/admin", signal);
+        // Gửi signal đến topic riêng biệt để tránh ảnh hưởng đến chat
+        messagingTemplate.convertAndSend("/topic/read-updates", signal);
 
         return ResponseEntity.ok().build();
     }

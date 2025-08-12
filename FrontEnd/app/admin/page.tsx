@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import { useState, useEffect, useCallback } from "react";
 import AdminChatInbox from "@/app/components/chatbox/AdminChatInbox";
 import AdminChatDetail from "@/app/components/chatbox/AdminChatDetail";
@@ -90,6 +90,7 @@ const isDateInRange = (dateString: string, startDate: Date, endDate: Date) => {
 
 export default function AdminDashboard() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
@@ -114,7 +115,13 @@ export default function AdminDashboard() {
       
       // Fetch orders for revenue and sales calculations
       try {
-        const ordersResponse = await fetch(`http://localhost:9003/api/orders`);
+        const token = await getToken();
+        const ordersResponse = await fetch(`http://localhost:9003/api/orders`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (ordersResponse.ok) {
           orders = await ordersResponse.json();
         } else {
@@ -162,7 +169,15 @@ export default function AdminDashboard() {
       
       // Fetch users for visitor count
       try {
-        const usersResponse = await fetch(`http://localhost:9001/users/users`);
+        // Sử dụng endpoint đúng và thêm authentication
+        const token = await getToken();
+        const usersResponse = await fetch(`http://localhost:9001/api/users/all`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
         if (usersResponse.ok) {
           users = await usersResponse.json();
         } else {

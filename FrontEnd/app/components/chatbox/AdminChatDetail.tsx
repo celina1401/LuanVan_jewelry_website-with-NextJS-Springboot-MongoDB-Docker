@@ -8,7 +8,12 @@ import { useUser } from "@clerk/nextjs";
 
 let stompClient: any = null;
 
-export default function AdminChatDetail({ userId }: { userId: string }) {
+interface AdminChatDetailProps {
+  userId: string;
+  onMarkAsRead?: (userId: string) => void;
+}
+
+export default function AdminChatDetail({ userId, onMarkAsRead }: AdminChatDetailProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [username, setUsername] = useState<string>("");
@@ -62,6 +67,11 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
     };
 
     fetchData();
+
+    // Đánh dấu tin nhắn đã đọc ngay khi chọn user
+    if (userId) {
+      handleInputFocus();
+    }
   }, [userId]);
 
   // ✅ WebSocket connect + subscribe sau khi userId thay đổi
@@ -80,15 +90,20 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
     client.connect({  userId: adminId }, () => {
       console.log("✅ WebSocket connected (Admin)");
 
-      client.subscribe("/topic/admin", (message: any) => {
+      // Subscribe to chat messages topic để nhận tin nhắn mới
+      client.subscribe("/topic/chat-messages", (message: any) => {
         const msg: Message = JSON.parse(message.body);
+        console.log("📥 AdminChatDetail - WebSocket message:", msg);
 
         // Chỉ xử lý nếu là tin nhắn từ đúng user
-        if (msg.sender === userId && msg.role === "user") {
+        if (msg.sender === userId && msg.role === "user" && msg.content) {
+          console.log("🆕 Tin nhắn mới từ user:", userId);
           setMessages((prev) => {
-            // Kiểm tra xem đã có tin này chưa (dựa vào timestamp + content)
+            // Kiểm tra xem đã có tin này chưa (dựa vào timestamp + content + sender)
             const alreadyExists = prev.some(
-              (m) => m.timestamp === msg.timestamp && m.content === msg.content
+              (m) => m.timestamp === msg.timestamp && 
+                     m.content === msg.content && 
+                     m.sender === msg.sender
             );
             if (alreadyExists) return prev;
 
@@ -96,6 +111,17 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
             localStorage.setItem(`chat_admin_${userId}`, JSON.stringify(updated));
             return updated;
           });
+        }
+      });
+
+      // Subscribe to admin topic để nhận thông báo hệ thống
+      client.subscribe("/topic/admin", (message: any) => {
+        const msg: Message = JSON.parse(message.body);
+        console.log("📥 AdminChatDetail - Admin message:", msg);
+
+        // Xử lý tin nhắn hệ thống nếu cần
+        if (msg.type === "system" && msg.receiver === userId) {
+          console.log("🔔 Thông báo hệ thống cho user:", userId);
         }
       });
     });
@@ -129,6 +155,30 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
     setMessages(updated);
     localStorage.setItem(`chat_admin_${userId}`, JSON.stringify(updated));
     setInput("");
+
+    // Đánh dấu tin nhắn đã đọc khi admin gửi tin nhắn
+    handleInputFocus();
+  };
+
+  // Đánh dấu tin nhắn đã đọc khi admin focus vào input
+  const handleInputFocus = async () => {
+    try {
+      const response = await fetch(`http://localhost:9007/api/chat/markAsRead/${userId}`, {
+        method: "POST",
+      });
+      
+      if (response.ok) {
+        console.log("✅ Đã đánh dấu tin nhắn đã đọc khi admin focus input");
+        // Thông báo cho parent component để cập nhật UI
+        if (onMarkAsRead) {
+          onMarkAsRead(userId);
+        }
+      } else {
+        console.error("❌ API trả về lỗi:", response.status, response.statusText);
+      }
+    } catch (err) {
+      console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", err);
+    }
   };
 
   if (loading) {
@@ -197,13 +247,14 @@ export default function AdminChatDetail({ userId }: { userId: string }) {
 
       {/* Input Form */}
       <form onSubmit={handleSend} className="flex items-center gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Nhập tin nhắn..."
-          className="flex-1 rounded-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
+                 <input
+           type="text"
+           value={input}
+           onChange={(e) => setInput(e.target.value)}
+           onFocus={handleInputFocus}
+           placeholder="Nhập tin nhắn..."
+           className="flex-1 rounded-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+         />
         <button
           type="submit"
           disabled={!input.trim()}
