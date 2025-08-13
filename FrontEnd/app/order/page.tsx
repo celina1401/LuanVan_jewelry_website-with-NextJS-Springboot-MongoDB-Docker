@@ -34,7 +34,7 @@ export default function OrderPage() {
   const [deliveryType, setDeliveryType] = useState("home");
   const [payment, setPayment] = useState("cod");
   const [agree, setAgree] = useState(false);
-  const [sms, setSms] = useState(false);
+  // const [sms, setSms] = useState(false);
   const [invoice, setInvoice] = useState(false);
   const [promo, setPromo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false); // Thêm loading state
@@ -43,6 +43,10 @@ export default function OrderPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  // 🎯 Membership discount functionality
+  const [membershipInfo, setMembershipInfo] = useState<any>(null);
+  const [membershipLoading, setMembershipLoading] = useState(false);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -80,6 +84,29 @@ export default function OrderPage() {
     fetchUserInfo();
   }, [user, getToken]);
 
+  // 🎯 Fetch membership info for discount calculation
+  useEffect(() => {
+    const fetchMembershipInfo = async () => {
+      if (!user) return;
+      try {
+        setMembershipLoading(true);
+        const response = await fetch(`http://localhost:9001/api/users/membership/${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMembershipInfo(data);
+          console.log('✅ Membership info loaded:', data);
+        } else {
+          console.warn('⚠️ Could not load membership info');
+        }
+      } catch (error) {
+        console.error('❌ Error loading membership info:', error);
+      } finally {
+        setMembershipLoading(false);
+      }
+    };
+    fetchMembershipInfo();
+  }, [user]);
+
   //Tinh gia vang dong
   useEffect(() => {
     async function fetchPrices() {
@@ -108,11 +135,16 @@ export default function OrderPage() {
   }, [items]);
 
   const shipping = deliveryType === "home" ? 0 : 0;
-  const discount = 0;
-  const finalTotal = items.reduce((sum, item) => {
+  
+  // 🎯 Calculate membership discount (rounded to integer VND)
+  const rawSubtotal = items.reduce((sum, item) => {
     const unitPrice = dynamicPrices[item.id] ?? item.price;
     return sum + unitPrice * item.quantity;
   }, 0);
+  const subtotal = Math.round(rawSubtotal);
+  const membershipDiscount = membershipInfo ? Math.round(subtotal * membershipInfo.discountRate) : 0;
+  const discount = membershipDiscount;
+  const finalTotal = Math.max(0, Math.round(subtotal - discount + shipping));
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,21 +216,21 @@ export default function OrderPage() {
               productImage: item.image,
               quantity: item.quantity,
               price: dynamicPrices[item.id] ?? item.price,
-              totalPrice: (dynamicPrices[item.id] ?? item.price) * item.quantity,
+               totalPrice: Math.round((dynamicPrices[item.id] ?? item.price) * item.quantity),
               weight: item.metadata?.weight,
               goldAge: item.metadata?.goldAge,
               wage: item.metadata?.wage,
               category: item.metadata?.category,
               brand: item.metadata?.brand,
             })),
-            subtotal: finalTotal,
+             subtotal: Math.round(subtotal),
             shippingFee: shipping,
             discount,
-            total: finalTotal,
+             total: Math.round(finalTotal),
             paymentMethod: "VNPAY",
             paymentStatus: "Chờ thanh toán",
             note,
-            smsNotification: sms,
+            // smsNotification: sms,
             invoiceRequest: invoice,
             promoCode: promo,
           }),
@@ -342,21 +374,21 @@ export default function OrderPage() {
                 productImage: item.image,
                 quantity: item.quantity,
                 price: dynamicPrices[item.id] ?? item.price,
-                totalPrice: (dynamicPrices[item.id] ?? item.price) * item.quantity,
+               totalPrice: Math.round((dynamicPrices[item.id] ?? item.price) * item.quantity),
                 weight: item.metadata?.weight,
                 goldAge: item.metadata?.goldAge,
                 wage: item.metadata?.wage,
                 category: item.metadata?.category,
                 brand: item.metadata?.brand,
               })),
-              subtotal: finalTotal,
-              shippingFee: shipping,
-              discount,
-              total: finalTotal,
+                           subtotal: Math.round(subtotal),
+            shippingFee: shipping,
+            discount,
+             total: Math.round(finalTotal),
               paymentMethod: "COD",
               paymentStatus: "Chưa thanh toán",
               note,
-              smsNotification: sms,
+              // smsNotification: sms,
               invoiceRequest: invoice,
               promoCode: promo,
             }),
@@ -480,10 +512,31 @@ export default function OrderPage() {
                 </ul>
               )}
               <div className="mt-4 flex flex-col gap-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Tạm tính</span><span className="text-gray-900 dark:text-white">{Math.round(finalTotal).toLocaleString()}₫</span></div>
+                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Tạm tính</span><span className="text-gray-900 dark:text-white">{Math.round(subtotal).toLocaleString()}₫</span></div>
                 <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Giao hàng</span><span className="text-gray-900 dark:text-white">{shipping === 0 ? "Miễn phí" : shipping + "₫"}</span></div>
-                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Giảm giá</span><span className="text-gray-900 dark:text-white">- {discount}₫</span></div>
-                <div className="flex justify-between font-bold text-lg"><span className="text-gray-900 dark:text-white">Tổng tiền</span><span className="text-gray-900 dark:text-white">{Math.round(finalTotal).toLocaleString()}₫</span></div>
+                
+                {/* 🎯 Membership Discount Display */}
+                {membershipInfo && membershipInfo.discountRate > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-900 dark:text-white">
+                      Giảm giá hạng {membershipInfo.tierDisplayName} 
+                      <span className="text-xs text-gray-500 ml-1">({(membershipInfo.discountRate * 100).toFixed(0)}%)</span>
+                    </span>
+                    <span className="text-green-600 font-medium">-{Math.round(discount).toLocaleString()}₫</span>
+                  </div>
+                )}
+                
+                {(!membershipInfo || membershipInfo.discountRate === 0) && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-900 dark:text-white">Giảm giá</span>
+                    <span className="text-gray-500">0₫</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span className="text-gray-900 dark:text-white">Tổng tiền</span>
+                  <span className="text-rose-600">{Math.round(finalTotal).toLocaleString()}₫</span>
+                </div>
               </div>
               <div className="mt-4 flex gap-2 items-center">
                 <input className="border rounded p-2 flex-1 text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Nhập mã ưu đãi" value={promo} onChange={e => setPromo(e.target.value)} />
@@ -604,10 +657,10 @@ export default function OrderPage() {
                   )}
                 </>
               )}
-              <div className="flex items-center gap-2 mb-2">
+              {/* <div className="flex items-center gap-2 mb-2">
                 <input type="checkbox" checked={sms} onChange={e => setSms(e.target.checked)} />
                 <label className="text-sm text-gray-900 dark:text-white">Tôi muốn gửi thiệp và lời chúc qua SMS</label>
-              </div>
+              </div> */}
               <div className="flex items-center gap-2 mb-2">
                 <input type="checkbox" checked={invoice} onChange={e => setInvoice(e.target.checked)} />
                 <label className="text-sm text-gray-900 dark:text-white">Xuất hóa đơn công ty</label>

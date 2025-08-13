@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Home, Box, Users, FileText, BarChart2, User, ListChecks, Calendar, Lock, LogOut, MessageCircleMore, Star, Images, ChevronLeft, ChevronRight, TrendingUp, BarChart3 } from "lucide-react";
+import { Home, Box, Users, FileText, BarChart2, User, ListChecks, Calendar, Lock, LogOut, MessageCircleMore, Star, Images, ChevronLeft, ChevronRight, TrendingUp, BarChart3, Crown } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
 import { TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -18,7 +18,8 @@ const navLinks = [
   { href: "/admin/reviews", label: "Quản lý đánh giá & bình luận", icon: <Star size={24} /> },
   { href: "/admin/slider", label: "Quản lý slider", icon: <Images size={24} /> },
   { href: "/admin/message", label: "Quản lý trò chuyện", icon: <MessageCircleMore size={24} /> },
-  { href: "/admin/reports", label: "Báo cáo & Thống kê", icon: <BarChart3 size={24} /> },
+  { href: "/admin/membership", label: "Hạng thành viên", icon: <Crown size={24} /> },
+  // { href: "/admin/reports", label: "Báo cáo & Thống kê", icon: <BarChart3 size={24} /> },
 ];
 
 export default function AdminSidebar() {

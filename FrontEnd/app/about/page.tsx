@@ -1,5 +1,4 @@
 import { Navbar } from "@/components/navbar";
-import BusinessMap from "../components/BusinessMap";
 
 export default function AboutPage() {
   return (
@@ -7,79 +6,129 @@ export default function AboutPage() {
       <Navbar />
       
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-black">
+        <section className="w-full py-12 bg-white dark:bg-black">
           <div className="container px-4 md:px-6">
-            <div className="mx-auto max-w-3xl space-y-8 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-gray-900 dark:text-white">
-                  About Our Full Stack Application
-                </h1>
-                <p className="mx-auto max-w-[700px] text-gray-600 dark:text-gray-300 md:text-xl">
-                  Learn about the technologies and architecture behind our application
+            <div className="mx-auto max-w-4xl">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                  🏢 Giới thiệu Doanh nghiệp
+                </h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                  Chúng tôi là một doanh nghiệp tiên phong trong lĩnh vực thương mại điện tử, 
+                  cam kết mang đến trải nghiệm mua sắm tuyệt vời cho khách hàng
                 </p>
               </div>
               
-              <div className="text-left space-y-8">
-                <div className="space-y-4">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Technology Stack</h2>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Frontend</h3>
-                    <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
-                      <li>Next.js 13 - React framework with server-side rendering</li>
-                      <li>Tailwind CSS - Utility-first CSS framework</li>
-                      <li>shadcn/ui - Reusable component library</li>
-                      <li>TypeScript - Static type checking</li>
-                    </ul>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div className="space-y-6">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-2xl">🎯</span>
+                      Sứ mệnh
+                    </h3>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      Cung cấp các sản phẩm chất lượng cao với giá cả hợp lý, 
+                      đáp ứng mọi nhu cầu của khách hàng trong thời đại số.
+                    </p>
                   </div>
                   
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Backend</h3>
-                    <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
-                      <li>Spring Boot - Java-based backend framework</li>
-                      <li>Spring Security - Authentication and authorization</li>
-                      <li>JWT - Secure token-based authentication</li>
-                      <li>Spring Data MongoDB - Data access layer</li>
-                    </ul>
+                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-2xl">🌟</span>
+                      Tầm nhìn
+                    </h3>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      Trở thành đối tác tin cậy hàng đầu trong lĩnh vực thương mại điện tử, 
+                      góp phần thúc đẩy sự phát triển của nền kinh tế số Việt Nam.
+                    </p>
                   </div>
                   
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Database</h3>
-                    <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
-                      <li>MongoDB - NoSQL document database</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">DevOps</h3>
-                    <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
-                      <li>Docker - Containerization</li>
-                      <li>Docker Compose - Multi-container orchestration</li>
+                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-2xl">💎</span>
+                      Giá trị cốt lõi
+                    </h3>
+                    <ul className="text-gray-700 dark:text-gray-300 space-y-2">
+                      <li>• Chất lượng sản phẩm hàng đầu</li>
+                      <li>• Dịch vụ khách hàng xuất sắc</li>
+                      <li>• Sự minh bạch và uy tín</li>
+                      <li>• Đổi mới và sáng tạo không ngừng</li>
                     </ul>
                   </div>
                 </div>
                 
-                <div className="space-y-4">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Architecture</h2>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    This application follows a microservices architecture with separate frontend and backend services.
-                    The frontend is a Next.js application that communicates with the backend through RESTful API endpoints.
-                    The backend is built with Spring Boot and handles business logic, authentication, and data access.
-                    MongoDB is used as the database to store user information and application data.
-                  </p>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    The entire application is containerized using Docker, which makes it easy to develop, deploy,
-                    and scale. Docker Compose is used to orchestrate the multiple containers and their interactions.
-                  </p>
+                <div className="space-y-6">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-2xl">📞</span>
+                      Thông tin liên hệ
+                    </h3>
+                    <div className="space-y-3 text-gray-700 dark:text-gray-300">
+                      <div className="flex items-center gap-3">
+                        <span className="text-blue-600">📍</span>
+                        <span>31 Đ. Gia Long, Trà Ôn, Vĩnh Long, Vĩnh Long</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-green-600">📧</span>
+                        <span>info@doanhnghiep.com</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-purple-600">📱</span>
+                        <span>+84 123 456 789</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-orange-600">🕒</span>
+                        <span>Thứ 2 - Thứ 6: 8:00 - 18:00</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-2xl">🚀</span>
+                      Dịch vụ chính
+                    </h3>
+                    <ul className="text-gray-700 dark:text-gray-300 space-y-2">
+                      <li>• Bán lẻ sản phẩm đa dạng</li>
+                      <li>• Hệ thống hạng thành viên</li>
+                      <li>• Giao hàng nhanh chóng</li>
+                      <li>• Hỗ trợ khách hàng 24/7</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                  📍 Vị trí của chúng tôi
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Trụ sở chính tại Vĩnh Long - nơi giao thoa văn hóa và phát triển kinh tế
+                </p>
+              </div>
+              
+              <div className="flex justify-center mb-8">
+                <iframe 
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3929.6120964381826!2d105.91786147479314!3d9.966195590137492!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31a0642b7dd766c7%3A0xad8d45ebd67ae769!2zMzEgxJAuIEdpYSBMb25nLCBUcsOgIMOUbiwgVsSpbmggTG9uZywgVmnhu4d0IE5hbQ!5e0!3m2!1svi!2s!4v1755081751277!5m2!1svi!2s" 
+                  width="100%" 
+                  height="450" 
+                  style={{border: 0}} 
+                  allowFullScreen 
+                  loading="lazy" 
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="rounded-lg shadow-lg"
+                />
+              </div>
+              
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-full">
+                  <span className="text-blue-600">💼</span>
+                  <span className="text-blue-700 dark:text-blue-300 font-medium">
+                    Hãy đến thăm chúng tôi tại địa chỉ trên hoặc liên hệ để được tư vấn!
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-        <section className="w-full py-12 bg-white dark:bg-black">
-          <div className="container px-4 md:px-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Địa chỉ doanh nghiệp</h2>
-            <p className="mb-4 text-gray-700 dark:text-gray-300">123 Đường ABC, Quận XYZ, Hà Nội</p>
-            <BusinessMap />
           </div>
         </section>
       </main>

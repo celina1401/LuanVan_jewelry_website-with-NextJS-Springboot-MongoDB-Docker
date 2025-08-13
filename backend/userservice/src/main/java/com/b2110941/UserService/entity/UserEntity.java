@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
 import com.b2110941.UserService.entity.Address;
+import com.b2110941.UserService.entity.MembershipTier;
 
 @Document(collection = "users")
 public class UserEntity {
@@ -34,6 +35,12 @@ public class UserEntity {
     private String dateOfBirth;
     private String gender;
     private Integer purchaseCount = 0;
+    private MembershipTier membershipTier = MembershipTier.BRONZE;
+    private Double totalSpent = 0.0;
+    // Lưu tháng cuối cùng được reset hạng thành viên (format: "yyyy-MM")
+    private String lastResetMonth;
+    // Lưu các mã đơn hàng đã được tính vào membership để tránh đếm trùng
+    private Set<String> countedOrders = new HashSet<>();
 
 
     // Getters & Setters
@@ -194,5 +201,89 @@ public class UserEntity {
 
     public void setPurchaseCount(Integer purchaseCount) {
         this.purchaseCount = purchaseCount;
+        // Tự động cập nhật hạng thành viên khi số lần mua thay đổi
+        this.membershipTier = MembershipTier.getTierByPurchaseCount(purchaseCount);
+    }
+
+    public MembershipTier getMembershipTier() {
+        return membershipTier;
+    }
+
+    public void setMembershipTier(MembershipTier membershipTier) {
+        this.membershipTier = membershipTier;
+    }
+
+    public Double getTotalSpent() {
+        return totalSpent;
+    }
+
+    public void setTotalSpent(Double totalSpent) {
+        this.totalSpent = totalSpent;
+    }
+
+    // Helper method để tính discount
+    public double getDiscountRate() {
+        return membershipTier.getDiscountRate();
+    }
+
+    // Helper method để tính số lần mua cần thiết để lên hạng tiếp theo
+    public int getPurchasesToNextTier() {
+        int currentCount = purchaseCount;
+        if (currentCount < 5) return 5 - currentCount;
+        if (currentCount < 10) return 10 - currentCount;
+        if (currentCount < 15) return 15 - currentCount;
+        return 0; // Đã ở hạng cao nhất
+    }
+
+    // Helper method để khởi tạo membershipTier nếu chưa có
+    public void initializeMembershipTier() {
+        if (this.membershipTier == null) {
+            this.membershipTier = MembershipTier.getTierByPurchaseCount(this.purchaseCount);
+        }
+    }
+
+    // Các helper cho idempotency của membership
+    public Set<String> getCountedOrders() {
+        return countedOrders;
+    }
+
+    public void setCountedOrders(Set<String> countedOrders) {
+        this.countedOrders = countedOrders;
+    }
+
+    public boolean hasCountedOrder(String identifier) {
+        if (identifier == null) return false;
+        if (this.countedOrders == null) this.countedOrders = new HashSet<>();
+        return this.countedOrders.contains(identifier);
+    }
+
+    public void addCountedOrder(String identifier) {
+        if (identifier == null) return;
+        if (this.countedOrders == null) this.countedOrders = new HashSet<>();
+        this.countedOrders.add(identifier);
+    }
+
+    // Helper methods for monthly reset
+    public String getLastResetMonth() {
+        return lastResetMonth;
+    }
+
+    public void setLastResetMonth(String lastResetMonth) {
+        this.lastResetMonth = lastResetMonth;
+    }
+
+    public boolean needsMonthlyReset() {
+        if (this.lastResetMonth == null) return true;
+        
+        String currentMonth = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"));
+        return !this.lastResetMonth.equals(currentMonth);
+    }
+
+    public void resetMonthlyStats() {
+        this.purchaseCount = 0;
+        this.totalSpent = 0.0;
+        this.membershipTier = MembershipTier.BRONZE;
+        this.countedOrders.clear();
+        this.lastResetMonth = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"));
     }
 }

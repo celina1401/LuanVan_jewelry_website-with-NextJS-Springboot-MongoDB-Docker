@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:9003';
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:9001';
 
 function getAuthToken(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
@@ -103,6 +104,67 @@ export async function PUT(
 
     const data = await response.json();
     console.log('Order updated successfully:', data);
+
+    // After successful update, try to fetch order details to determine if membership should be updated
+    try {
+      // Helper to fetch order details by id or orderNumber
+      const fetchOrderDetails = async (): Promise<any | null> => {
+        // Try as database id first
+        const tryUrls = [
+          `${ORDER_SERVICE_URL}/api/orders/${orderId}`,
+          `${ORDER_SERVICE_URL}/api/orders/number/${orderId}`,
+        ];
+        for (const u of tryUrls) {
+          try {
+            const res = await fetch(u, { headers });
+            if (res.ok) {
+              return await res.json();
+            }
+          } catch (e) {
+            // continue
+          }
+        }
+        return null;
+      };
+
+      const order = await fetchOrderDetails();
+      if (order) {
+        const shippingStatusText: string = String(order.shippingStatus || order.orderStatus || '').toLowerCase();
+        const paymentStatusText: string = String(order.paymentStatus || '').toLowerCase();
+
+        const isDelivered = /đã\s*giao/.test(shippingStatusText) || /delivered/.test(shippingStatusText);
+        const isPaid = /đã\s*thanh\s*toán/.test(paymentStatusText) || /paid/.test(paymentStatusText);
+
+        // Check if order is completed (both delivered and paid)
+        const isCompleted = isDelivered && isPaid;
+        
+        // Update membership if order is completed and has required data
+        if (isCompleted && order.userId && (order.total ?? order.totalAmount ?? order.amount)) {
+          const orderAmount = Number(order.total ?? order.totalAmount ?? order.amount);
+          try {
+            const membershipRes = await fetch(`${USER_SERVICE_URL}/api/users/membership/${order.userId}/purchase`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderAmount, orderId: order.id ?? orderId, orderNumber: order.orderNumber ?? undefined }),
+            });
+
+            if (!membershipRes.ok) {
+              const errText = await membershipRes.text();
+              console.error('Failed to update membership purchase:', membershipRes.status, errText);
+            } else {
+              console.log('Membership purchase counted successfully');
+            }
+          } catch (e) {
+            console.error('Error calling membership purchase API:', e);
+          }
+        }
+      } else {
+        console.warn('Could not fetch order details to evaluate membership update');
+      }
+    } catch (postErr) {
+      console.error('Post-update membership evaluation error:', postErr);
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error updating order:', error);

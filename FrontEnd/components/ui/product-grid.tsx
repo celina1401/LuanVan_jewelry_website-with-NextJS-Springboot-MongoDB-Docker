@@ -243,7 +243,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
 
   return (
     <div className="space-y-6">
-      {/* Debug Info */}
+      {/* Debug Info
       {showDebugInfo && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
           <h3 className="font-semibold text-yellow-800 mb-2">Debug Info:</h3>
@@ -267,7 +267,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
             </details>
           )}
         </div>
-      )}
+      )} */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map((product, index) => {

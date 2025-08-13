@@ -298,8 +298,10 @@ export default function AdminOrdersPage() {
                                                         );
 
                                                         try {
-                                                            const res = await fetch(`http://localhost:9003/api/orders/${order.orderNumber}/status?orderStatus=${encodeURIComponent(value)}`, {
+                                                            const res = await fetch(`/api/orders/${order.orderNumber}/update`, {
                                                                 method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ action: 'status', orderStatus: value }),
                                                             });
 
                                                             if (!res.ok) {
@@ -397,8 +399,10 @@ export default function AdminOrdersPage() {
                                                         );
 
                                                         try {
-                                                            const res = await fetch(`http://localhost:9003/api/orders/${order.orderNumber}/shipping?shippingStatus=${encodeURIComponent(value)}`, {
+                                                            const res = await fetch(`/api/orders/${order.orderNumber}/update`, {
                                                                 method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ action: 'shipping', shippingStatus: value }),
                                                             });
 
                                                             if (!res.ok) {
@@ -518,8 +522,10 @@ export default function AdminOrdersPage() {
                                         className="ml-2 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                                         onClick={async () => {
                                             try {
-                                                const res = await fetch(`http://localhost:9003/api/orders/${selectedOrder.orderNumber}/payment?paymentStatus=Đã thanh toán`, {
+                                                const res = await fetch(`/api/orders/${selectedOrder.orderNumber}/update`, {
                                                     method: "PUT",
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ action: 'payment', paymentStatus: 'Đã thanh toán' }),
                                                 });
                                                 
                                                 if (!res.ok) {
@@ -658,22 +664,28 @@ export default function AdminOrdersPage() {
                                         let hasUpdate = false;
 
                                         if (selectedOrder.orderStatus && selectedOrder.orderStatus !== original?.status) {
-                                            await fetch(`http://localhost:9003/api/orders/${selectedOrder.orderNumber}/status?orderStatus=${encodeURIComponent(selectedOrder.orderStatus)}`, {
+                                            await fetch(`/api/orders/${selectedOrder.orderNumber}/update`, {
                                                 method: "PUT",
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ action: 'status', orderStatus: selectedOrder.orderStatus }),
                                             });
                                             hasUpdate = true;
                                         }
 
                                         if (selectedOrder.shippingStatus && selectedOrder.shippingStatus !== original?.shippingStatus) {
-                                            await fetch(`http://localhost:9003/api/orders/${selectedOrder.orderNumber}/shipping?shippingStatus=${encodeURIComponent(selectedOrder.shippingStatus)}`, {
+                                            await fetch(`/api/orders/${selectedOrder.orderNumber}/update`, {
                                                 method: "PUT",
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ action: 'shipping', shippingStatus: selectedOrder.shippingStatus }),
                                             });
                                             hasUpdate = true;
                                         }
 
                                         if (selectedOrder.paymentStatus && selectedOrder.paymentStatus !== original?.payment) {
-                                            await fetch(`http://localhost:9003/api/orders/${selectedOrder.orderNumber}/payment?paymentStatus=${encodeURIComponent(selectedOrder.paymentStatus)}`, {
+                                            await fetch(`/api/orders/${selectedOrder.orderNumber}/update`, {
                                                 method: "PUT",
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ action: 'payment', paymentStatus: selectedOrder.paymentStatus }),
                                             });
                                             hasUpdate = true;
                                         }

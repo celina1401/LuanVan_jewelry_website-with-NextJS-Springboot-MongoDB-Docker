@@ -7,10 +7,12 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import VietMapAddressPicker from "@/components/VietMapAddressPicker";
 import React, { useRef } from "react";
+import MembershipCard from "@/app/components/MembershipCard";
 
 // Định nghĩa kiểu Address
 export type Address = {
@@ -207,6 +209,7 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
+
   // ✅ Đồng bộ và load user từ backend sau khi đăng nhập
   useEffect(() => {
     const fetchUserData = async () => {
@@ -266,6 +269,8 @@ export default function DashboardPage() {
 
     fetchOrders();
   }, [user]);
+
+
 
   useEffect(() => {
     if (addresses.length === 0) setShowAddForm(true);
@@ -380,6 +385,23 @@ export default function DashboardPage() {
               <p><b>Email:</b> {user.emailAddresses[0]?.emailAddress}</p>
               <p><b>Vai trò:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : "user"}</p>
               <p><b>Số điện thoại:</b> {phone || "Chưa cập nhật"}</p>
+              
+              {/* Membership Info */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Hạng thành viên</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/membership')}
+                    className="text-rose-500 hover:bg-rose-50"
+                  >
+                    Xem chi tiết
+                  </Button>
+                </div>
+                <MembershipCard userId={user.id} className="w-full" />
+              </div>
+              
               <p><b>Địa chỉ:</b></p>
               {addresses.length === 0 ? (
                 <span>Chưa cập nhật</span>
