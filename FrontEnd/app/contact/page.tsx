@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,13 +130,7 @@ export default function ContactPage() {
         </section>
       </main>
       
-      <footer className="border-t py-6 md:py-8 bg-white dark:bg-black">
-        <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-300">
-            © {new Date().getFullYear()} T&C Jewelry. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

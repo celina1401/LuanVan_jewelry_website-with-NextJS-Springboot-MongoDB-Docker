@@ -74,7 +74,7 @@ export function ProductFilters({
         </CardContent>
       </Card>
 
-      <Card className="bg-white dark:bg-black">
+      {/* <Card className="bg-white dark:bg-black">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">Giới tính</CardTitle>
         </CardHeader>
@@ -98,7 +98,7 @@ export function ProductFilters({
             </div>
           </RadioGroup>
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Button
         variant="outline"

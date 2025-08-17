@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/Footer";
 
 export default function AboutPage() {
   return (
@@ -66,19 +67,19 @@ export default function AboutPage() {
                     <div className="space-y-3 text-gray-700 dark:text-gray-300">
                       <div className="flex items-center gap-3">
                         <span className="text-blue-600">📍</span>
-                        <span>31 Đ. Gia Long, Trà Ôn, Vĩnh Long, Vĩnh Long</span>
+                        <span>22 Đ. Gia Long, Trà Ôn, Vĩnh Long, Vĩnh Long</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-green-600">📧</span>
-                        <span>info@doanhnghiep.com</span>
+                        <span>tcjewelry@gmail.com</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-purple-600">📱</span>
-                        <span>+84 123 456 789</span>
+                        <span>0908934902</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-orange-600">🕒</span>
-                        <span>Thứ 2 - Thứ 6: 8:00 - 18:00</span>
+                        <span>Thứ 2 - Thứ 6: 7:30 - 18:00</span>
                       </div>
                     </div>
                   </div>
@@ -109,7 +110,8 @@ export default function AboutPage() {
               
               <div className="flex justify-center mb-8">
                 <iframe 
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3929.6120964381826!2d105.91786147479314!3d9.966195590137492!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31a0642b7dd766c7%3A0xad8d45ebd67ae769!2zMzEgxJAuIEdpYSBMb25nLCBUcsOgIMOUbiwgVsSpbmggTG9uZywgVmnhu4d0IE5hbQ!5e0!3m2!1svi!2s!4v1755081751277!5m2!1svi!2s" 
+                  // title="Vị trí của chúng tôi"
+                  src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d245.6008283448825!2d105.92031268119305!3d9.96609957926899!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31a0642b7e87d7a7%3A0x4e818b2751db279e!2zMjIgxJAuIEdpYSBMb25nLCBUcsOgIMOUbiwgVsSpbmggTG9uZywgVmnhu4d0IE5hbQ!5e0!3m2!1svi!2sus!4v1755344087365!5m2!1svi!2sus"
                   width="100%" 
                   height="450" 
                   style={{border: 0}} 
@@ -119,27 +121,12 @@ export default function AboutPage() {
                   className="rounded-lg shadow-lg"
                 />
               </div>
-              
-              <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-full">
-                  <span className="text-blue-600">💼</span>
-                  <span className="text-blue-700 dark:text-blue-300 font-medium">
-                    Hãy đến thăm chúng tôi tại địa chỉ trên hoặc liên hệ để được tư vấn!
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </section>
       </main>
       
-      <footer className="border-t py-6 md:py-8 bg-white dark:bg-black">
-        <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-300">
-            © {new Date().getFullYear()} FullStack App. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { translateProductTag, getProductImageUrl } from "@/lib/utils";
 import { MagnifierImage } from "@/app/components/MagnifierImage";
 import ReviewSection from "@/components/ReviewSection";
 import ReviewSummary from "@/components/ReviewSummary";
+import { Footer } from "@/components/Footer";
 
 
 type Product = {
@@ -201,10 +202,8 @@ export default function ProductDetailPage() {
       if (response.ok) {
         const updatedProduct = await response.json();
         setProduct(updatedProduct);
-        console.log("[DEBUG] Rating updated after new review:", updatedProduct.rating);
       }
     } catch (error) {
-      console.error("[DEBUG] Error updating rating:", error);
     }
   };
 
@@ -224,9 +223,6 @@ export default function ProductDetailPage() {
     fetch(`http://localhost:9004/api/products/${productId}`)
       .then(res => res.json())
               .then((data: Product) => {
-          console.log('[DEBUG] Product data from backend:', data);
-          console.log('[DEBUG] thumbnailUrl:', data.thumbnailUrl);
-          console.log('[DEBUG] images array:', data.images);
           setProduct(data);
           // Ưu tiên sử dụng thumbnailUrl từ Cloudinary, fallback về images[0] hoặc ảnh mặc định
           setSelectedImg(data.thumbnailUrl || (data.images && data.images.length > 0) ? data.images[0] : "/images/no-image.png");
@@ -234,7 +230,6 @@ export default function ProductDetailPage() {
           setLoading(false);
         })
       .catch((error) => {
-        // console.error('[DEBUG] Error fetching product:', error);
         setProduct(null);
         setLoading(false);
       });
@@ -252,13 +247,6 @@ export default function ProductDetailPage() {
 
   // Sử dụng rating từ backend (đã được tính từ ReviewService)
   const avgRating = product.rating || 0;
-    
-  // Debug log
-  console.log(`[DEBUG] Product Detail ${product.id}:`, {
-    name: product.name,
-    rating: product.rating,
-    reviews: product.reviews
-  });
 
   const addToCart = (product: Product) => {
     if (product.stockQuantity === 0) {
@@ -280,8 +268,8 @@ export default function ProductDetailPage() {
   };
 
   const buyNow = (product: Product) => {
-    addToCart(product);
-    router.push("/order");
+    // Không thêm vào giỏ hàng, chỉ chuyển hướng với tham số mua ngay
+    router.push(`/order?productId=${product.id}&quantity=${quantity}&buyNow=true`);
   };
 
   const goToCheckout = () => {
@@ -327,52 +315,33 @@ export default function ProductDetailPage() {
               zoom={1.5} // Tăng zoom rõ hơn một chút
               lensSize={320} // Thu nhỏ vùng kính lúp xuống 80x80 pixel
             />
-            {/* Debug info */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
-                <p>Debug - selectedImg: {selectedImg}</p>
-                <p>Debug - getProductImageUrl: {getProductImageUrl(product)}</p>
-                <p>Debug - product.thumbnailUrl: {product.thumbnailUrl}</p>
-                <p>Debug - product.images: {JSON.stringify(product.images)}</p>
-              </div>
-            )}
+
             <div className="flex gap-4 mt-6">
-              {/* Hiển thị ảnh chính */}
-              <img
-                src={getProductImageUrl(product)}
-                alt=""
-                className={`w-20 h-20 object-cover rounded-xl border-4 cursor-pointer transition-all duration-150 shadow ${selectedImg === getProductImageUrl(product)
-                    ? "border-blue-500 ring-4 ring-blue-200 scale-105"
-                    : "border-gray-200 hover:border-blue-300"
-                  }`}
-                onClick={() => setSelectedImg(getProductImageUrl(product))}
-                onError={(e) => {
-                  const img = e.target as HTMLImageElement;
-                  if (!img.src.includes("default-avatar.png")) {
-                    img.src = "/default-avatar.png";
-                  }
-                }}
-              />
-              
-              {/* Hiển thị tất cả ảnh nếu có nhiều */}
-              {product.images && product.images.length > 1 && product.images.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={`${product.name} - Ảnh ${index + 1}`}
-                  className={`w-20 h-20 object-cover rounded-xl border-4 cursor-pointer transition-all duration-150 shadow ${selectedImg === img
-                      ? "border-blue-500 ring-4 ring-blue-200 scale-105"
-                      : "border-gray-200 hover:border-blue-300"
-                    }`}
-                  onClick={() => setSelectedImg(img)}
-                  onError={(e) => {
-                    const imgElement = e.target as HTMLImageElement;
-                    if (!imgElement.src.includes("default-avatar.png")) {
-                      imgElement.src = "/default-avatar.png";
-                    }
-                  }}
-                />
-              ))}
+              {/* Tạo danh sách ảnh duy nhất để hiển thị */}
+              {(() => {
+                const mainImage = getProductImageUrl(product);
+                const allImages = [mainImage, ...(product.images || [])];
+                const uniqueImages = Array.from(new Set(allImages)); // Loại bỏ ảnh trùng lặp
+                
+                return uniqueImages.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img}
+                    alt={`${product.name} - Ảnh ${index + 1}`}
+                    className={`w-20 h-20 object-cover rounded-xl border-4 cursor-pointer transition-all duration-150 shadow ${selectedImg === img
+                        ? "border-blue-500 ring-4 ring-blue-200 scale-105"
+                        : "border-gray-200 hover:border-blue-300"
+                      }`}
+                    onClick={() => setSelectedImg(img)}
+                    onError={(e) => {
+                      const imgElement = e.target as HTMLImageElement;
+                      if (!imgElement.src.includes("default-avatar.png")) {
+                        imgElement.src = "/default-avatar.png";
+                      }
+                    }}
+                  />
+                ));
+              })()}
             </div>
           </div>
           {/* Thông tin sản phẩm */}
@@ -436,13 +405,6 @@ export default function ProductDetailPage() {
             </div>
             {/* Nút đặt mua/giỏ hàng */}
             <div className="flex flex-wrap gap-4 mt-4">
-              <button
-                className="px-8 py-3 bg-rose-400 text-white rounded-full font-bold text-lg shadow hover:bg-rose-500 transition"
-                disabled={product.stockQuantity === 0}
-                onClick={() => alert("Đặt hàng thành công!")}
-              >
-                Đặt hàng
-              </button>
               <button
                 className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2"
                 onClick={() => addToCart(product)}
@@ -591,9 +553,10 @@ export default function ProductDetailPage() {
               ))}
             </div>
           </div>
-        )}
-      </div>
-      <ChatBox />
-    </div>
-  );
-} 
+                 )}
+       </div>
+       <ChatBox />
+       <Footer />
+     </div>
+   );
+ } 

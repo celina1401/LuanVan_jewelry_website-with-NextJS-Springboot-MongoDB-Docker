@@ -1,6 +1,7 @@
 "use client"
 
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/Footer";
 import { HeroSlider } from "@/components/ui/hero-slider";
 import { BestSellerProducts } from "@/components/ui/best-seller-products";
 import { GoldPriceChart } from "@/components/ui/gold-price-chart";
@@ -18,7 +19,7 @@ export default function Home() {
         </section>
         <BestSellerProducts />
         
-        <section className="w-full bg-gray-100 dark:bg-gray-900 py-6 md:py-12 lg:py-16">
+        {/* <section className="w-full bg-gray-100 dark:bg-gray-900 py-6 md:py-12 lg:py-16">
           <div className="container px-4 md:px-6">
             <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:gap-12">
               <div className="space-y-2">
@@ -41,16 +42,10 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
       </main>
       
-      <footer className="border-t py-6 md:py-8 bg-white dark:bg-black">
-        <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-300">
-            © {new Date().getFullYear()} T&C Jewelry. Đã đăng ký bản quyền.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

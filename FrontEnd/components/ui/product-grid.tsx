@@ -196,18 +196,25 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
         // Price range filtering
         let matchPrice = true;
         if (priceRange !== "all") {
-          const [min, max] = priceRange.split("-").map(Number);
           const productPrice = productGoldPrices[product.id] ?? product.price;
           
-          if (max) {
-            matchPrice = productPrice >= min && productPrice <= max;
-          } else {
+          if (priceRange.includes("+")) {
             // Handle "5000000+" case
+            const min = parseInt(priceRange.replace("+", ""));
             matchPrice = productPrice >= min;
+            
+          } else {
+            // Handle range like "1000000-2000000"
+            const [min, max] = priceRange.split("-").map(Number);
+            matchPrice = productPrice >= min && productPrice <= max;
+            console.log(`Product ${product.name}: price ${productPrice} in range ${min}-${max} = ${matchPrice}`);
           }
         }
         
-        return matchGender && matchCategory && matchPrice;
+        const result = matchGender && matchCategory && matchPrice;
+        console.log(`Product ${product.name}: gender=${matchGender}, category=${matchCategory}, price=${matchPrice}, final=${result}`);
+        
+        return result;
       })
       .sort((a, b) => {
         // Sort products

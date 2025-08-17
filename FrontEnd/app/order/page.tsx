@@ -4,9 +4,11 @@ import { useCart } from "@/contexts/cart-context";
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/navbar";
 import { useUser, useAuth } from "@clerk/nextjs";
+import { useSearchParams } from "next/navigation";
 // import type { Address } from "@/app/dashboard/page";
 import AddAddressForm, { Address } from "@/app/components/AddAddressForm";
 import { toast } from "sonner";
+import { Footer } from "@/components/Footer";
 
 
 const paymentMethods = [
@@ -18,6 +20,23 @@ export default function OrderPage() {
   const { items, total, clearCart, updateQuantity } = useCart();
   const { user } = useUser();
   const { getToken } = useAuth();
+  
+  // ✅ Xử lý buyNow - mua ngay một sản phẩm cụ thể
+  const searchParams = useSearchParams();
+  const buyNowProductId = searchParams.get('productId');
+  const buyNowQuantity = parseInt(searchParams.get('quantity') || '1');
+  const isBuyNow = searchParams.get('buyNow') === 'true';
+  
+  // Debug log để kiểm tra URL parameters
+  console.log('🔍 Debug URL parameters:', {
+    buyNowProductId,
+    buyNowQuantity,
+    isBuyNow
+  });
+  
+  // ✅ Nếu là buyNow, tạo item đơn lẻ từ thông tin URL
+  const [buyNowItem, setBuyNowItem] = useState<any>(null);
+  const [buyNowLoading, setBuyNowLoading] = useState(false);
 
   const [dynamicPrices, setDynamicPrices] = useState<{ [id: string]: number }>({});
   const [name, setName] = useState("");
@@ -34,7 +53,6 @@ export default function OrderPage() {
   const [deliveryType, setDeliveryType] = useState("home");
   const [payment, setPayment] = useState("cod");
   const [agree, setAgree] = useState(false);
-  // const [sms, setSms] = useState(false);
   const [invoice, setInvoice] = useState(false);
   const [promo, setPromo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false); // Thêm loading state
@@ -107,12 +125,90 @@ export default function OrderPage() {
     fetchMembershipInfo();
   }, [user]);
 
+  // 🎯 Fetch buyNow product info if needed
+  useEffect(() => {
+    const fetchBuyNowProduct = async () => {
+      if (!isBuyNow || !buyNowProductId) return;
+      
+      console.log('🔄 Fetching buyNow product:', { buyNowProductId, buyNowQuantity });
+      
+      try {
+        setBuyNowLoading(true);
+        console.log('🔄 Fetching from API:', `http://localhost:9004/api/products/${buyNowProductId}`);
+        
+        const response = await fetch(`http://localhost:9004/api/products/${buyNowProductId}`);
+        console.log('📡 API Response status:', response.status);
+        
+        if (response.ok) {
+          const product = await response.json();
+          console.log('✅ Received product data:', product);
+          
+          const buyNowItemData = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.thumbnailUrl || product.images?.[0] || '/default-avatar.png',
+            quantity: buyNowQuantity,
+            metadata: {
+              weight: product.weight,
+              goldAge: product.goldAge || product.karat,
+              wage: product.wage,
+              category: product.category,
+              brand: product.brand,
+              ...product.metadata
+            }
+          };
+          
+          console.log('🎯 Setting buyNowItem:', buyNowItemData);
+          setBuyNowItem(buyNowItemData);
+        } else {
+          const errorText = await response.text();
+          console.error('❌ Failed to fetch product:', response.status, response.statusText, errorText);
+          
+          // Fallback: tạo item từ URL params nếu API fail
+          console.log('🔄 Creating fallback item from URL params...');
+          const fallbackItem = {
+            id: buyNowProductId,
+            name: `Sản phẩm ${buyNowProductId}`,
+            price: 0, // Sẽ được tính sau
+            image: '/default-avatar.png',
+            quantity: buyNowQuantity,
+            metadata: {}
+          };
+          setBuyNowItem(fallbackItem);
+          toast.warning('Không thể tải thông tin sản phẩm, sử dụng thông tin cơ bản');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching buyNow product:', error);
+        
+        // Fallback: tạo item từ URL params nếu API fail
+        console.log('🔄 Creating fallback item from URL params due to network error...');
+        const fallbackItem = {
+          id: buyNowProductId,
+          name: `Sản phẩm ${buyNowProductId}`,
+          price: 0, // Sẽ được tính sau
+          image: '/default-avatar.png',
+          quantity: buyNowQuantity,
+          metadata: {}
+        };
+        setBuyNowItem(fallbackItem);
+        toast.warning('Không thể kết nối server, sử dụng thông tin cơ bản');
+      } finally {
+        setBuyNowLoading(false);
+      }
+    };
+    
+    fetchBuyNowProduct();
+  }, [isBuyNow, buyNowProductId, buyNowQuantity]);
+
   //Tinh gia vang dong
   useEffect(() => {
     async function fetchPrices() {
       const result: { [id: string]: number } = {};
+      const itemsToProcess = isBuyNow && buyNowItem ? [buyNowItem] : items;
+      
       await Promise.all(
-        items.map(async (item) => {
+        itemsToProcess.map(async (item) => {
           const { weight, wage = 0, goldAge } = item.metadata || {};
           if (weight && goldAge) {
             try {
@@ -131,13 +227,58 @@ export default function OrderPage() {
       );
       setDynamicPrices(result);
     }
-    if (items.length > 0) fetchPrices();
-  }, [items]);
+    
+    if ((isBuyNow && buyNowItem) || items.length > 0) {
+      fetchPrices();
+    }
+  }, [items, isBuyNow, buyNowItem]);
 
   const shipping = deliveryType === "home" ? 0 : 0;
   
   // 🎯 Calculate membership discount (rounded to integer VND)
-  const rawSubtotal = items.reduce((sum, item) => {
+  // Ưu tiên BuyNow: nếu có buyNowItem thì chỉ dùng buyNowItem, không dùng items từ giỏ hàng
+  const itemsToCalculate = isBuyNow && buyNowItem ? [buyNowItem] : (isBuyNow ? [] : items);
+  
+  // Debug log để kiểm tra
+  console.log('🔍 Debug itemsToCalculate:', {
+    isBuyNow,
+    buyNowProductId,
+    buyNowQuantity,
+    buyNowItem: buyNowItem ? { 
+      id: buyNowItem.id, 
+      name: buyNowItem.name, 
+      quantity: buyNowItem.quantity,
+      price: buyNowItem.price,
+      metadata: buyNowItem.metadata
+    } : null,
+    itemsCount: items.length,
+    itemsToCalculateCount: itemsToCalculate.length,
+    itemsToCalculate: itemsToCalculate.map(item => ({ 
+      id: item.id, 
+      name: item.name, 
+      quantity: item.quantity,
+      price: item.price,
+      metadata: item.metadata
+    }))
+  });
+  
+  // Debug log chi tiết hơn để kiểm tra
+  if (isBuyNow) {
+    console.log('🎯 BuyNow Mode:', {
+      buyNowProductId,
+      buyNowQuantity,
+      buyNowItem: buyNowItem,
+      itemsToCalculate: itemsToCalculate,
+      shouldShowOnlyBuyNowItem: itemsToCalculate.length === 1 && itemsToCalculate[0]?.id === buyNowProductId
+    });
+  } else {
+    console.log('🛒 Cart Mode:', {
+      itemsCount: items.length,
+      itemsToCalculate: itemsToCalculate
+    });
+  }
+  
+  const rawSubtotal = itemsToCalculate.reduce((sum, item) => {
     const unitPrice = dynamicPrices[item.id] ?? item.price;
     return sum + unitPrice * item.quantity;
   }, 0);
@@ -177,9 +318,9 @@ export default function OrderPage() {
       return;
     }
 
-    if (items.length === 0) {
-      toast.error('Giỏ hàng trống', {
-        description: 'Vui lòng thêm sản phẩm vào giỏ hàng'
+    if (itemsToCalculate.length === 0) {
+      toast.error('Không có sản phẩm nào', {
+        description: 'Vui lòng thêm sản phẩm vào giỏ hàng hoặc chọn mua ngay'
       });
       return;
     }
@@ -210,7 +351,7 @@ export default function OrderPage() {
             ward,
             district,
             province,
-            items: items.map((item) => ({
+            items: itemsToCalculate.map((item) => ({
               productId: item.id,
               productName: item.name,
               productImage: item.image,
@@ -368,7 +509,7 @@ export default function OrderPage() {
               ward,
               district,
               province,
-              items: items.map((item) => ({
+              items: itemsToCalculate.map((item) => ({
                 productId: item.id,
                 productName: item.name,
                 productImage: item.image,
@@ -423,6 +564,7 @@ export default function OrderPage() {
     } finally {
       setIsSubmitting(false); // Kết thúc loading
     }
+
   };
 
   const handleAddAddress = (newAddress: Address) => {
@@ -461,12 +603,21 @@ export default function OrderPage() {
         ) : (
           <form onSubmit={handleOrder} className="space-y-6">
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
-              <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Sản phẩm</h2>
-              {items.length === 0 ? (
-                <p className="text-gray-900 dark:text-white">Giỏ hàng của bạn đang trống.</p>
+              <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+                {isBuyNow ? 'Sản phẩm mua ngay' : 'Sản phẩm'}
+              </h2>
+              {isBuyNow && buyNowLoading ? (
+                <div className="p-4 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-gray-900 dark:text-white">Đang tải thông tin sản phẩm...</p>
+                </div>
+              ) : itemsToCalculate.length === 0 ? (
+                <p className="text-gray-900 dark:text-white">
+                  {isBuyNow ? 'Không có sản phẩm nào được chọn.' : 'Giỏ hàng của bạn đang trống.'}
+                </p>
               ) : (
                 <ul className="space-y-2">
-                  {items.map((item) => {
+                  {itemsToCalculate.map((item) => {
                     const unitPrice = dynamicPrices[item.id] ?? item.price;
                     return (
                       <li key={item.id} className="flex flex-col gap-1 justify-between">
@@ -474,11 +625,46 @@ export default function OrderPage() {
                           {item.image && <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded border" />}
                           <span className="text-gray-900 dark:text-white">{item.name}</span>
                           <div className="flex items-center gap-1 ml-2">
-                            <button type="button" onClick={() => updateQuantity(item.id, item.quantity - 1, item.metadata)} disabled={item.quantity <= 1} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">-</button>
+                            <button type="button" onClick={() => {
+                              if (isBuyNow && buyNowItem) {
+                                // Cập nhật số lượng cho buyNow item
+                                setBuyNowItem({...buyNowItem, quantity: Math.max(1, buyNowItem.quantity - 1)});
+                              } else {
+                                updateQuantity(item.id, item.quantity - 1, item.metadata);
+                              }
+                            }} disabled={item.quantity <= 1} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">-</button>
                             <span className="w-8 text-center text-gray-900 dark:text-white">{item.quantity}</span>
-                            <button type="button" onClick={() => updateQuantity(item.id, item.quantity + 1, item.metadata)} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">+</button>
+                            <button type="button" onClick={() => {
+                              if (isBuyNow && buyNowItem) {
+                                // Cập nhật số lượng cho buyNow item
+                                setBuyNowItem({...buyNowItem, quantity: buyNowItem.quantity + 1});
+                              } else {
+                                updateQuantity(item.id, item.quantity + 1, item.metadata);
+                              }
+                            }} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">+</button>
                           </div>
                           <span className="text-gray-900 dark:text-white">{Math.round(unitPrice * item.quantity).toLocaleString()}₫</span>
+                          {/* Nút xóa sản phẩm */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isBuyNow && buyNowItem) {
+                                // Xóa sản phẩm mua ngay - chuyển về trang sản phẩm
+                                toast.success('Đã xóa sản phẩm khỏi đơn hàng');
+                                window.location.href = `/products/${buyNowProductId}`;
+                              } else {
+                                // Xóa sản phẩm khỏi giỏ hàng
+                                updateQuantity(item.id, 0, item.metadata);
+                                toast.success('Đã xóa sản phẩm khỏi giỏ hàng');
+                              }
+                            }}
+                            className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                            title="Xóa sản phẩm"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </div>
                         {/* Thông tin khối lượng × giá vàng + tiền công */}
                         <div className="ml-20 text-xs text-gray-600 dark:text-gray-300">ID
@@ -537,11 +723,13 @@ export default function OrderPage() {
                   <span className="text-gray-900 dark:text-white">Tổng tiền</span>
                   <span className="text-rose-600">{Math.round(finalTotal).toLocaleString()}₫</span>
                 </div>
+
               </div>
               <div className="mt-4 flex gap-2 items-center">
                 <input className="border rounded p-2 flex-1 text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Nhập mã ưu đãi" value={promo} onChange={e => setPromo(e.target.value)} />
                 <button type="button" className="bg-rose-400 text-white px-4 py-2 rounded font-semibold">Áp dụng</button>
               </div>
+
             </div>
             {/* giao hang */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -704,13 +892,14 @@ export default function OrderPage() {
               <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Ghi chú đơn hàng (Không bắt buộc)</h2>
               <textarea className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Vui lòng ghi chú thêm để T&C Jewelry hỗ trợ tốt nhất cho Quý khách!" value={note} onChange={e => setNote(e.target.value)} />
             </div>
-            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={items.length === 0 || !agree || isSubmitting}
+            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={itemsToCalculate.length === 0 || !agree || isSubmitting}
             >
-              {isSubmitting ? "Đang xử lý..." : "Xác nhận đặt hàng"}
+              {isSubmitting ? "Đang xử lý..." : (isBuyNow ? "Mua ngay" : "Xác nhận đặt hàng")}
             </button>
           </form>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

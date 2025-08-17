@@ -30,23 +30,26 @@ interface GoldPriceHistory {
   type: string
   price: number
   timestamp: string
+  isEmpty?: boolean
 }
 
 // Thay thế mock data bằng fetch từ GoldAPI
-const GOLD_API_KEY = "goldapi-40qegsmdtz8uim-io"; // <-- Điền API Key tại đây
+const GOLD_API_KEY = "goldapi-3sqsn7xmbq3a7f1-io"; // <-- Điền API Key tại đây
 // API dự phòng:
 
 // goldapi-5p9h9smdppd1qi-io         - Vicao              R
 // goldapi-40qegsmdtz23aq-io        - CongTri             R
 // goldapi-k15ismdtz65qw-io         - GiaBao              R 
 // goldapi-40qegsmdtz8uim-io        - BichTram            R
-// goldapi-8raw3zsme5b0qmf-io       - ThaiLe
+// goldapi-8raw3zsme5b0qmf-io       - ThaiLe              R
 // goldapi-1cey8cmsme5bmw4g-io      - MinhHao
 // goldapi-8raw3zsme5cim88-io       - KKD
 // goldapi-grta9sme89c0ge-io        - AnhPhuc1
 // goldapi-krl2sme89hruk-io         - AnhPhuc2
 // goldapi-5j959sme9ngfoc-io        - BichTram2
 // goldapi-6v0i89sme9qwd5c-io       - Lam
+
+
 
 const GOLD_API_URL = "https://www.goldapi.io/api/XAU/USD";
 
@@ -238,7 +241,14 @@ export function GoldPriceChart() {
 
   // Lọc dữ liệu history theo filterMode
   const now = Date.now();
-  let filteredHistory = history;
+  let filteredHistory: Array<{ 
+    price: number; 
+    timestamp: string; 
+    isEmpty?: boolean;
+    dayIndex?: number;
+    dayName?: string;
+    expectedDate?: string;
+  }> = history;
   
   if (filterMode === 'day') {
     const startOfDay = new Date(now);
@@ -251,12 +261,30 @@ export function GoldPriceChart() {
       return ts >= startOfDay.getTime() && ts <= endOfDay.getTime();
     });
   } else if (filterMode === 'week') {
-    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    // Lấy tuần hiện tại từ T2 đến CN
+    const today = new Date(now);
+    const currentDay = today.getDay(); // 0 = CN, 1 = T2, 2 = T3, ..., 6 = T7
     
-    // Lấy dữ liệu từ 7 ngày trước
+    // Tính ngày đầu tuần (T2) - nếu hôm nay là CN thì lấy T2 tuần trước
+    let startOfWeek: Date;
+    if (currentDay === 0) { // CN
+      startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - 6); // Lùi 6 ngày để về T2
+    } else {
+      startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - (currentDay - 1)); // Lùi về T2
+    }
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Tính ngày cuối tuần (CN)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Cộng 6 ngày để đến CN
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    // Lấy dữ liệu trong khoảng tuần hiện tại
     const weekData = history.filter(h => {
       const ts = new Date(h.timestamp).getTime();
-      return ts >= oneWeekAgo.getTime();
+      return ts >= startOfWeek.getTime() && ts <= endOfWeek.getTime();
     });
 
     // Nhóm theo ngày và lấy điểm dữ liệu mới nhất cho mỗi ngày
@@ -271,10 +299,113 @@ export function GoldPriceChart() {
       }
     });
 
-    // Chuyển về array và sắp xếp theo thời gian
-    filteredHistory = Array.from(dailyData.values()).sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    // Tạo dữ liệu cho đủ 7 ngày từ T2 đến CN với thứ tự chính xác
+    const weekDays = [];
+    const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startOfWeek);
+      currentDate.setDate(startOfWeek.getDate() + i);
+      const dayKey = currentDate.toISOString().split('T')[0];
+      
+      if (dailyData.has(dayKey)) {
+        // Thêm thông tin ngày vào dữ liệu
+        const data = dailyData.get(dayKey);
+        
+        // Kiểm tra và làm sạch giá trị
+        let cleanPrice = data.price;
+        if (typeof cleanPrice === 'number' && !isNaN(cleanPrice) && cleanPrice > 0) {
+          // Kiểm tra outlier
+          const allPrices = Array.from(dailyData.values())
+            .filter(d => typeof d.price === 'number' && !isNaN(d.price) && d.price > 0)
+            .map(d => d.price);
+          
+          if (allPrices.length > 0) {
+            const avgPrice = allPrices.reduce((sum, price) => sum + price, 0) / allPrices.length;
+            const stdDev = Math.sqrt(
+              allPrices.reduce((sum, price) => sum + Math.pow(price - avgPrice, 2), 0) / allPrices.length
+            );
+            
+            // Nếu giá trị là outlier, sử dụng giá trung bình
+            if (Math.abs(cleanPrice - avgPrice) > 2 * stdDev) {
+              console.log(`Thay thế outlier ${cleanPrice} bằng giá trung bình ${avgPrice.toFixed(2)} cho ngày ${dayNames[i]}`);
+              cleanPrice = avgPrice;
+            }
+          }
+        }
+        
+        weekDays.push({
+          ...data,
+          price: cleanPrice,
+          dayIndex: i,
+          dayName: dayNames[i],
+          expectedDate: currentDate.toISOString()
+        });
+      } else {
+        // Nếu không có dữ liệu cho ngày này, tạo điểm dữ liệu mặc định
+        weekDays.push({
+          price: 0, // Sẽ được xử lý để không hiển thị trên chart
+          timestamp: currentDate.toISOString(),
+          isEmpty: true,
+          dayIndex: i,
+          dayName: dayNames[i],
+          expectedDate: currentDate.toISOString()
+        });
+      }
+    }
+
+    // Không cần sort nữa vì đã theo thứ tự đúng
+    filteredHistory = weekDays;
+
+    // Debug: Log week data
+    console.log('Week data:', weekDays.map((item, index) => ({
+      dayIndex: item.dayIndex,
+      dayName: item.dayName,
+      date: new Date(item.timestamp).toLocaleDateString(),
+      price: item.price,
+      isEmpty: item.isEmpty
+    })));
+
+    // Debug: Log start and end of week
+    console.log('Start of week:', startOfWeek.toLocaleDateString());
+    console.log('End of week:', endOfWeek.toLocaleDateString());
+    console.log('Current day:', currentDay, '(', ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][currentDay], ')');
+
+    // Debug: Log daily data
+    console.log('Daily data from history:', Array.from(dailyData.entries()).map(([day, data]) => ({
+      day,
+      price: data.price,
+      timestamp: data.timestamp
+    })));
+
+    // Debug: Log week days order
+    console.log('Week days order:', weekDays.map((item, index) => {
+      return `${index}: ${item.dayName} (${new Date(item.timestamp).toLocaleDateString()}) - Price: ${item.price}`;
+    }));
+
+    // Debug: Log expected week structure
+    console.log('Expected week structure:');
+    dayNames.forEach((dayName, index) => {
+      const expectedDate = new Date(startOfWeek);
+      expectedDate.setDate(startOfWeek.getDate() + index);
+      console.log(`${index}: ${dayName} - ${expectedDate.toLocaleDateString()}`);
+    });
+
+    // Debug: Log actual vs expected
+    console.log('Actual vs Expected comparison:');
+    weekDays.forEach((item, index) => {
+      const match = item.dayName === dayNames[index];
+      console.log(`${index}: Expected ${dayNames[index]}, Got ${item.dayName} - ${match ? '✅' : '❌'} - Price: ${item.price}`);
+    });
+
+    // Debug: Log final filteredHistory
+    console.log('Final filteredHistory for week:', filteredHistory.map((item, index) => ({
+      index,
+      dayName: item.dayName,
+      date: new Date(item.timestamp).toLocaleDateString(),
+      price: item.price,
+      isEmpty: item.isEmpty
+    })));
   } else if (filterMode === 'month') {
     const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
     
@@ -318,6 +449,112 @@ export function GoldPriceChart() {
   // Nếu muốn lọc nhiều loại vàng, cần fetch nhiều endpoint và map thành mảng. Ở đây chỉ có 1 loại XAU/USD.
   const filteredGoldTypes = goldData ? [goldData] : [];
 
+  // Lọc dữ liệu để hiển thị trên chart
+  let chartData = filteredHistory;
+  
+  // Trong chế độ tuần, hiển thị tất cả 7 ngày kể cả những ngày không có dữ liệu
+  if (filterMode === 'week') {
+    // Lọc bỏ các điểm dữ liệu có giá bất thường (outliers)
+    chartData = filteredHistory.filter(item => {
+      if (!item || !item.timestamp || typeof item.price !== 'number' || isNaN(item.price)) {
+        return false;
+      }
+      
+      // Nếu có dữ liệu hợp lệ, kiểm tra outlier
+      if (item.price > 0) {
+        // Tính giá trung bình của các điểm dữ liệu hợp lệ
+        const validPrices = filteredHistory
+          .filter(h => h.price > 0 && typeof h.price === 'number' && !isNaN(h.price))
+          .map(h => h.price);
+        
+        if (validPrices.length > 0) {
+          const avgPrice = validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length;
+          const stdDev = Math.sqrt(
+            validPrices.reduce((sum, price) => sum + Math.pow(price - avgPrice, 2), 0) / validPrices.length
+          );
+          
+          // Loại bỏ các giá trị nằm ngoài 3 độ lệch chuẩn
+          if (Math.abs(item.price - avgPrice) > 3 * stdDev) {
+            console.log(`Loại bỏ outlier: ${item.price} (trung bình: ${avgPrice.toFixed(2)}, độ lệch: ${stdDev.toFixed(2)})`);
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    });
+  } else {
+    // Với các chế độ khác, lọc bỏ các điểm dữ liệu trống và outlier
+    chartData = filteredHistory.filter(item => 
+      item && 
+      item.timestamp && 
+      typeof item.price === 'number' && 
+      !isNaN(item.price) &&
+      item.price > 0
+    );
+  }
+
+  // Debug: Log chart data
+  console.log(`Chart data count: ${chartData.length}`);
+  if (chartData.length > 0) {
+    console.log('Chart data:', chartData.map(item => ({
+      date: new Date(item.timestamp).toLocaleDateString(),
+      price: item.price,
+      day: new Date(item.timestamp).getDay()
+    })));
+  }
+
+  // Debug: Log filtered history for week mode
+  if (filterMode === 'week') {
+    console.log('Filtered history for week:', filteredHistory.map((item, index) => ({
+      index,
+      date: new Date(item.timestamp).toLocaleDateString(),
+      price: item.price,
+      day: new Date(item.timestamp).getDay(),
+      isEmpty: item.isEmpty
+    })));
+  }
+
+  // Debug: Log all data for troubleshooting
+  console.log('All filtered history:', filteredHistory);
+  console.log('Chart data for display:', chartData);
+
+  // Debug: Log history data for troubleshooting
+  console.log('Original history count:', history.length);
+  if (history.length > 0) {
+    console.log('History date range:', {
+      first: new Date(history[0].timestamp).toLocaleDateString(),
+      last: new Date(history[history.length - 1].timestamp).toLocaleDateString()
+    });
+  }
+
+  // Debug: Log filter mode and data summary
+  console.log('=== DATA SUMMARY ===');
+  console.log('Filter mode:', filterMode);
+  console.log('Total filtered history:', filteredHistory.length);
+  console.log('Chart data count:', chartData.length);
+  console.log('Original history count:', history.length);
+  console.log('===================');
+
+  // Debug: Log chart data details for week mode
+  if (filterMode === 'week' && chartData.length > 0) {
+    console.log('=== CHART DATA DETAILS ===');
+    chartData.forEach((item, index) => {
+      const date = new Date(item.timestamp);
+      const dayName = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][date.getDay()];
+      console.log(`${index}: ${dayName} - ${date.toLocaleDateString()} - Price: ${item.price}`);
+    });
+    console.log('==========================');
+  }
+
+  // Debug: Log final chart data for week mode
+  if (filterMode === 'week') {
+    console.log('=== FINAL CHART DATA FOR WEEK ===');
+    console.log('Chart data length:', chartData.length);
+    console.log('Chart data:', chartData);
+    console.log('===============================');
+  }
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const price = payload[0].value;
@@ -325,7 +562,7 @@ export function GoldPriceChart() {
       return (
         <div className="bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 p-3 rounded-md shadow-md border border-zinc-200 dark:border-zinc-700">
           <p className="text-sm font-semibold">Thời gian: {time}</p>
-          <p className="text-sm">Giá: <span className="font-bold text-yellow-500">{price.toLocaleString()} USD</span></p>
+          <p className="text-sm">Giá: <span className="font-bold text-yellow-500">{typeof price === 'number' ? price.toFixed(1) : price} USD</span></p>
         </div>
       );
     }
@@ -351,13 +588,26 @@ export function GoldPriceChart() {
   if (filterMode === "day") {
     filterInfoText = `Hôm nay: ${formatToday()}`;
   } else if (filterMode === "week") {
-    if (filteredHistory.length > 0) {
-      const firstDate = new Date(filteredHistory[0].timestamp);
-      const lastDate = new Date(filteredHistory[filteredHistory.length - 1].timestamp);
-      filterInfoText = `Tuần từ ${firstDate.toLocaleDateString('vi-VN')} đến ${lastDate.toLocaleDateString('vi-VN')} (${filteredHistory.length} ngày)`;
+    // Tính tuần hiện tại từ T2 đến CN
+    const today = new Date(now);
+    const currentDay = today.getDay(); // 0 = CN, 1 = T2, 2 = T3, ..., 6 = T7
+    
+    let startOfWeek: Date;
+    if (currentDay === 0) { // CN
+      startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - 6); // Lùi 6 ngày để về T2
     } else {
-      filterInfoText = `Tuần ${getWeekNumber(today)} năm ${today.getFullYear()}`;
+      startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - (currentDay - 1)); // Lùi về T2
     }
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Cộng 6 ngày để đến CN
+    
+    // Đếm số ngày có dữ liệu trong tuần
+    const daysWithData = filteredHistory.filter(item => item.price > 0).length;
+    
+    filterInfoText = `Tuần từ ${startOfWeek.toLocaleDateString('vi-VN')} đến ${endOfWeek.toLocaleDateString('vi-VN')} (${daysWithData} ngày có dữ liệu)`;
   } else if (filterMode === "month") {
     if (filteredHistory.length > 0) {
       const firstDate = new Date(filteredHistory[0].timestamp);
@@ -401,34 +651,88 @@ export function GoldPriceChart() {
           <CardContent className="flex-1 h-full p-4">
             <ResponsiveContainer width="100%" height="100%">
 
-              <LineChart data={filteredHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <LineChart 
+                data={chartData} 
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                width={filterMode === "week" ? 700 : undefined}
+                height={400}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 {/* <XAxis dataKey="timestamp" tickFormatter={v => new Date(v).toLocaleTimeString()} minTickGap={40} /> */}
                 <XAxis
                   dataKey="timestamp"
                   tickFormatter={(value) => {
-                    const date = new Date(value);
-                    if (filterMode === "week") {
-                      const d = date.getDay(); // 0 = CN, 1 = T2, 2 = T3, 3 = T4, 4 = T5, 5 = T6, 6 = T7
-                      const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-                      return dayNames[d];
+                    // Kiểm tra giá trị hợp lệ
+                    if (!value || value === 'undefined' || value === 'null') {
+                      return '';
                     }
-                    if (filterMode === "month") {
-                      return `${date.getDate()}/${date.getMonth() + 1}`;
+                    
+                    try {
+                      const date = new Date(value);
+                      // Kiểm tra ngày hợp lệ
+                      if (isNaN(date.getTime())) {
+                        return '';
+                      }
+                      
+                      if (filterMode === "week") {
+                        // Sử dụng dayName đã được tính toán chính xác
+                        const item = filteredHistory.find(h => h.timestamp === value);
+                        if (item && item.dayName) {
+                          return item.dayName;
+                        }
+                        // Fallback nếu không có dayName
+                        const d = date.getDay(); // 0 = CN, 1 = T2, 2 = T3, 3 = T4, 4 = T5, 5 = T6, 6 = T7
+                        const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                        return dayNames[d];
+                      }
+                      if (filterMode === "month") {
+                        return `${date.getDate()}/${date.getMonth() + 1}`;
+                      }
+                      // Mặc định: theo ngày → hiển thị giờ phút
+                      return date.toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    } catch (error) {
+                      console.error('Error formatting timestamp:', value, error);
+                      return '';
                     }
-                    // Mặc định: theo ngày → hiển thị giờ phút
-                    return date.toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-
-                    });
                   }}
+                  interval={filterMode === "week" ? 0 : "preserveStart"}
+                  // padding={{ left: 20, right: 20 }}
+                  minTickGap={30}
+                  scale="point"
+                  type="category"
+                  allowDuplicatedCategory={false}
                 />
 
 
-                <YAxis domain={['auto', 'auto']} />
+                <YAxis 
+                  domain={['auto', 'auto']} 
+                  tickFormatter={(value) => {
+                    // Hiển thị giá trị với 1 chữ số thập phân
+                    if (typeof value === 'number' && !isNaN(value)) {
+                      return value.toFixed(1);
+                    }
+                    return value;
+                  }}
+                />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="price" stroke="#FFD700" dot={false} />
+                <Line 
+                  type="monotone" 
+                  dataKey="price" 
+                  stroke="#FFD700" 
+                  dot={false}
+                  strokeWidth={2}
+                  connectNulls={false}
+                  // Chỉ hiển thị các điểm dữ liệu có giá hợp lệ
+                  data={chartData.filter(item => 
+                    item && 
+                    typeof item.price === 'number' && 
+                    !isNaN(item.price) && 
+                    item.price > 0
+                  )}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

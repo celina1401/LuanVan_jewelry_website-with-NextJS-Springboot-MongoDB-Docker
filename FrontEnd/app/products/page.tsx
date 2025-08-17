@@ -6,6 +6,7 @@ import { ProductGrid } from "../../components/ui/product-grid"
 import { ProductFilters } from "../../components/ui/product-filters"
 import { ProductSort } from "../../components/ui/product-sort"
 import { translateProductTag } from "@/lib/utils";
+import { Footer } from "../../components/Footer";
 
 // Define categories with both English (for filtering) and Vietnamese (for display)
 const categories = [
@@ -86,6 +87,7 @@ export default function ProductsPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   )
 } 
