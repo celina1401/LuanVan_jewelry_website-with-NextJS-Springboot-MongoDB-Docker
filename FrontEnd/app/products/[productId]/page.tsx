@@ -312,8 +312,8 @@ export default function ProductDetailPage() {
               alt={product.name}
               width={480}
               height={480}
-              zoom={1.5} // Tăng zoom rõ hơn một chút
-              lensSize={320} // Thu nhỏ vùng kính lúp xuống 80x80 pixel
+              zoom={3} // Tăng zoom rõ hơn một chút
+              lensSize={360} // Thu nhỏ vùng kính lúp xuống 80x80 pixel
             />
 
             <div className="flex gap-4 mt-6">
@@ -368,7 +368,13 @@ export default function ProductDetailPage() {
             <p className="mb-1 text-lg text-gray-700 dark:text-gray-300 font-medium">{product.description}</p>
             {/* Tổng tiền động phía dưới mô tả sản phẩm */}
             <p className="mb-2 text-3xl font-extrabold text-rose-500">
-              {totalPrice ? totalPrice.toLocaleString() + '₫' : '-'}
+              {product.stockQuantity === 0 ? (
+                <span className="text-red-500">Hết hàng</span>
+              ) : totalPrice ? (
+                totalPrice.toLocaleString() + '₫'
+              ) : (
+                '-'
+              )}
             </p>
             {/* Chọn màu */}
             {product.colors && (
@@ -406,20 +412,20 @@ export default function ProductDetailPage() {
             {/* Nút đặt mua/giỏ hàng */}
             <div className="flex flex-wrap gap-4 mt-4">
               <button
-                className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2"
+                className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400"
                 onClick={() => addToCart(product)}
                 disabled={product.stockQuantity === 0}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A1 1 0 007.52 17h8.96a1 1 0 00.87-1.47L17 13M7 13V6h13" /></svg>
-                Thêm vào giỏ
+                {product.stockQuantity === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}
               </button>
               <button
-                className="px-8 py-3 bg-green-500 text-white rounded-full font-bold text-lg shadow hover:bg-green-600 transition flex items-center gap-2"
+                className="px-8 py-3 bg-green-500 text-white rounded-full font-bold text-lg shadow hover:bg-green-600 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
                 onClick={() => buyNow(product)}
                 disabled={product.stockQuantity === 0}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                Mua ngay
+                {product.stockQuantity === 0 ? 'Hết hàng' : 'Mua ngay'}
               </button>
             </div>
             {/* Trả góp */}

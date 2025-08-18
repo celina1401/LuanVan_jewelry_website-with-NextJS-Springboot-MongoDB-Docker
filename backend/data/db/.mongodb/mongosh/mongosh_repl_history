@@ -1,3 +1,5 @@
+db.products.find().pretty()
+db.product.find().pretty()
 db.orders.find().pretty()
 db.chat_logs.drop()
 show collections

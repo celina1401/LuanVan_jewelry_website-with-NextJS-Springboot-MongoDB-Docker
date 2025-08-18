@@ -1,7 +1,7 @@
 "use client";
 
 import { useCart } from "@/contexts/cart-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Navbar } from "@/components/navbar";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
@@ -16,7 +16,7 @@ const paymentMethods = [
   { label: "Thanh toán VNPAY", value: "vnpay" },
 ];
 
-export default function OrderPage() {
+function OrderPageContent() {
   const { items, total, clearCart, updateQuantity } = useCart();
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -28,11 +28,6 @@ export default function OrderPage() {
   const isBuyNow = searchParams.get('buyNow') === 'true';
   
   // Debug log để kiểm tra URL parameters
-  console.log('🔍 Debug URL parameters:', {
-    buyNowProductId,
-    buyNowQuantity,
-    isBuyNow
-  });
   
   // ✅ Nếu là buyNow, tạo item đơn lẻ từ thông tin URL
   const [buyNowItem, setBuyNowItem] = useState<any>(null);
@@ -155,6 +150,7 @@ export default function OrderPage() {
               wage: product.wage,
               category: product.category,
               brand: product.brand,
+              stock: product.stockQuantity || 0, // Thêm thông tin tồn kho vào metadata
               ...product.metadata
             }
           };
@@ -173,7 +169,9 @@ export default function OrderPage() {
             price: 0, // Sẽ được tính sau
             image: '/default-avatar.png',
             quantity: buyNowQuantity,
-            metadata: {}
+            metadata: {
+              stock: 0 // Giả sử hết hàng nếu không fetch được
+            }
           };
           setBuyNowItem(fallbackItem);
           toast.warning('Không thể tải thông tin sản phẩm, sử dụng thông tin cơ bản');
@@ -189,7 +187,9 @@ export default function OrderPage() {
           price: 0, // Sẽ được tính sau
           image: '/default-avatar.png',
           quantity: buyNowQuantity,
-          metadata: {}
+          metadata: {
+            stock: 0 // Giả sử hết hàng nếu không fetch được
+          }
         };
         setBuyNowItem(fallbackItem);
         toast.warning('Không thể kết nối server, sử dụng thông tin cơ bản');
@@ -249,6 +249,7 @@ export default function OrderPage() {
       name: buyNowItem.name, 
       quantity: buyNowItem.quantity,
       price: buyNowItem.price,
+      stock: buyNowItem.metadata?.stock || 0,
       metadata: buyNowItem.metadata
     } : null,
     itemsCount: items.length,
@@ -258,6 +259,7 @@ export default function OrderPage() {
       name: item.name, 
       quantity: item.quantity,
       price: item.price,
+      stock: item.metadata?.stock || 0,
       metadata: item.metadata
     }))
   });
@@ -278,7 +280,18 @@ export default function OrderPage() {
     });
   }
   
+  // 🎯 Kiểm tra tồn kho và tính toán giá
+  const hasOutOfStockItems = itemsToCalculate.some(item => {
+    const itemStock = item.metadata?.stock || 0;
+    return itemStock < item.quantity;
+  });
+  
   const rawSubtotal = itemsToCalculate.reduce((sum, item) => {
+    const itemStock = item.metadata?.stock || 0;
+    // Nếu hết hàng hoặc không đủ số lượng, không tính vào tổng
+    if (itemStock < item.quantity) {
+      return sum;
+    }
     const unitPrice = dynamicPrices[item.id] ?? item.price;
     return sum + unitPrice * item.quantity;
   }, 0);
@@ -321,6 +334,14 @@ export default function OrderPage() {
     if (itemsToCalculate.length === 0) {
       toast.error('Không có sản phẩm nào', {
         description: 'Vui lòng thêm sản phẩm vào giỏ hàng hoặc chọn mua ngay'
+      });
+      return;
+    }
+
+    // 🎯 Kiểm tra tồn kho trước khi đặt hàng
+    if (hasOutOfStockItems) {
+      toast.error('Không thể đặt hàng', {
+        description: 'Một số sản phẩm đã hết hàng hoặc không đủ số lượng. Vui lòng kiểm tra lại.'
       });
       return;
     }
@@ -619,31 +640,76 @@ export default function OrderPage() {
                 <ul className="space-y-2">
                   {itemsToCalculate.map((item) => {
                     const unitPrice = dynamicPrices[item.id] ?? item.price;
+                    const itemStock = item.metadata?.stock || 0;
+                    const isOutOfStock = itemStock < item.quantity;
+                    const availableStock = Math.min(itemStock, item.quantity);
+                    
                     return (
                       <li key={item.id} className="flex flex-col gap-1 justify-between">
                         <div className="flex items-center gap-3">
                           {item.image && <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded border" />}
-                          <span className="text-gray-900 dark:text-white">{item.name}</span>
-                          <div className="flex items-center gap-1 ml-2">
-                            <button type="button" onClick={() => {
-                              if (isBuyNow && buyNowItem) {
-                                // Cập nhật số lượng cho buyNow item
-                                setBuyNowItem({...buyNowItem, quantity: Math.max(1, buyNowItem.quantity - 1)});
-                              } else {
-                                updateQuantity(item.id, item.quantity - 1, item.metadata);
-                              }
-                            }} disabled={item.quantity <= 1} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">-</button>
-                            <span className="w-8 text-center text-gray-900 dark:text-white">{item.quantity}</span>
-                            <button type="button" onClick={() => {
-                              if (isBuyNow && buyNowItem) {
-                                // Cập nhật số lượng cho buyNow item
-                                setBuyNowItem({...buyNowItem, quantity: buyNowItem.quantity + 1});
-                              } else {
-                                updateQuantity(item.id, item.quantity + 1, item.metadata);
-                              }
-                            }} className="w-7 h-7 rounded bg-gray-200 dark:bg-black text-lg font-bold text-gray-900 dark:text-white">+</button>
+                          <div className="flex-1">
+                            <span className="text-gray-900 dark:text-white">{item.name}</span>
+                            {/* Cảnh báo hết hàng */}
+                            {isOutOfStock && (
+                              <div className="text-red-500 text-sm font-medium mt-1">
+                                ⚠️ Hết hàng! Chỉ còn {itemStock} sản phẩm
+                              </div>
+                            )}
                           </div>
-                          <span className="text-gray-900 dark:text-white">{Math.round(unitPrice * item.quantity).toLocaleString()}₫</span>
+                          <div className="flex items-center gap-1 ml-2">
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                if (isBuyNow && buyNowItem) {
+                                  // Cập nhật số lượng cho buyNow item
+                                  setBuyNowItem({...buyNowItem, quantity: Math.max(1, buyNowItem.quantity - 1)});
+                                } else {
+                                  updateQuantity(item.id, item.quantity - 1, item.metadata);
+                                }
+                              }} 
+                              disabled={item.quantity <= 1 || isOutOfStock} 
+                              className={`w-7 h-7 rounded text-lg font-bold ${
+                                isOutOfStock 
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                  : 'bg-gray-200 dark:bg-black text-gray-900 dark:text-white'
+                              }`}
+                            >
+                              -
+                            </button>
+                            <span className={`w-8 text-center ${
+                              isOutOfStock ? 'text-red-500' : 'text-gray-900 dark:text-white'
+                            }`}>
+                              {item.quantity}
+                            </span>
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                if (isBuyNow && buyNowItem) {
+                                  // Cập nhật số lượng cho buyNow item
+                                  setBuyNowItem({...buyNowItem, quantity: buyNowItem.quantity + 1});
+                                } else {
+                                  updateQuantity(item.id, item.quantity + 1, item.metadata);
+                                }
+                              }} 
+                              disabled={isOutOfStock || item.quantity >= itemStock}
+                              className={`w-7 h-7 rounded text-lg font-bold ${
+                                isOutOfStock || item.quantity >= itemStock
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                  : 'bg-gray-200 dark:bg-black text-gray-900 dark:text-white'
+                              }`}
+                            >
+                              +
+                            </button>
+                          </div>
+                          {/* Hiển thị giá hoặc thông báo hết hàng */}
+                          {isOutOfStock ? (
+                            <span className="text-red-500 font-medium">Hết hàng</span>
+                          ) : (
+                            <span className="text-gray-900 dark:text-white">
+                              {Math.round(unitPrice * item.quantity).toLocaleString()}₫
+                            </span>
+                          )}
                           {/* Nút xóa sản phẩm */}
                           <button
                             type="button"
@@ -666,32 +732,34 @@ export default function OrderPage() {
                             </svg>
                           </button>
                         </div>
-                        {/* Thông tin khối lượng × giá vàng + tiền công */}
-                        <div className="ml-20 text-xs text-gray-600 dark:text-gray-300">ID
-                          {(() => {
-                            const weight = item.metadata?.weight;
-                            const wage = item.metadata?.wage || 0;
-                            const goldAge = item.metadata?.goldAge;
-                            const pricePerChi = (dynamicPrices[item.id] && weight)
-                              ? ((dynamicPrices[item.id] - wage) / weight)
-                              : null;
-                            if (weight && pricePerChi !== null && pricePerChi !== undefined) {
-                              return (
-                                <span>
-                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng: <b className="text-gray-900 dark:text-white">{Math.round(pricePerChi).toLocaleString()}₫</b> + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
-                                </span>
-                              );
-                            } else if (weight && goldAge) {
-                              return (
-                                <span>
-                                  (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
-                                </span>
-                              );
-                            } else {
-                              return null;
-                            }
-                          })()}
-                        </div>
+                        {/* Thông tin khối lượng × giá vàng + tiền công - chỉ hiển thị khi còn hàng */}
+                        {!isOutOfStock && (
+                          <div className="ml-20 text-xs text-gray-600 dark:text-gray-300">
+                            {(() => {
+                              const weight = item.metadata?.weight;
+                              const wage = item.metadata?.wage || 0;
+                              const goldAge = item.metadata?.goldAge;
+                              const pricePerChi = (dynamicPrices[item.id] && weight)
+                                ? ((dynamicPrices[item.id] - wage) / weight)
+                                : null;
+                              if (weight && pricePerChi !== null && pricePerChi !== undefined) {
+                                return (
+                                  <span>
+                                    (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng: <b className="text-gray-900 dark:text-white">{Math.round(pricePerChi).toLocaleString()}₫</b> + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                  </span>
+                                );
+                              } else if (weight && goldAge) {
+                                return (
+                                  <span>
+                                    (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                  </span>
+                                );
+                              } else {
+                                return null;
+                              }
+                            })()}
+                          </div>
+                        )}
                       </li>
                     );
                   })}
@@ -730,6 +798,20 @@ export default function OrderPage() {
                 <button type="button" className="bg-rose-400 text-white px-4 py-2 rounded font-semibold">Áp dụng</button>
               </div>
 
+              {/* 🎯 Cảnh báo hết hàng */}
+              {hasOutOfStockItems && (
+                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span className="font-medium">Không thể đặt hàng</span>
+                  </div>
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">
+                    Một số sản phẩm đã hết hàng hoặc không đủ số lượng. Vui lòng kiểm tra lại hoặc xóa sản phẩm hết hàng.
+                  </p>
+                </div>
+              )}
             </div>
             {/* giao hang */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -892,14 +974,24 @@ export default function OrderPage() {
               <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Ghi chú đơn hàng (Không bắt buộc)</h2>
               <textarea className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Vui lòng ghi chú thêm để T&C Jewelry hỗ trợ tốt nhất cho Quý khách!" value={note} onChange={e => setNote(e.target.value)} />
             </div>
-            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={itemsToCalculate.length === 0 || !agree || isSubmitting}
+            <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={itemsToCalculate.length === 0 || !agree || isSubmitting || hasOutOfStockItems}
             >
-              {isSubmitting ? "Đang xử lý..." : (isBuyNow ? "Mua ngay" : "Xác nhận đặt hàng")}
+              {isSubmitting ? "Đang xử lý..." : 
+               hasOutOfStockItems ? "Không thể đặt hàng (Hết hàng)" :
+               (isBuyNow ? "Mua ngay" : "Xác nhận đặt hàng")}
             </button>
           </form>
         )}
       </div>
       <Footer />
     </div>
+  );
+}
+
+export default function OrderPage() {
+  return (
+    <Suspense fallback={<div className="max-w-3xl mx-auto py-10 px-4 text-gray-900 dark:text-white">Đang tải...</div>}>
+      <OrderPageContent />
+    </Suspense>
   );
 }

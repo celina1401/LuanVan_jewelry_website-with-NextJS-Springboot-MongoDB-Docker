@@ -41,7 +41,7 @@ function PaymentCallback() {
         setOrderFetched(true);
 
         // Gửi cập nhật trạng thái thanh toán
-        const res = await fetch(`/api/orders/${order.id}/update`, {
+        const res = await fetch(`/api/orders/${order.orderNumber}/update`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

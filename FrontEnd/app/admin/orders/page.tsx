@@ -33,6 +33,7 @@ interface Order {
     // Add missing properties for order details
     receiverName?: string;
     receiverAddress?: string;
+    cancelReason?: string;
     items?: Array<{
         productName: string;
         productImage?: string;
@@ -58,8 +59,9 @@ function getShippingStatus(order: string) {
     return "info";
 }
 
-function getPaymentBadgeClass(method: string): string {
-    switch (method.toUpperCase()) {
+function getPaymentBadgeClass(method?: string | null): string {
+    const normalized = (method || "").toUpperCase();
+    switch (normalized) {
         case "VNPAY":
             return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200";
         case "COD":
@@ -183,6 +185,7 @@ export default function AdminOrdersPage() {
                     createdAt: order.createdAt,
                     receiverName: order.receiverName,
                     receiverAddress: order.receiverAddress,
+                    cancelReason: order.cancelReason,
                     items: order.items,
                     shippingAddress: order.shippingAddress,
                     orderStatus: order.orderStatus,
@@ -390,6 +393,11 @@ export default function AdminOrdersPage() {
 
                                             </td>
                                             <td className="px-4 py-2 min-w-[140px]">
+                                                {order.status === "Đã hủy" ? (
+                                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200">
+                                                        Đơn hàng bị hủy
+                                                    </span>
+                                                ) : (
                                                 <Select
                                                     disabled={order.status !== "Chờ giao hàng"}
                                                     onValueChange={async (value) => {
@@ -453,6 +461,7 @@ export default function AdminOrdersPage() {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+                                                )}
                                             </td>
                                             <td className="px-4 py-2">
                                                 <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPaymentBadgeClass(order.method)}`}>
@@ -509,7 +518,13 @@ export default function AdminOrdersPage() {
                                     {/* <option value="Đã hủy">Đã hủy</option> */}
                                 </select>
                             </p>
-                            <p><strong>Trạng thái giao hàng:</strong> {selectedOrder.shippingStatus || '-'}</p>
+                            <p><strong>Trạng thái giao hàng:</strong> {selectedOrder.orderStatus === "Đã hủy" ? (
+                                <span className="text-red-600 font-semibold">Đơn hàng bị hủy</span>
+                              ) : (selectedOrder.shippingStatus || '-')}
+                            </p>
+                            {selectedOrder.orderStatus === "Đã hủy" && selectedOrder.cancelReason && (
+                              <p className="mt-1"><strong>Lý do hủy:</strong> <span className="text-red-600">{selectedOrder.cancelReason}</span></p>
+                            )}
                             <p><strong>Phương thức thanh toán:</strong> {selectedOrder.paymentMethod === 'COD' ? 'Tiền mặt khi nhận hàng' : selectedOrder.paymentMethod || '-'}</p>
                             <p><strong>Trạng thái thanh toán:</strong>{" "}
                                 {selectedOrder.paymentStatus === "Lỗi thanh toán" || selectedOrder.paymentStatus === "Chưa xử lý"
@@ -615,7 +630,7 @@ export default function AdminOrdersPage() {
                                 onClick={async () => {
                                     if (window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này?")) {
                                         try {
-                                            const response = await fetch(`http://localhost:9003/api/orders/${selectedOrder.id}`, { 
+                                            const response = await fetch(`/api/orders/${selectedOrder.orderNumber}`, { 
                                                 method: "DELETE" 
                                             });
                                             
@@ -691,7 +706,7 @@ export default function AdminOrdersPage() {
                                         }
 
                                         if (hasUpdate) {
-                                            toast.success(`Thông tin đơn hàng #${selectedOrder.orderNumber} đã được cập nhật.`);
+                                            toast.success(`Thông tin đơn hàng #${selectedOrder.id} đã được cập nhật.`);
                                         } else if (!hasUpdate) {
                                             toast.warning("Bạn chưa chỉnh sửa gì để cập nhật.");
                                         } else {

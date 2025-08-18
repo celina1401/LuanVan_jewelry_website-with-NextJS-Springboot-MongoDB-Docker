@@ -20,6 +20,7 @@ interface CartItem {
     goldAge?: string
     category?: string
     brand?: string
+    stock?: number
   }
 }
 
@@ -61,6 +62,7 @@ async function fetchCartWithProductDetails(userId: string) {
         color: product?.color,
         category: product?.category,
         brand: product?.brand,
+        stock: product?.stockQuantity || 0, // Thêm thông tin tồn kho
       }
     }
   })
