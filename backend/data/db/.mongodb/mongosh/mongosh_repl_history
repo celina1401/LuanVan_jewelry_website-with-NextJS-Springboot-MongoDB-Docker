@@ -1,3 +1,7 @@
+db.orders.find().pretty()
+show collections
+db.orders.find().pretty()
+db.users.find().pretty()
 db.products.find().pretty()
 db.product.find().pretty()
 db.orders.find().pretty()

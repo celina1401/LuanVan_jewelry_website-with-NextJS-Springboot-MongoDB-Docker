@@ -73,6 +73,21 @@ export default function AdminOrderDetailPage() {
                 const response = await fetch(`/api/orders/${params.orderId}`);
                 if (response.ok) {
                     const orderData = await response.json();
+                    
+                    // Lấy username từ UserService nếu có userId
+                    if (orderData.userId) {
+                        try {
+                            const userResponse = await fetch(`http://localhost:9001/api/users/users/${orderData.userId}`);
+                            if (userResponse.ok) {
+                                const userData = await userResponse.json();
+                                // Cập nhật customerName với username
+                                orderData.customerName = userData.username || orderData.customerName;
+                            }
+                        } catch (error) {
+                            console.error('Lỗi khi lấy thông tin user:', error);
+                        }
+                    }
+                    
                     setOrder(orderData);
                 } else {
                     setError("Không thể tải thông tin đơn hàng");
@@ -238,7 +253,7 @@ export default function AdminOrderDetailPage() {
                     <CardContent className="space-y-4">
                         <div>
                             <p className="text-sm text-gray-500">Tên khách hàng</p>
-                            <p className="font-medium">{order.customerName}</p>
+                            <p className="font-medium">{order.customerName || order.receiverName || 'Không rõ'}</p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-500">Số điện thoại</p>

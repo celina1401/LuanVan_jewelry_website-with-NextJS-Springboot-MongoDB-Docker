@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 
 interface InvoiceData {
   orderNumber: string;
-  customerName: string;
+  customerName: string; // Username từ UserService
   customerPhone: string;
   customerEmail: string;
   receiverName: string;
@@ -31,6 +31,32 @@ const removeVietnameseDiacritics = (text: string): string => {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
     .replace(/[đĐ]/g, (match) => match === 'đ' ? 'd' : 'D'); // Replace đ/Đ with d/D
+};
+
+// Custom number formatting to avoid unwanted characters and round up
+const formatCurrency = (amount: number): string => {
+  if (amount === 0) return '0 ₫';
+  
+  // Round up to the nearest whole number
+  const roundedAmount = Math.ceil(amount);
+  
+  // Convert to string and split by decimal point
+  const parts = roundedAmount.toString().split('.');
+  const integerPart = parts[0];
+  
+  // Add thousands separators
+  let formatted = '';
+  for (let i = integerPart.length - 1, j = 0; i >= 0; i--, j++) {
+    if (j > 0 && j % 3 === 0) formatted = '.' + formatted;
+    formatted = integerPart[i] + formatted;
+  }
+  
+  // Add decimal part if exists
+  if (parts[1]) {
+    formatted += ',' + parts[1];
+  }
+  
+  return formatted ;
 };
 
 const safeSetFont = (doc: jsPDF, font: string, style: 'normal' | 'bold', fallback = 'helvetica'): string => {
@@ -147,7 +173,7 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<void> => {
   safeSetFont(doc, fontFamily, 'normal', fallbackFont);
   
   const customerItems = [
-    { label: 'Ten khach hang', value: removeVietnameseDiacritics(data.customerName) },
+    { label: 'Ten khach hang', value: data.customerName || 'Không rõ' }, // Username từ UserService
     { label: 'So dien thoai', value: data.customerPhone },
     { label: 'Email', value: data.customerEmail },
     { label: 'Nguoi nhan', value: removeVietnameseDiacritics(data.receiverName) },
@@ -187,20 +213,21 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<void> => {
       if (weight > 0 && totalPrice > 0) {
         // Giá vàng = (Tổng tiền / Số lượng / Khối lượng) - Tiền công
         goldPrice = (totalPrice / item.quantity / weight) - wage;
-        // Đảm bảo giá vàng không âm
+        // Đảm bảo giá vàng không âm và làm tròn đến hàng nghìn
         goldPrice = Math.max(0, goldPrice);
+        goldPrice = Math.round(goldPrice / 1) * 1; // Làm tròn đến hàng nghìn
       }
     }
-    
+
     return [
       (index + 1).toString(),
       removeVietnameseDiacritics(item.productName).length > 20 
         ? removeVietnameseDiacritics(item.productName).substring(0, 17) + '...' 
         : removeVietnameseDiacritics(item.productName),
       item.quantity.toString(),
-      goldPrice > 0 ? Number(goldPrice).toLocaleString('vi-VN') + ' ₫' : '0 ₫',
-      Number(item.wage || 0).toLocaleString('vi-VN') + ' ₫',
-      Number(item.totalPrice || 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + ' ₫'
+      goldPrice > 0 ? goldPrice.toLocaleString('vi-VN')  : '0 ',
+      (item.wage || 0).toLocaleString('vi-VN'),
+      formatCurrency(item.totalPrice || 0) // Làm tròn lên thành tiền
     ];
   });
 
@@ -286,12 +313,12 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<void> => {
   safeSetFont(doc, fontFamily, 'normal', fallbackFont);
   
   const summaryItems = [
-    { label: 'Tam tinh', value: Number(data.subtotal || 0).toLocaleString('vi-VN') + ' ₫' },
-    { label: 'Phi giao hang', value: data.shippingFee === 0 ? 'Mien phi' : Number(data.shippingFee || 0).toLocaleString('vi-VN') + ' ₫' }
+    { label: 'Tam tinh', value: formatCurrency(data.subtotal || 0) },
+    { label: 'Phi giao hang', value: data.shippingFee === 0 ? 'Mien phi' : formatCurrency(data.shippingFee || 0) }
   ];
   
   if (data.discount > 0) {
-    summaryItems.push({ label: 'Giam gia', value: '- ' + Number(data.discount || 0).toLocaleString('vi-VN') + ' ₫' });
+    summaryItems.push({ label: 'Giam gia', value: '- ' + formatCurrency(data.discount || 0) });
   }
   
   summaryItems.forEach(item => {
@@ -310,7 +337,7 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<void> => {
   doc.setFontSize(11);
   safeSetFont(doc, fontFamily, 'bold', fallbackFont);
   doc.text(removeVietnameseDiacritics('TONG CONG:'), summaryX + 8, detailY);
-  doc.text(Number(data.total || 0).toLocaleString('vi-VN') + ' ₫', summaryX + summaryWidth - 8, detailY, { align: 'right' });
+  doc.text(formatCurrency(data.total || 0), summaryX + summaryWidth - 8, detailY, { align: 'right' });
 
   // Note section if exists - adjusted positioning
   if (data.note) {
@@ -337,7 +364,7 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<void> => {
     doc.setFontSize(8);
     doc.text(`Trang ${i}/${pageCount}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
     doc.setFontSize(7);
-    doc.text(removeVietnameseDiacritics('Cong ty TNHH Thuong mai va Dich vu'), pageWidth / 2, pageHeight - 12, { align: 'center' });
+
     doc.text('Cam on quy khach da su dung dich vu cua chung toi!', pageWidth / 2, pageHeight - 2, { align: 'center' });
   }
 

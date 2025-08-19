@@ -73,6 +73,7 @@ export default function OrderDetailPage() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
+  const [customerUsername, setCustomerUsername] = useState<string>("");
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -81,6 +82,22 @@ export default function OrderDetailPage() {
         const response = await fetch(`/api/orders/${params.orderId}`);
         if (response.ok) {
           const orderData = await response.json();
+          
+          // Lấy username từ UserService nếu có userId
+          if (orderData.userId) {
+            try {
+              const userResponse = await fetch(`http://localhost:9001/api/users/users/${orderData.userId}`);
+              if (userResponse.ok) {
+                const userData = await userResponse.json();
+                // Cập nhật customerName với username
+                orderData.customerName = userData.username || orderData.customerName;
+                setCustomerUsername(userData.username || orderData.customerName);
+              }
+            } catch (error) {
+              console.error('Lỗi khi lấy thông tin user:', error);
+            }
+          }
+          
           setOrder(orderData);
         } else {
           setError("Không thể tải thông tin đơn hàng");
@@ -105,7 +122,7 @@ export default function OrderDetailPage() {
       // Chuẩn bị dữ liệu cho hóa đơn
       const invoiceData = {
         orderNumber: order.orderNumber,
-        customerName: order.customerName,
+        customerName: customerUsername || order.customerName, // Sử dụng username từ UserService
         customerPhone: order.customerPhone,
         customerEmail: order.customerEmail,
         receiverName: order.receiverName,
@@ -338,6 +355,7 @@ export default function OrderDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
+                  <p><strong>Khách hàng:</strong> {customerUsername || order.customerName || 'Không rõ'}</p>
                   <p><strong>Người nhận:</strong> {order.receiverName}</p>
                   <p><strong>Địa chỉ:</strong> {order.shippingAddress}</p>
                   <p><strong>Số điện thoại:</strong> {order.customerPhone}</p>

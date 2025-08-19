@@ -6,7 +6,7 @@ import { LoadingSpinner, OrdersEmptyState, ErrorBoundary, ApiErrorDisplay, Statu
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Filter, Save, Search, Eye } from "lucide-react";
+import { Plus, Search, Eye } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
 
@@ -15,7 +15,7 @@ const ORDER_TABS = [
     { label: "Tất cả đơn hàng", value: "all" },
     { label: "Chưa thanh toán", value: "unpaid" },
     { label: "Xử lý giao hàng", value: "shipping" },
-    { label: "Hàng order", value: "order" },
+    { label: "Đơn hàng bị hủy", value: "order" },
 ];
 
 
@@ -23,6 +23,10 @@ interface Order {
     id: string; // orderId thực
     orderNumber: string; // mã đơn hàng để hiển thị
     customer: string;
+    customerName?: string;
+    firstName?: string;
+    lastName?: string;
+    userId?: string;
     status: string;
     payment: string;
     shippingStatus: string;
@@ -131,11 +135,9 @@ export default function AdminOrdersPage() {
     const [error, setError] = useState<string | null>(null);
     const [tab, setTab] = useState("all");
     const [search, setSearch] = useState("");
-    const [filters, setFilters] = useState<string[]>([]);
-
-
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [showDetail, setShowDetail] = useState(false);
+    const [customerUsername, setCustomerUsername] = useState<string>("");
 
 
     async function handleViewDetail(orderNumber: string) {
@@ -143,15 +145,27 @@ export default function AdminOrdersPage() {
             const res = await fetch(`http://localhost:9003/api/orders/number/${orderNumber}`);
             if (!res.ok) throw new Error("Không thể lấy chi tiết đơn hàng");
             const data = await res.json();
-            // Đảm bảo selectedOrder có id là orderId thực
-            // setSelectedOrder(prev => ({ ...data, id: data.id }));
+            
+            // Lấy username từ UserService nếu có userId
+            let username = "";
+            if (data.userId) {
+                try {
+                    const r = await fetch(`http://localhost:9001/api/users/users/${data.userId}`);
+                    if (r.ok) {
+                        const u = await r.json();
+                        username = (u.username || '').trim() || `${(u.firstName || '').trim()} ${(u.lastName || '').trim()}`.trim() || u.email;
+                    }
+                } catch { }
+            }
+
             setSelectedOrder(prev => ({
                 ...data,
                 id: data.id,
                 discount: data.discount || 0,
-                shippingFee: data.shippingFee || 0
+                shippingFee: data.shippingFee || 0,
             }));
-
+            
+            setCustomerUsername(username);
             setShowDetail(true);
         } catch (err) {
             console.error("❌ Lỗi khi lấy chi tiết đơn hàng", err);
@@ -175,7 +189,16 @@ export default function AdminOrdersPage() {
                 const mappedOrders: Order[] = data.map((order: any) => ({
                     id: order.id, // orderId thực
                     orderNumber: order.orderNumber, // mã đơn hàng
-                    customer: order.receiverName || "Không rõ",
+                    customer: (function () {
+                        const first = (order.firstName || '').trim();
+                        const last = (order.lastName || '').trim();
+                        const full = `${first} ${last}`.trim();
+                        return full || order.customerName || order.receiverName || "Không rõ";
+                    })(),
+                    customerName: order.customerName,
+                    firstName: order.firstName,
+                    lastName: order.lastName,
+                    userId: order.userId,
                     status: order.orderStatus === "Chưa xử lý" ? "Chưa xử lý" : order.orderStatus,
                     payment: order.paymentStatus,
                     shippingStatus: order.shippingStatus || "Chưa giao hàng",
@@ -195,6 +218,44 @@ export default function AdminOrdersPage() {
 
 
                 setOrders(mappedOrders);
+
+                // Bổ sung/ghi đè tên hiển thị từ UserService theo userId (ưu tiên username)
+                try {
+                    const ids = Array.from(new Set(mappedOrders.filter(o => o.userId).map(o => o.userId as string)));
+                    if (ids.length) {
+                        const results = await Promise.all(ids.map(async (uid) => {
+                            try {
+                                const r = await fetch(`http://localhost:9001/api/users/users/${uid}`);
+                                if (!r.ok) return null;
+                                const u = await r.json();
+                                return {
+                                    uid,
+                                    user: {
+                                        username: (u.username || '').trim(),
+                                        firstName: (u.firstName || '').trim(),
+                                        lastName: (u.lastName || '').trim(),
+                                        email: u.email || ''
+                                    }
+                                } as { uid: string; user: { username: string; firstName: string; lastName: string; email: string } };
+                            } catch { return null; }
+                        }));
+                        const mapUser = new Map(results.filter(Boolean).map(x => [x!.uid, x!.user] as [string, { username: string; firstName: string; lastName: string; email: string }]));
+                        if (mapUser.size) {
+                            setOrders(prev => prev.map(o => {
+                                if (!o.userId || !mapUser.has(o.userId)) return o;
+                                const u = mapUser.get(o.userId)!;
+                                const display = u.username || `${u.firstName} ${u.lastName}`.trim() || u.email;
+                                return {
+                                    ...o,
+                                    customer: display,
+                                    customerName: u.username || display, // Lưu username vào customerName
+                                    firstName: o.firstName || u.firstName,
+                                    lastName: o.lastName || u.lastName,
+                                };
+                            }));
+                        }
+                    }
+                } catch { }
             } catch (err) {
                 console.error(err);
                 setError("Không thể tải danh sách đơn hàng.");
@@ -204,11 +265,19 @@ export default function AdminOrdersPage() {
         }
 
         fetchOrders();
-    }, [tab, search, filters]);
+    }, [tab, search]);
 
     const filteredOrders = orders.filter(order => {
-        if (tab !== "all" && order.status !== tab) return false;
+        // Tab filter
+        if (tab !== "all") {
+            if (tab === "unpaid" && order.payment !== "Chưa xử lý") return false;
+            if (tab === "shipping" && order.status !== "Chờ giao hàng") return false;
+            if (tab === "order" && order.status !== "Đã hủy") return false;
+        }
+
+        // Search filter
         if (search && !order.customer.toLowerCase().includes(search.toLowerCase()) && !order.orderNumber.toLowerCase().includes(search.toLowerCase())) return false;
+
         return true;
     });
 
@@ -232,7 +301,6 @@ export default function AdminOrdersPage() {
                     <PageHeader
                         title="Danh sách đơn hàng"
                         description="Quản lý, tìm kiếm và lọc các đơn hàng của khách hàng."
-                        actions={[{ label: "Tạo đơn hàng", icon: "plus", variant: "default", onClick: () => alert("Tạo đơn hàng mới") }]}
                     />
                     <div className="flex flex-wrap gap-2 mt-6 mb-4">
                         {ORDER_TABS.map((t) => (
@@ -246,22 +314,15 @@ export default function AdminOrdersPage() {
                                 {t.label}
                             </Button>
                         ))}
+                        <div className="flex flex-wrap items-center gap-2 mb-4 ml-auto">
+                            <Button variant="ghost" size="sm" className="p-2" type="button">
+                                <Search className="w-4 h-4" />
+                            </Button>
+                            <Input placeholder="Tìm kiếm" value={search} onChange={e => setSearch(e.target.value)} className="w-64 max-w-full" />
+                        </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <Button variant="outline" size="sm" className="gap-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setFilters([...filters, "Bộ lọc mẫu"])}>
-                            <Filter className="h-4 w-4" /> Thêm điều kiện lọc
-                        </Button>
-                        {filters.map((f, idx) => (
-                            <span key={idx} className="bg-gray-100 dark:bg-black text-gray-700 dark:text-gray-200 rounded px-2 py-1 text-xs flex items-center gap-1">
-                                {f}
-                                <button onClick={() => setFilters(filters.filter((_, i) => i !== idx))} className="ml-1 text-gray-400 hover:text-red-500">×</button>
-                            </span>
-                        ))}
-                        <Input placeholder="Tìm kiếm" value={search} onChange={e => setSearch(e.target.value)} className="w-64 max-w-full ml-2" />
-                        <Button variant="outline" size="sm" className="ml-auto gap-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700">
-                            <Save className="h-4 w-4" /> Lưu bộ lọc
-                        </Button>
-                    </div>
+
+
                     <div className="overflow-x-auto rounded-lg border bg-white dark:bg-muted">
                         {loading ? (
                             <LoadingSpinner text="Đang tải danh sách đơn hàng..." />
@@ -398,69 +459,69 @@ export default function AdminOrdersPage() {
                                                         Đơn hàng bị hủy
                                                     </span>
                                                 ) : (
-                                                <Select
-                                                    disabled={order.status !== "Chờ giao hàng"}
-                                                    onValueChange={async (value) => {
-                                                        const previousShippingStatus = order.shippingStatus;
-                                                        setOrders((prev) =>
-                                                            prev.map((o, i) => (i === idx ? { ...o, shippingStatus: value } : o))
-                                                        );
+                                                    <Select
+                                                        disabled={order.status !== "Chờ giao hàng"}
+                                                        onValueChange={async (value) => {
+                                                            const previousShippingStatus = order.shippingStatus;
+                                                            setOrders((prev) =>
+                                                                prev.map((o, i) => (i === idx ? { ...o, shippingStatus: value } : o))
+                                                            );
 
-                                                        try {
-                                                            const res = await fetch(`/api/orders/${order.orderNumber}/update`, {
-                                                                method: 'PUT',
-                                                                headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ action: 'shipping', shippingStatus: value }),
-                                                            });
+                                                            try {
+                                                                const res = await fetch(`/api/orders/${order.orderNumber}/update`, {
+                                                                    method: 'PUT',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'shipping', shippingStatus: value }),
+                                                                });
 
-                                                            if (!res.ok) {
-                                                                console.error('❌ Lỗi khi cập nhật trạng thái giao hàng');
-                                                                toast.error('Lỗi khi cập nhật trạng thái giao hàng');
+                                                                if (!res.ok) {
+                                                                    console.error('❌ Lỗi khi cập nhật trạng thái giao hàng');
+                                                                    toast.error('Lỗi khi cập nhật trạng thái giao hàng');
+                                                                    // Revert the change if failed
+                                                                    setOrders((prev) =>
+                                                                        prev.map((o, i) => (i === idx ? { ...o, shippingStatus: previousShippingStatus } : o))
+                                                                    );
+                                                                } else {
+                                                                    console.log('✅ Đã cập nhật trạng thái giao hàng');
+                                                                    toast.success(`Đã cập nhật trạng thái giao hàng đơn hàng #${order.orderNumber} thành "${value}"`);
+                                                                }
+                                                            } catch (err) {
+                                                                console.error('❌ Lỗi network khi cập nhật giao hàng:', err);
+                                                                toast.error('Lỗi kết nối khi cập nhật trạng thái giao hàng');
                                                                 // Revert the change if failed
                                                                 setOrders((prev) =>
                                                                     prev.map((o, i) => (i === idx ? { ...o, shippingStatus: previousShippingStatus } : o))
                                                                 );
-                                                            } else {
-                                                                console.log('✅ Đã cập nhật trạng thái giao hàng');
-                                                                toast.success(`Đã cập nhật trạng thái giao hàng đơn hàng #${order.orderNumber} thành "${value}"`);
                                                             }
-                                                        } catch (err) {
-                                                            console.error('❌ Lỗi network khi cập nhật giao hàng:', err);
-                                                            toast.error('Lỗi kết nối khi cập nhật trạng thái giao hàng');
-                                                            // Revert the change if failed
-                                                            setOrders((prev) =>
-                                                                prev.map((o, i) => (i === idx ? { ...o, shippingStatus: previousShippingStatus } : o))
-                                                            );
-                                                        }
-                                                    }}
-                                                >
+                                                        }}
+                                                    >
 
-                                                    <SelectTrigger className={cn("w-full h-8 rounded-md px-2", getShippingTriggerClass(order.shippingStatus), "border border-gray-300 dark:border-zinc-600 shadow-sm", "focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors")}>
-                                                        <div className="w-full flex items-center justify-between gap-2 truncate">
-                                                            <StatusBadge status={
-                                                                getShippingStatus(order.shippingStatus)}
-                                                                label={order.shippingStatus}
-                                                                size="sm" className="truncate"
-                                                                variant="default" />
-                                                        </div>
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-md shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-gray-700 z-50">
-                                                        {[
-                                                            "Đã giao hàng",
-                                                            "Chưa giao hàng",
-                                                            "Giao hàng thất bại",
-                                                            "Đang giao"
-                                                        ].map((status) => (
-                                                            <SelectItem key={status} value={status} className="text-sm px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                                                        <SelectTrigger className={cn("w-full h-8 rounded-md px-2", getShippingTriggerClass(order.shippingStatus), "border border-gray-300 dark:border-zinc-600 shadow-sm", "focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors")}>
+                                                            <div className="w-full flex items-center justify-between gap-2 truncate">
                                                                 <StatusBadge status={
-                                                                    getShippingStatus(status)}
-                                                                    label={status} size="sm"
-                                                                    className="truncate"
+                                                                    getShippingStatus(order.shippingStatus)}
+                                                                    label={order.shippingStatus}
+                                                                    size="sm" className="truncate"
                                                                     variant="default" />
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                            </div>
+                                                        </SelectTrigger>
+                                                        <SelectContent className="rounded-md shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-gray-700 z-50">
+                                                            {[
+                                                                "Đã giao hàng",
+                                                                "Chưa giao hàng",
+                                                                "Giao hàng thất bại",
+                                                                "Đang giao"
+                                                            ].map((status) => (
+                                                                <SelectItem key={status} value={status} className="text-sm px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                                                                    <StatusBadge status={
+                                                                        getShippingStatus(status)}
+                                                                        label={status} size="sm"
+                                                                        className="truncate"
+                                                                        variant="default" />
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                 )}
                                             </td>
                                             <td className="px-4 py-2">
@@ -502,7 +563,8 @@ export default function AdminOrdersPage() {
                         </button>
                         <h2 className="text-xl font-bold mb-4">Chi tiết đơn hàng #{selectedOrder.orderNumber}</h2>
                         <div className="mb-4 space-y-1 text-sm text-gray-700 dark:text-gray-200">
-                            <p><strong>Khách hàng:</strong> {selectedOrder.receiverName || '-'}</p>
+                            <p><strong>Khách hàng:</strong> {customerUsername || '-'}</p>
+                            <p><strong>Người nhận:</strong> {selectedOrder.receiverName || '-'}</p>
                             <p><strong>Địa chỉ:</strong> {selectedOrder.shippingAddress || '-'}</p>
                             <p><strong>Trạng thái:</strong>
                                 {/* {selectedOrder.orderStatus || '-'} */}
@@ -520,10 +582,10 @@ export default function AdminOrdersPage() {
                             </p>
                             <p><strong>Trạng thái giao hàng:</strong> {selectedOrder.orderStatus === "Đã hủy" ? (
                                 <span className="text-red-600 font-semibold">Đơn hàng bị hủy</span>
-                              ) : (selectedOrder.shippingStatus || '-')}
+                            ) : (selectedOrder.shippingStatus || '-')}
                             </p>
                             {selectedOrder.orderStatus === "Đã hủy" && selectedOrder.cancelReason && (
-                              <p className="mt-1"><strong>Lý do hủy:</strong> <span className="text-red-600">{selectedOrder.cancelReason}</span></p>
+                                <p className="mt-1"><strong>Lý do hủy:</strong> <span className="text-red-600">{selectedOrder.cancelReason}</span></p>
                             )}
                             <p><strong>Phương thức thanh toán:</strong> {selectedOrder.paymentMethod === 'COD' ? 'Tiền mặt khi nhận hàng' : selectedOrder.paymentMethod || '-'}</p>
                             <p><strong>Trạng thái thanh toán:</strong>{" "}
@@ -542,7 +604,7 @@ export default function AdminOrdersPage() {
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify({ action: 'payment', paymentStatus: 'Đã thanh toán' }),
                                                 });
-                                                
+
                                                 if (!res.ok) {
                                                     toast.error('Lỗi khi cập nhật trạng thái thanh toán');
                                                 } else {
@@ -630,17 +692,17 @@ export default function AdminOrdersPage() {
                                 onClick={async () => {
                                     if (window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này?")) {
                                         try {
-                                            const response = await fetch(`/api/orders/${selectedOrder.orderNumber}`, { 
-                                                method: "DELETE" 
+                                            const response = await fetch(`/api/orders/${selectedOrder.id}`, {
+                                                method: "DELETE"
                                             });
-                                            
+
                                             if (response.ok) {
                                                 // Xóa đơn hàng khỏi state
                                                 setOrders(prev => prev.filter(order => order.orderNumber !== selectedOrder.orderNumber));
-                                                
+
                                                 // Đóng modal
                                                 setShowDetail(false);
-                                                
+
                                                 // Hiển thị thông báo thành công
                                                 toast.success(`Đơn hàng #${selectedOrder.orderNumber} đã được xóa.`);
                                             } else {
@@ -740,6 +802,7 @@ export default function AdminOrdersPage() {
                     </div>
                 </div>
             )}
+
         </>
     );
 
