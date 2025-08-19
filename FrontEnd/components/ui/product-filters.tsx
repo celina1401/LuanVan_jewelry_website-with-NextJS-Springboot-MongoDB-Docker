@@ -14,10 +14,13 @@ interface Category {
 interface ProductFiltersProps {
   categories: Category[]
   priceRanges: { label: string; value: string }[]
+  goldAges: { label: string; value: string }[]
   selectedCategory: string
   selectedPriceRange: string
+  selectedGoldAge: string
   onCategoryChange: (value: string) => void
   onPriceRangeChange: (value: string) => void
+  onGoldAgeChange: (value: string) => void
   gender: string
   onGenderChange: (value: string) => void
 }
@@ -25,10 +28,13 @@ interface ProductFiltersProps {
 export function ProductFilters({
   categories,
   priceRanges,
+  goldAges,
   selectedCategory,
   selectedPriceRange,
+  selectedGoldAge,
   onCategoryChange,
   onPriceRangeChange,
+  onGoldAgeChange,
   gender,
   onGenderChange,
 }: ProductFiltersProps) {
@@ -74,31 +80,25 @@ export function ProductFilters({
         </CardContent>
       </Card>
 
-      {/* <Card className="bg-white dark:bg-black">
+      <Card className="bg-white dark:bg-black">
         <CardHeader>
-          <CardTitle className="text-gray-900 dark:text-white">Giới tính</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Tuổi vàng</CardTitle>
         </CardHeader>
         <CardContent>
           <RadioGroup
-            value={gender}
-            onValueChange={onGenderChange}
+            value={selectedGoldAge}
+            onValueChange={onGoldAgeChange}
             className="space-y-2"
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="all" id="gender-all" />
-              <Label htmlFor="gender-all" className="text-gray-900 dark:text-white">Tất cả</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="female" id="gender-female" />
-              <Label htmlFor="gender-female" className="text-gray-900 dark:text-white">Nữ</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="male" id="gender-male" />
-              <Label htmlFor="gender-male" className="text-gray-900 dark:text-white">Nam</Label>
-            </div>
+            {goldAges.map((age) => (
+              <div key={age.value} className="flex items-center space-x-2">
+                <RadioGroupItem value={age.value} id={age.value} />
+                <Label htmlFor={age.value} className="text-gray-900 dark:text-white">{age.label}</Label>
+              </div>
+            ))}
           </RadioGroup>
         </CardContent>
-      </Card> */}
+      </Card>
 
       <Button
         variant="outline"
@@ -106,6 +106,7 @@ export function ProductFilters({
         onClick={() => {
           onCategoryChange("all")
           onPriceRangeChange("all")
+          onGoldAgeChange("all")
           onGenderChange("all")
         }}
       >

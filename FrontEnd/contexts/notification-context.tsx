@@ -25,7 +25,9 @@ interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   markAsRead: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
+  deleteAllNotifications: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -83,30 +85,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     throw lastError instanceof Error ? lastError : new Error('All notification service URLs failed');
   };
 
-  // Test connection function with retry
-  // const testConnection = async (retries = 3): Promise<boolean> => {
-  //   for (let i = 0; i < retries; i++) {
-  //     try {
-  //       const response = await fetch('http://localhost:9002/api/notifications/health', {
-  //         method: 'GET',
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //         },
-  //         signal: createTimeoutSignal(3000), // Reduced timeout
-  //       });
-  //       if (response.ok) {
-  //         return true;
-  //       }
-  //     } catch (error) {
-  //       console.warn(`Connection attempt ${i + 1} failed:`, error);
-  //       if (i < retries - 1) {
-  //         // Wait before retry with exponential backoff
-  //         await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
-  //       }
-  //     }
-  //   }
-  //   return false;
-  // };
+
 
   const fetchNotifications = async () => {
     if (!userId) return;
@@ -115,14 +94,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setLoading(true);
       setError(null);
       
-      // Test connection first
-      // const isConnected = await testConnection();
-      // if (!isConnected) {
-      //   setError('Notification service is not available');
-      //   setNotifications([]);
-      //   setUnreadCount(0);
-      //   return;
-      // }
+
 
       const response = await requestWithFallback(`/api/notifications/user/${userId}`, {
         method: 'GET',
@@ -179,13 +151,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!userId) return;
     
     try {
-      // Test connection first
-      // const isConnected = await testConnection(1); // Only try once for unread count
-      // if (!isConnected) {
-      //   console.warn('Notification service not available for unread count');
-      //   setUnreadCount(0);
-      //   return;
-      // }
+
 
       const response = await requestWithFallback(`/api/notifications/user/${userId}/unread-count`, {
         method: 'GET',
@@ -281,7 +247,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setNotifications(prev => prev.filter(n => n.id !== notificationId));
         await fetchUnreadCount();
       } else if (response.status === 500) {
-        console.warn('Notification service returned 500 error for delete');
+        console.log('Notification service returned 500 error for delete');
         // Delete locally even if service fails
         setNotifications(prev => prev.filter(n => n.id !== notificationId));
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -296,6 +262,112 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Delete locally even if service fails
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const markAllAsRead = async () => {
+    console.log('✅ Marking all notifications as read');
+    try {
+      // Get all unread notifications
+      const unreadNotifications = notifications.filter(n => n.status === 'UNREAD');
+      
+      if (unreadNotifications.length === 0) {
+        console.log('No unread notifications to mark');
+        return;
+      }
+
+      // Mark each unread notification as read individually
+      const markPromises = unreadNotifications.map(async (notification) => {
+        try {
+          const response = await requestWithFallback(`/api/notifications/${notification.id}/read`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: createTimeoutSignal(3000),
+          });
+          
+          if (response.ok) {
+            return notification.id;
+          } else {
+            console.warn(`Failed to mark notification ${notification.id} as read:`, response.status);
+            return null;
+          }
+        } catch (error) {
+          console.warn(`Error marking notification ${notification.id} as read:`, error);
+          return null;
+        }
+      });
+
+      const results = await Promise.all(markPromises);
+      const successfulIds = results.filter(Boolean);
+      
+      if (successfulIds.length > 0) {
+        // Update local state for successfully marked notifications
+        setNotifications(prev => 
+          prev.map(n => 
+            successfulIds.includes(n.id) 
+              ? { ...n, status: 'READ' as const, readAt: new Date().toISOString() }
+              : n
+          )
+        );
+        
+        // Update unread count
+        const newUnreadCount = Math.max(0, unreadCount - successfulIds.length);
+        setUnreadCount(newUnreadCount);
+        
+        console.log(`✅ Successfully marked ${successfulIds.length} notifications as read`);
+      }
+      
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Request timeout for mark all as read');
+      }
+      // Update locally even if service fails
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, status: 'READ' as const, readAt: new Date().toISOString() }))
+      );
+      setUnreadCount(0);
+    }
+  };
+
+  const deleteAllNotifications = async () => {
+    console.log('🗑️ Deleting all notifications');
+    try {
+      if (!userId) {
+        console.warn('No user ID available for delete all notifications');
+        return;
+      }
+
+      const response = await requestWithFallback(`/api/notifications/user/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: createTimeoutSignal(3000),
+      });
+      
+      if (response.ok) {
+        setNotifications([]);
+        setUnreadCount(0);
+        console.log('✅ Successfully deleted all notifications');
+      } else if (response.status === 500) {
+        console.warn('Notification service returned 500 error for delete all');
+        // Delete locally even if service fails
+        setNotifications([]);
+        setUnreadCount(0);
+      } else {
+        console.error('Error deleting all notifications:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Request timeout for delete all notifications');
+      }
+      // Delete locally even if service fails
+      setNotifications([]);
+      setUnreadCount(0);
     }
   };
 
@@ -398,7 +470,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       notifications,
       unreadCount,
       markAsRead,
+      markAllAsRead,
       deleteNotification,
+      deleteAllNotifications,
       refreshNotifications,
       loading,
       error

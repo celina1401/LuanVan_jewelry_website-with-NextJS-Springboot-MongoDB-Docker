@@ -36,6 +36,7 @@ interface Product {
 interface ProductGridProps {
   category: string
   priceRange: string
+  goldAge: string
   sortBy: string
   gender: string
 }
@@ -85,7 +86,7 @@ function useCurrentGoldPricePerChi(age: string | undefined) {
   return price;
 }
 
-export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGridProps) {
+export function ProductGrid({ category, priceRange, goldAge, sortBy, gender }: ProductGridProps) {
   const { addItem } = useCart()
   const router = useRouter();
   const { toast } = useToast();
@@ -193,6 +194,32 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
         // Category filtering - use the original category value from backend
         const matchCategory = category === "all" || product.category === category;
         
+        // Gold age filtering - improved logic
+        let matchGoldAge = true;
+        if (goldAge !== "all") {
+          const productGoldAge = (product.goldAge || product.karat || "").toString().toUpperCase().trim();
+          const selectedGoldAgeUpper = goldAge.toUpperCase().trim();
+          
+          // Check exact match first
+          if (productGoldAge === selectedGoldAgeUpper) {
+            matchGoldAge = true;
+          } else if (productGoldAge && selectedGoldAgeUpper) {
+            // Check if product gold age contains the selected value (for partial matches)
+            // Also handle cases like "18K" vs "18" or "K18"
+            const cleanProduct = productGoldAge.replace(/[^0-9K]/g, '');
+            const cleanSelected = selectedGoldAgeUpper.replace(/[^0-9K]/g, '');
+            
+            matchGoldAge = cleanProduct === cleanSelected || 
+                          productGoldAge.includes(selectedGoldAgeUpper) || 
+                          selectedGoldAgeUpper.includes(productGoldAge);
+          } else {
+            matchGoldAge = false;
+          }
+          
+          // Debug logging for gold age filtering
+          console.log(`Product ${product.name}: productGoldAge="${productGoldAge}", selected="${selectedGoldAgeUpper}", match=${matchGoldAge}`);
+        }
+        
         // Price range filtering
         let matchPrice = true;
         if (priceRange !== "all") {
@@ -211,8 +238,8 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
           }
         }
         
-        const result = matchGender && matchCategory && matchPrice;
-        console.log(`Product ${product.name}: gender=${matchGender}, category=${matchCategory}, price=${matchPrice}, final=${result}`);
+        const result = matchGender && matchCategory && matchGoldAge && matchPrice;
+        console.log(`Product ${product.name}: gender=${matchGender}, category=${matchCategory}, goldAge=${matchGoldAge}, price=${matchPrice}, final=${result}`);
         
         return result;
       })
@@ -235,7 +262,7 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
     }
     
     return filtered;
-  }, [products, category, priceRange, sortBy, favorites, gender, productGoldPrices]);
+  }, [products, category, priceRange, sortBy, favorites, gender, productGoldPrices, goldAge]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -245,36 +272,10 @@ export function ProductGrid({ category, priceRange, sortBy, gender }: ProductGri
     return <ProductsEmptyState />;
   }
 
-  // Debug: Hiển thị thông tin debug nếu cần
-  const showDebugInfo = process.env.NODE_ENV === 'development';
-
+  
   return (
     <div className="space-y-6">
-      {/* Debug Info
-      {showDebugInfo && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
-          <h3 className="font-semibold text-yellow-800 mb-2">Debug Info:</h3>
-          <p>Total products: {products.length}</p>
-          <p>Filtered products: {filteredProducts.length}</p>
-          <p>API endpoint: http://localhost:9004/api/products/all</p>
-          {filteredProducts.length > 0 && (
-            <details className="mt-2">
-              <summary className="cursor-pointer text-yellow-700">Product details</summary>
-              <div className="mt-2 space-y-2">
-                {filteredProducts.slice(0, 3).map((product, idx) => (
-                  <div key={idx} className="text-xs bg-white p-2 rounded border">
-                    <p><strong>ID:</strong> {product.id}</p>
-                    <p><strong>Name:</strong> {product.name}</p>
-                    <p><strong>Thumbnail:</strong> {product.thumbnailUrl || 'N/A'}</p>
-                    <p><strong>Images:</strong> {product.images?.length || 0} images</p>
-                    <p><strong>Gender:</strong> {product.gender || 'N/A'}</p>
-                  </div>
-                ))}
-              </div>
-            </details>
-          )}
-        </div>
-      )} */}
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map((product, index) => {

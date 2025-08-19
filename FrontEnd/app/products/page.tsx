@@ -15,16 +15,29 @@ const categories = [
   { value: "necklace", label: "Dây chuyền" },
   { value: "earring", label: "Bông tai" },
   { value: "bracelet", label: "Vòng tay" },
-  { value: "watch", label: "Đồng hồ" }
-]
+  { value: "anklet", label: "Lắc chân" },
+  { value: "ankle-bracelet", label: "Lắc tay" },
+  { value: "pendant", label: "Mặt dây chuyền" },
+];
 
 const priceRanges = [
-  { label: "Tất cả mức giá", value: "all" },
+  { label: "Tất cả", value: "all" },
   { label: "Dưới 1.000.000₫", value: "0-1000000" },
   { label: "1.000.000₫ - 2.000.000₫", value: "1000000-2000000" },
   { label: "2.000.000₫ - 5.000.000₫", value: "2000000-5000000" },
   { label: "Trên 5.000.000₫", value: "5000000+" }
-]
+];
+
+const goldAges = [
+  { label: "Tất cả", value: "all" },
+  { label: "10K", value: "10K" },
+  { label: "14K", value: "14K" },
+  { label: "15K", value: "15K" },
+  { label: "16K", value: "16K" },
+  { label: "17K", value: "17K" },
+  { label: "23K", value: "23K" },
+  { label: "24K", value: "24K" }
+];
 
 const sortOptions = [
   { label: "Phổ biến nhất", value: "popular" },
@@ -37,6 +50,7 @@ const sortOptions = [
 export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = React.useState("all")
   const [selectedPriceRange, setSelectedPriceRange] = React.useState("all")
+  const [selectedGoldAge, setSelectedGoldAge] = React.useState("all")
   const [sortBy, setSortBy] = React.useState("popular")
   const [isFilterOpen, setIsFilterOpen] = React.useState(false)
   const [gender, setGender] = React.useState("all")
@@ -68,10 +82,13 @@ export default function ProductsPage() {
               <ProductFilters
                 categories={categories}
                 priceRanges={priceRanges}
+                goldAges={goldAges}
                 selectedCategory={selectedCategory}
                 selectedPriceRange={selectedPriceRange}
+                selectedGoldAge={selectedGoldAge}
                 onCategoryChange={setSelectedCategory}
                 onPriceRangeChange={setSelectedPriceRange}
+                onGoldAgeChange={setSelectedGoldAge}
                 gender={gender}
                 onGenderChange={setGender}
               />
@@ -80,6 +97,7 @@ export default function ProductsPage() {
               <ProductGrid
                 category={selectedCategory}
                 priceRange={selectedPriceRange}
+                goldAge={selectedGoldAge}
                 sortBy={sortBy}
                 gender={gender}
               />

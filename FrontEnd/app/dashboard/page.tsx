@@ -193,6 +193,7 @@ export default function DashboardPage() {
   const { signOut } = useClerk();
 
   const [username, setUsername] = useState("");
+  const [fullname, setFullname] = useState("");
   const [phone, setPhone] = useState("");
   const [addresses, setAddresses] = useState<Address[]>([]); // Danh sách địa chỉ
   const [loading, setLoading] = useState(false);
@@ -228,6 +229,10 @@ export default function DashboardPage() {
         if (res.ok) {
           const data = await res.json();
           setUsername(data.username || "");
+          // Ưu tiên dữ liệu từ Clerk, sau đó mới đến backend
+          const clerkFullName = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || user.lastName || "";
+          const backendFullName = data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : data.firstName || data.lastName || "";
+          setFullname(clerkFullName || backendFullName || "");
           setPhone(data.phone || "");
           setAddresses(data.addresses || []);
           setAvatarUrl(data.avatarUrl || data.imageUrl || undefined);
@@ -281,6 +286,13 @@ export default function DashboardPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    
+    // ✅ Validation số điện thoại
+    if (phone && phone.length !== 10) {
+      setMessage("❌ Số điện thoại phải có đúng 10 chữ số!");
+      return;
+    }
+    
     setLoading(true);
     setMessage("");
 
@@ -380,7 +392,7 @@ export default function DashboardPage() {
             <div className="space-y-4 text-base w-full text-left">
               {/* Avatar và nút sửa avatar */}
               <AvatarUpload userId={user?.id} avatarUrl={avatarUrl} clerkImageUrl={user?.imageUrl} onUploaded={setAvatarUrl} />
-              <p><b>Mã người dùng:</b> {user.id}</p>
+              <p><b>Họ và tên:</b> {fullname || "Chưa cập nhật"}</p>
               <p><b>Tên đăng nhập:</b> {username || user.username}</p>
               <p><b>Email:</b> {user.emailAddresses[0]?.emailAddress}</p>
               <p><b>Vai trò:</b> {typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : "user"}</p>
@@ -493,12 +505,18 @@ export default function DashboardPage() {
                         <label className="block font-medium mb-1">Số điện thoại</label>
                         <input
                           type="text"
-                          className="w-full border rounded px-3 py-2"
+                          maxLength={10}
+                          className={`w-full border rounded px-3 py-2 ${
+                            phone && phone.length !== 10 ? 'border-red-500' : ''
+                          }`}
                           value={phone}
-                          onChange={e => setPhone(e.target.value)}
-                          placeholder="Nhập số điện thoại"
+                          onChange={e => setPhone(e.target.value.slice(0, 10))}
+                          placeholder="Nhập số điện thoại (10 số)"
                           required
                         />
+                        {phone && phone.length !== 10 && (
+                          <p className="text-red-500 text-xs mt-1">Số điện thoại phải có đúng 10 chữ số</p>
+                        )}
                       </div>
                       <div>
                         <label className="block font-medium mb-1">Danh sách địa chỉ</label>
