@@ -10,13 +10,13 @@ export default function Page() {
       <Navbar />
       
       <main className="flex-1 flex items-center justify-center p-4 md:p-8">
-        <Card className="w-full max-w-md">
+        {/* <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl">Tạo tài khoản</CardTitle>
             <CardDescription>
               Nhập thông tin để tạo tài khoản mới
             </CardDescription>
-          </CardHeader>
+          </CardHeader> */}
           <CardContent>
             <SignUp 
               routing="path"
@@ -25,7 +25,7 @@ export default function Page() {
               signInUrl="/login"
             />
           </CardContent>
-        </Card>
+        {/* </Card> */}
       </main>
     </div>
   );

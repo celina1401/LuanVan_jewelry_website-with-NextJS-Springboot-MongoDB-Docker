@@ -165,12 +165,12 @@ export function PaymentStatusCard({
                   variant="outline" 
                   className="flex-1"
                 >
-                  Xem đơn hàng
+                  Xem đơn hàng của tôi
                 </Button>
               ) : (
                 <Button asChild variant="outline" className="flex-1">
                   <Link href="/dashboard/orders">
-                    Xem đơn hàng
+                    Xem đơn hàng của tôi
                   </Link>
                 </Button>
               )}

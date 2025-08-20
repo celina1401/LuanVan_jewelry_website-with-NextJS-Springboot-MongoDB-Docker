@@ -7,13 +7,17 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./card"
 import { useCart } from "../../contexts/cart-context"
 import { useRouter } from "next/navigation"
 import { getProductImageUrl } from "../../lib/utils"
+import { useUser } from "@clerk/nextjs"
+import { LoginRequiredPopup } from "@/components/ui/login-required-popup"
 
 export function Cart() {
   const { items, removeItem, updateQuantity } = useCart()
   const router = useRouter()
+  const { isSignedIn } = useUser()
 
   const [calculatedPrices, setCalculatedPrices] = React.useState<{ [id: string]: number }>({})
   const [stockInfo, setStockInfo] = React.useState<{ [id: string]: number }>({})
+  const [showLoginPopup, setShowLoginPopup] = React.useState(false)
 
   React.useEffect(() => {
     async function fetchPrices() {
@@ -203,12 +207,26 @@ export function Cart() {
         </div>
         <Button 
           className="w-full" 
-          onClick={() => router.push("/order")}
+          onClick={() => {
+            if (!isSignedIn) {
+              setShowLoginPopup(true)
+            } else {
+              router.push("/order")
+            }
+          }}
           disabled={hasOutOfStockItems}
         >
           {hasOutOfStockItems ? 'Không thể thanh toán (Hết hàng)' : 'Thanh toán'}
         </Button>
       </CardFooter>
+      
+      {/* Login Required Popup */}
+      <LoginRequiredPopup
+        isOpen={showLoginPopup}
+        onClose={() => setShowLoginPopup(false)}
+        title="Đăng nhập để thanh toán"
+        message="Bạn cần đăng nhập để tiếp tục thanh toán giỏ hàng."
+      />
     </Card>
   )
 }

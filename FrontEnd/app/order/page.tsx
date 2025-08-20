@@ -48,7 +48,6 @@ function OrderPageContent() {
   const [deliveryType, setDeliveryType] = useState("home");
   const [payment, setPayment] = useState("cod");
   const [agree, setAgree] = useState(false);
-  const [invoice, setInvoice] = useState(false);
   const [promo, setPromo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false); // Thêm loading state
 
@@ -317,12 +316,19 @@ function OrderPageContent() {
       return;
     }
 
-    if (!phone.trim()) {
-      toast.error('Vui lòng nhập số điện thoại', {
-        description: 'Số điện thoại không được để trống'
-      });
-      return;
-    }
+         if (!phone.trim()) {
+       toast.error('Vui lòng nhập số điện thoại', {
+         description: 'Số điện thoại không được để trống'
+       });
+       return;
+     }
+
+     if (phone.length !== 10) {
+       toast.error('Số điện thoại không hợp lệ', {
+         description: 'Số điện thoại phải có đúng 10 số'
+       });
+       return;
+     }
 
     if (!address.trim()) {
       toast.error('Vui lòng nhập địa chỉ', {
@@ -393,7 +399,7 @@ function OrderPageContent() {
             paymentStatus: "Chờ thanh toán",
             note,
             // smsNotification: sms,
-            invoiceRequest: invoice,
+
             promoCode: promo,
           }),
         });
@@ -411,15 +417,7 @@ function OrderPageContent() {
         const createdOrderId = savedOrder.orderNumber; // Hoặc orderNumber nếu bạn dùng
         console.log('✅ Đã tạo đơn hàng thành công:', createdOrderId);
 
-        // Nếu có invoiceUrl và người dùng chọn xuất hóa đơn
-        if (invoice && savedOrder.invoiceUrl) {
-          const link = document.createElement('a');
-          link.href = savedOrder.invoiceUrl;
-          link.download = 'HoaDon.pdf';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+
 
         // Bước 2: Lấy URL thanh toán từ PaymentService với retry logic
         let retryCount = 0;
@@ -551,7 +549,7 @@ function OrderPageContent() {
               paymentStatus: "Chưa thanh toán",
               note,
               // smsNotification: sms,
-              invoiceRequest: invoice,
+
               promoCode: promo,
             }),
           });
@@ -614,10 +612,10 @@ function OrderPageContent() {
                 <p>• Bạn có thể theo dõi đơn hàng trong trang Dashboard</p>
               </div>
               <button
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => window.location.href = `/dashboard/orders`}
                 className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                Xem đơn hàng
+                Xem đơn hàng của tôi
               </button>
             </div>
           </div>
@@ -793,10 +791,7 @@ function OrderPageContent() {
                 </div>
 
               </div>
-              <div className="mt-4 flex gap-2 items-center">
-                <input className="border rounded p-2 flex-1 text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Nhập mã ưu đãi" value={promo} onChange={e => setPromo(e.target.value)} />
-                <button type="button" className="bg-rose-400 text-white px-4 py-2 rounded font-semibold">Áp dụng</button>
-              </div>
+
 
               {/* 🎯 Cảnh báo hết hàng */}
               {hasOutOfStockItems && (
@@ -931,14 +926,6 @@ function OrderPageContent() {
                 <input type="checkbox" checked={sms} onChange={e => setSms(e.target.checked)} />
                 <label className="text-sm text-gray-900 dark:text-white">Tôi muốn gửi thiệp và lời chúc qua SMS</label>
               </div> */}
-              <div className="flex items-center gap-2 mb-2">
-                <input type="checkbox" checked={invoice} onChange={e => setInvoice(e.target.checked)} />
-                <label className="text-sm text-gray-900 dark:text-white">Xuất hóa đơn công ty</label>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} required />
-                <label className="text-sm text-gray-900 dark:text-white">Đồng ý xử lý dữ liệu cá nhân</label>
-              </div>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
               <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Phương thức thanh toán</h2>
@@ -965,7 +952,20 @@ function OrderPageContent() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Họ và tên" value={name} onChange={e => setName(e.target.value)} required />
-                <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} required />
+                                 <input 
+                   className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" 
+                   placeholder="Số điện thoại (10 số)" 
+                   value={phone} 
+                   onChange={e => {
+                     const value = e.target.value.replace(/\D/g, ''); // Chỉ cho phép số
+                     if (value.length <= 10) { // Giới hạn tối đa 10 số
+                       setPhone(value);
+                     }
+                   }} 
+                   pattern="[0-9]{10}"
+                   title="Số điện thoại phải có đúng 10 số"
+                   required 
+                 />
                 <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} type="email" />
                 <input className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Ngày sinh" value={dob} onChange={e => setDob(e.target.value)} type="date" />
               </div>
@@ -974,6 +974,29 @@ function OrderPageContent() {
               <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Ghi chú đơn hàng (Không bắt buộc)</h2>
               <textarea className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-300" placeholder="Vui lòng ghi chú thêm để T&C Jewelry hỗ trợ tốt nhất cho Quý khách!" value={note} onChange={e => setNote(e.target.value)} />
             </div>
+            
+            {/* Checkbox đồng ý xử lý dữ liệu cá nhân */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <input 
+                  type="checkbox" 
+                  id="agree-privacy"
+                  checked={agree} 
+                  onChange={e => setAgree(e.target.checked)} 
+                  required 
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2"
+                />
+                <div className="flex-1">
+                  <label htmlFor="agree-privacy" className="text-sm font-medium text-blue-900 dark:text-blue-100 cursor-pointer">
+                    Tôi đồng ý cho phép T&C Jewelry xử lý thông tin cá nhân của mình
+                  </label>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    Thông tin của bạn sẽ được bảo mật và chỉ sử dụng để xử lý đơn hàng, giao hàng và chăm sóc khách hàng.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <button type="submit" className="w-full bg-rose-500 text-white py-3 rounded font-bold text-lg hover:bg-rose-600 transition" disabled={itemsToCalculate.length === 0 || !agree || isSubmitting || hasOutOfStockItems}
             >
               {isSubmitting ? "Đang xử lý..." : 

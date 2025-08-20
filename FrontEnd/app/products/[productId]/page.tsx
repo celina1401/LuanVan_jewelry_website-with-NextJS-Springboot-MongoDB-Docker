@@ -9,6 +9,7 @@ import { FaRegHeart, FaTruck, FaSyncAlt, FaShieldAlt, FaComments } from "react-i
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useUser } from "@clerk/nextjs";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/chatbox/ChatBox";
@@ -17,6 +18,7 @@ import { MagnifierImage } from "@/app/components/MagnifierImage";
 import ReviewSection from "@/components/ReviewSection";
 import ReviewSummary from "@/components/ReviewSummary";
 import { Footer } from "@/components/Footer";
+import { LoginRequiredPopup } from "@/components/ui/login-required-popup";
 
 
 type Product = {
@@ -182,6 +184,7 @@ function useCurrentGoldPricePerChi(age: string | undefined) {
 export default function ProductDetailPage() {
   const { theme } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isSignedIn } = useUser();
   const params = useParams<{ productId: string }>();
   const productId = params.productId;
   const [product, setProduct] = useState<Product | null>(null);
@@ -193,6 +196,7 @@ export default function ProductDetailPage() {
   const { addItem } = useCart();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   // Function để cập nhật rating khi có review mới
   const handleReviewAdded = async () => {
@@ -268,6 +272,9 @@ export default function ProductDetailPage() {
   };
 
   const buyNow = (product: Product) => {
+    // Kiểm tra đăng nhập trước khi mua ngay
+    if (!mounted) return; // Chờ component mount xong
+    
     // Không thêm vào giỏ hàng, chỉ chuyển hướng với tham số mua ngay
     router.push(`/order?productId=${product.id}&quantity=${quantity}&buyNow=true`);
   };
@@ -413,7 +420,14 @@ export default function ProductDetailPage() {
             <div className="flex flex-wrap gap-4 mt-4">
               <button
                 className="px-8 py-3 bg-white dark:bg-[#23272f] border-2 border-rose-400 dark:text-rose-400 dark:border-rose-400 rounded-full font-bold text-lg shadow hover:bg-rose-50 dark:hover:bg-[#2d323b] transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400"
-                onClick={() => addToCart(product)}
+                onClick={() => {
+                  if (!mounted) return;
+                  if (!isSignedIn) {
+                    setShowLoginPopup(true);
+                  } else {
+                    addToCart(product);
+                  }
+                }}
                 disabled={product.stockQuantity === 0}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A1 1 0 007.52 17h8.96a1 1 0 00.87-1.47L17 13M7 13V6h13" /></svg>
@@ -421,7 +435,14 @@ export default function ProductDetailPage() {
               </button>
               <button
                 className="px-8 py-3 bg-green-500 text-white rounded-full font-bold text-lg shadow hover:bg-green-600 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
-                onClick={() => buyNow(product)}
+                onClick={() => {
+                  if (!mounted) return;
+                  if (!isSignedIn) {
+                    setShowLoginPopup(true);
+                  } else {
+                    buyNow(product);
+                  }
+                }}
                 disabled={product.stockQuantity === 0}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -563,6 +584,14 @@ export default function ProductDetailPage() {
        </div>
        <ChatBox />
        <Footer />
+       
+       {/* Login Required Popup */}
+       <LoginRequiredPopup
+         isOpen={showLoginPopup}
+         onClose={() => setShowLoginPopup(false)}
+         title="Đăng nhập để tiếp tục"
+         message="Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng hoặc mua hàng."
+       />
      </div>
    );
  } 

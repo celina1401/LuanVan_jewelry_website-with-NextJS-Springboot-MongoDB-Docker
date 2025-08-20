@@ -22,7 +22,7 @@ export default function UserStatusChecker() {
           if (userData.active === false) {
             alert("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin để được hỗ trợ.");
             await signOut();
-            router.push("/login");
+            router.push("/");
           }
         }
       } catch (error) {
