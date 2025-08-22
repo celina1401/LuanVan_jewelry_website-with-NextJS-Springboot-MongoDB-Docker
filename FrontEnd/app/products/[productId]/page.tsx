@@ -13,7 +13,7 @@ import { useUser } from "@clerk/nextjs";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ChatBox from "@/app/components/chatbox/ChatBox";
-import { translateProductTag, getProductImageUrl } from "@/lib/utils";
+import { translateProductTag, getProductImageUrl, safeCurrencyFormat } from "@/lib/utils";
 import { MagnifierImage } from "@/app/components/MagnifierImage";
 import ReviewSection from "@/components/ReviewSection";
 import ReviewSummary from "@/components/ReviewSummary";
@@ -43,6 +43,8 @@ type Product = {
   goldPrice?: number; // Giá tuổi vàng
   wage?: number; // Tiền công
   karat?: string; // Tuổi vàng (có thể từ backend)
+  brand?: string; // Xuất xứ
+  taxCode?: string; // Mã số thuế
 };
 
 type Comment = {
@@ -370,7 +372,8 @@ export default function ProductDetailPage() {
               <div><span className="font-semibold text-gray-500">Tồn kho:</span> <span className={`font-medium ${product.stockQuantity && product.stockQuantity > 0 ? 'text-green-600' : 'text-red-500'}`}>{product.stockQuantity && product.stockQuantity > 0 ? 'Còn hàng' : 'Hết hàng'}</span></div>
               <div><span className="font-semibold text-gray-500">Khối lượng:</span> <span className="font-medium">{product.weight || '-'} chỉ</span></div>
               <div><span className="font-semibold text-gray-500">Tuổi vàng:</span> <span className="font-medium">{product.goldAge || product.karat || '-'}</span></div>
-              <div><span className="font-semibold text-gray-500">Tiền công:</span> <span className="font-medium">{product.wage ? Number(product.wage).toLocaleString() : '-'}₫</span></div>
+              <div><span className="font-semibold text-gray-500">Tiền công:</span> <span className="font-medium">{safeCurrencyFormat(product.wage, '₫', '-')}</span></div>
+              <div className="col-span-3"><span className="font-semibold text-gray-500">Xuất xứ:</span> <span className="font-medium break-words">{product.taxCode && product.brand ? `${product.taxCode} - ${product.brand}` : product.brand || '-'}</span></div>
             </div>
             <p className="mb-1 text-lg text-gray-700 dark:text-gray-300 font-medium">{product.description}</p>
             {/* Tổng tiền động phía dưới mô tả sản phẩm */}
@@ -378,7 +381,7 @@ export default function ProductDetailPage() {
               {product.stockQuantity === 0 ? (
                 <span className="text-red-500">Hết hàng</span>
               ) : totalPrice ? (
-                totalPrice.toLocaleString() + '₫'
+                safeCurrencyFormat(totalPrice)
               ) : (
                 '-'
               )}

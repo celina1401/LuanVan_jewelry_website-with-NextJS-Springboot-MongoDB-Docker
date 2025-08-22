@@ -66,3 +66,23 @@ export function translateProductTag(tag: string): string {
     default: return tag;
   }
 }
+
+/**
+ * Safely format a number with toLocaleString, handling undefined/null values
+ */
+export function safeNumberFormat(value: number | undefined | null, fallback: string = '0'): string {
+  if (value === undefined || value === null || isNaN(value)) {
+    return fallback;
+  }
+  return value.toLocaleString();
+}
+
+/**
+ * Safely format a number as currency with toLocaleString
+ */
+export function safeCurrencyFormat(value: number | undefined | null, currency: string = '₫', fallback: string = '0'): string {
+  if (value === undefined || value === null || isNaN(value)) {
+    return fallback;
+  }
+  return `${value.toLocaleString()}${currency}`;
+}

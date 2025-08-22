@@ -5,9 +5,11 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader as DialogModalHeader
 import { Dialog as DetailDialog, DialogContent as DetailDialogContent, DialogHeader as DetailDialogHeader, DialogTitle as DetailDialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useState, useEffect, useMemo } from "react";
 import Barcode from "react-barcode";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 
@@ -26,7 +28,6 @@ export default function ProductPage() {
     wage: "", // Thêm trường tiền công
     quantity: "", // Thêm trường số lượng
     productCode: "", // Thêm trường mã sản phẩm
-    price: "", // Thêm trường giá bán
     description: "", // Thêm trường mô tả chi tiết
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -106,10 +107,72 @@ export default function ProductPage() {
   // Fetch danh sách sản phẩm khi load trang
   useEffect(() => {
     fetchProducts();
+    loadBrands();
   }, []);
   // State xác nhận xóa
   const [deleteConfirm, setDeleteConfirm] = useState<any>({ open: false, product: null });
   const [showAdd, setShowAdd] = useState(false);
+  // Danh sách thương hiệu lấy từ API @data/brands.json
+  type Brand = { name: string; taxCode?: string };
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const brandOptions = useMemo(() => brands.map(b => b.name), [brands]);
+
+  async function loadBrands() {
+    try {
+      const res = await fetch('/api/brands', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setBrands(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error('Failed to load brands', e);
+    }
+  }
+  // Popup thêm thương hiệu mới
+  const [brandDialogOpen, setBrandDialogOpen] = useState(false);
+  const [brandDialogTarget, setBrandDialogTarget] = useState<"form" | "edit" | null>(null);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [newBrandTaxCode, setNewBrandTaxCode] = useState("");
+
+  function openNewBrandDialog(target: "form" | "edit") {
+    setBrandDialogTarget(target);
+    setNewBrandName("");
+    setNewBrandTaxCode("");
+    setBrandDialogOpen(true);
+  }
+
+  async function confirmNewBrand() {
+    const name = newBrandName.trim();
+    const taxCode = newBrandTaxCode.trim();
+    if (!name) {
+      toast.error("Vui lòng nhập tên thương hiệu");
+      return;
+    }
+    try {
+      const res = await fetch('/api/brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, taxCode }),
+      });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => ({} as any));
+        toast.error(msg?.error || 'Thêm thương hiệu thất bại');
+        return;
+      }
+      const created: Brand = await res.json();
+      setBrands(prev => [...prev.filter(b => b.name.toLowerCase() !== created.name.toLowerCase()), created].sort((a, b) => a.name.localeCompare(b.name)));
+      if (brandDialogTarget === 'form') {
+        setForm({ ...form, brand: created.name });
+      } else if (brandDialogTarget === 'edit') {
+        setEditProduct((prev: any) => ({ ...prev, brand: created.name }));
+      }
+      setBrandDialogOpen(false);
+      toast.success('Đã thêm thương hiệu mới');
+    } catch (e) {
+      console.error(e);
+      toast.error('Không thể lưu thương hiệu');
+    }
+  }
 
   // Lưu lại category ban đầu khi mở popup sửa
   const [originalEditCategory, setOriginalEditCategory] = useState<string | undefined>(undefined);
@@ -172,6 +235,9 @@ export default function ProductPage() {
       case "ring": prefix = "N"; break;
       case "earring": prefix = "E"; break;
       case "bracelet": prefix = "B"; break;
+      case "wristlet": prefix = "L"; break;
+      case "anklet": prefix = "A"; break;
+      case "pendant": prefix = "P"; break;
       default: prefix = "X";
     }
     async function fetchNextProductCodeForEdit() {
@@ -242,6 +308,9 @@ export default function ProductPage() {
         case 'ring': prefix = 'N'; break;
         case 'earring': prefix = 'E'; break;
         case 'bracelet': prefix = 'B'; break;
+        case 'wristlet': prefix = 'L'; break;
+        case 'anklet': prefix = 'A'; break;
+        case 'pendant': prefix = 'P'; break;
         default: prefix = 'X';
       }
       fetchNextProductCode(value, prefix);
@@ -394,7 +463,6 @@ export default function ProductPage() {
           wage: "",
           quantity: "",
           productCode: "",
-          price: "",
           description: "",
         });
         setImagePreview(null);
@@ -442,7 +510,7 @@ export default function ProductPage() {
   function handleEditChange(e: any) {
     const { name, value, type } = e.target;
     // Nếu là input type number, chuyển về số hoặc null nếu rỗng
-    if (["price", "quantity", "stockQuantity", "wage"].includes(name)) {
+    if (["quantity", "stockQuantity", "wage"].includes(name)) {
       setEditProduct((prev: any) => ({
         ...prev,
         [name]: value === '' ? null : Number(value)
@@ -544,48 +612,48 @@ export default function ProductPage() {
     }
   }
 
-  // Hàm cập nhật hình ảnh sản phẩm
-  const updateProductImage = async (productId: string, imageFile: File) => {
-    try {
-      // Upload lên Cloudinary trước
-      const result = await uploadToCloudinary(imageFile, { folder: 'products' });
-      const imageUrl = result.secure_url;
+  // // Hàm cập nhật hình ảnh sản phẩm
+  // const updateProductImage = async (productId: string, imageFile: File) => {
+  //   try {
+  //     // Upload lên Cloudinary trước
+  //     const result = await uploadToCloudinary(imageFile, { folder: 'products' });
+  //     const imageUrl = result.secure_url;
 
-      // Cập nhật qua API JSON
-      const res = await fetch(`http://localhost:9004/api/products/${productId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          thumbnailUrl: imageUrl,
-          images: [imageUrl] // Cập nhật cả list images
-        }),
-      });
+  //     // Cập nhật qua API JSON
+  //     const res = await fetch(`http://localhost:9004/api/products/${productId}`, {
+  //       method: 'PUT',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ 
+  //         thumbnailUrl: imageUrl,
+  //         images: [imageUrl] // Cập nhật cả list images
+  //       }),
+  //     });
 
-      if (res.ok) {
-        const result = await res.json();
-        // Cập nhật danh sách sản phẩm
-        setProducts((prev: any[]) =>
-          prev.map((p: any) =>
-            (p.id || p.product_id) === productId
-              ? { ...p, thumbnailUrl: result.thumbnailUrl, images: result.images }
-              : p
-          )
-        );
-        toast.success("Cập nhật ảnh thành công!", {
-          description: "Ảnh sản phẩm đã được cập nhật"
-        });
-        return result;
-      } else {
-        throw new Error('Failed to update image');
-      }
-    } catch (error) {
-      console.error('Error updating product image:', error);
-      toast.error("Lỗi khi cập nhật ảnh!", {
-        description: "Vui lòng thử lại sau"
-      });
-      throw error;
-    }
-  };
+  //     if (res.ok) {
+  //       const result = await res.json();
+  //       // Cập nhật danh sách sản phẩm
+  //       setProducts((prev: any[]) =>
+  //         prev.map((p: any) =>
+  //           (p.id || p.product_id) === productId
+  //             ? { ...p, thumbnailUrl: result.thumbnailUrl, images: result.images }
+  //             : p
+  //         )
+  //       );
+  //       toast.success("Cập nhật ảnh thành công!", {
+  //         description: "Ảnh sản phẩm đã được cập nhật"
+  //       });
+  //       return result;
+  //     } else {
+  //       throw new Error('Failed to update image');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error updating product image:', error);
+  //     toast.error("Lỗi khi cập nhật ảnh!", {
+  //       description: "Vui lòng thử lại sau"
+  //     });
+  //     throw error;
+  //   }
+  // };
 
   // Hàm cập nhật nhiều ảnh sản phẩm
   const updateProductImages = async (productId: string, imageFiles: File[]) => {
@@ -755,6 +823,9 @@ export default function ProductPage() {
                       <SelectItem value="necklace">Dây chuyền</SelectItem>
                       <SelectItem value="earring">Bông tai</SelectItem>
                       <SelectItem value="bracelet">Vòng tay</SelectItem>
+                      <SelectItem value="wristlet">Lắc tay</SelectItem>
+                      <SelectItem value="anklet">Lắc chân</SelectItem>
+                      <SelectItem value="pendant">Mặt dây chuyền</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -783,7 +854,7 @@ export default function ProductPage() {
                 </div>
               </div>
               {/* Hàng 3: Khối lượng - Tuổi vàng - Tiền công */}
-              <div className="grid grid-cols-4 gap-6 mb-2">
+              <div className="grid grid-cols-3 gap-6 mb-2">
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Khối lượng (chỉ)</label>
                   <input
@@ -850,9 +921,12 @@ export default function ProductPage() {
                       <SelectItem value="983">983</SelectItem>
                       <SelectItem value="999">999</SelectItem>
                       {/* <SelectItem value="9999">9999</SelectItem> */}
-                      <SelectItem value="15k">15k</SelectItem>
-                      <SelectItem value="16k">16k</SelectItem>
+                      <SelectItem value="24k">24k</SelectItem>
+                      <SelectItem value="23k">23k</SelectItem>
                       <SelectItem value="17k">17k</SelectItem>
+                      <SelectItem value="16k">16k</SelectItem>
+                      <SelectItem value="15k">15k</SelectItem>
+                      <SelectItem value="14k">14k</SelectItem>
                       <SelectItem value="10k">10k</SelectItem>
                     </SelectContent>
                   </Select>
@@ -871,19 +945,7 @@ export default function ProductPage() {
                     style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="font-semibold text-base">Giá bán (VNĐ)</label>
-                  <input
-                    name="price"
-                    type="number"
-                    min={0}
-                    value={form.price}
-                    onChange={handleChange}
-                    required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
-                    style={{ outline: 'none', boxShadow: 'none' }}
-                  />
-                </div>
+                
               </div>
               {/* Hàng 4: Xuất xứ - Thương hiệu */}
               <div className="grid grid-cols-2 gap-6 mb-2">
@@ -900,14 +962,37 @@ export default function ProductPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Thương hiệu</label>
-                  <input
-                    name="brand"
-                    value={form.brand}
-                    onChange={handleChange}
-                    required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
-                    style={{ outline: 'none', boxShadow: 'none' }}
-                  />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Select
+                        value={form.brand}
+                        onValueChange={(v) => setForm({ ...form, brand: v })}
+                      >
+                        <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full">
+                          <SelectValue placeholder="Chọn thương hiệu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brands.length === 0 && (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">Không có thương hiệu</div>
+                          )}
+                          {brands.map((b) => (
+                            <SelectItem key={b.name} value={b.name}>
+                              {b.taxCode ? `${b.taxCode} - ${b.name}` : b.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="px-3"><MoreVertical className="w-4 h-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openNewBrandDialog('form')}>Thêm thương hiệu mới</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setForm({ ...form, brand: '' })}>Xóa chọn</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
               {/* Mã SKU: chiếm 2 cột */}
@@ -1051,7 +1136,6 @@ export default function ProductPage() {
           wage: "",
           quantity: "",
           productCode: "",
-          price: "",
           description: "",
         });
                     setImagePreview(null);
@@ -1061,6 +1145,44 @@ export default function ProductPage() {
                 </button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+        {/* Popup thêm thương hiệu mới với mã số thuế */}
+        <Dialog open={brandDialogOpen} onOpenChange={setBrandDialogOpen}>
+          <DialogContent>
+            <DialogModalHeader>
+              <DialogModalTitle>Thêm thương hiệu mới</DialogModalTitle>
+            </DialogModalHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="font-semibold text-base">Tên thương hiệu</label>
+                <input
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                  placeholder="Nhập tên thương hiệu"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="font-semibold text-base">Mã số thuế</label>
+                <div className="flex gap-2">
+                  <input
+                    value={newBrandTaxCode}
+                    onChange={(e) => setNewBrandTaxCode(e.target.value)}
+                    className="flex-1 border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
+                    placeholder="Nhập mã số thuế"
+                    required
+                  />
+                  <Button asChild variant="outline">
+                    <a href="https://masothue.com/" target="_blank" rel="noopener noreferrer">Kiểm tra</a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setBrandDialogOpen(false)}>Hủy</Button>
+              <Button onClick={confirmNewBrand}>Lưu</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -1098,6 +1220,9 @@ export default function ProductPage() {
                       case 'bracelet': return 'Vòng tay';
                       case 'ring': return 'Nhẫn';
                       case 'earring': return 'Bông tai';
+                      case 'wristlet': return 'Lắc tay';
+                      case 'anklet': return 'Lắc chân';
+                      case 'pendant': return 'Mặt dây chuyền';
                       default: return product.category;
                     }
                   })()}</div>
@@ -1254,6 +1379,9 @@ export default function ProductPage() {
                         case 'bracelet': return 'Vòng tay';
                         case 'ring': return 'Nhẫn';
                         case 'earring': return 'Bông tai';
+                        case 'wristlet': return 'Lắc tay';
+                        case 'anklet': return 'Lắc chân';
+                        case 'pendant': return 'Mặt dây chuyền';
                         default: return detailProduct.category || '-';
                       }
                     })()}</p>
@@ -1284,12 +1412,7 @@ export default function ProductPage() {
                       {detailProduct.wage ? `${detailProduct.wage.toLocaleString()}₫` : '-'}
                     </p>
                   </div>
-                  <div>
-                    <span className="font-semibold text-gray-500">Giá bán:</span>
-                    <p className="font-medium text-rose-600 font-bold">
-                      {detailProduct.price ? `${detailProduct.price.toLocaleString()}₫` : '-'}
-                    </p>
-                  </div>
+                  
                 </div>
                 
                 <div>
@@ -1383,6 +1506,9 @@ export default function ProductPage() {
                       <SelectItem value="necklace">Dây chuyền</SelectItem>
                       <SelectItem value="earring">Bông tai</SelectItem>
                       <SelectItem value="bracelet">Vòng tay</SelectItem>
+                      <SelectItem value="wristlet">Lắc tay</SelectItem>
+                      <SelectItem value="anklet">Lắc chân</SelectItem>
+                      <SelectItem value="pendant">Mặt dây chuyền</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1410,8 +1536,8 @@ export default function ProductPage() {
                   />
                 </div>
               </div>
-              {/* Hàng 3: Khối lượng - Tuổi vàng - Tiền công - Giá bán */}
-              <div className="grid grid-cols-4 gap-6 mb-2">
+              {/* Hàng 3: Khối lượng - Tuổi vàng - Tiền công */}
+              <div className="grid grid-cols-3 gap-6 mb-2">
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Khối lượng (chỉ)</label>
                   <input
@@ -1497,19 +1623,7 @@ export default function ProductPage() {
                     style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="font-semibold text-base">Giá bán (VNĐ)</label>
-                  <input
-                    name="price"
-                    type="number"
-                    min={0}
-                    value={editProduct.price}
-                    onChange={handleEditChange}
-                    required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
-                    style={{ outline: 'none', boxShadow: 'none' }}
-                  />
-                </div>
+                
               </div>
               {/* Hàng 4: Xuất xứ - Thương hiệu */}
               <div className="grid grid-cols-2 gap-6 mb-2">
@@ -1526,14 +1640,37 @@ export default function ProductPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-base">Thương hiệu</label>
-                  <input
-                    name="brand"
-                    value={editProduct.brand || ''}
-                    onChange={handleEditChange}
-                    required
-                    className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-0 focus:border-rose-400 bg-background text-foreground w-full shadow-none"
-                    style={{ outline: 'none', boxShadow: 'none' }}
-                  />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Select
+                        value={editProduct.brand || ''}
+                        onValueChange={(v) => setEditProduct((prev: any) => ({ ...prev, brand: v }))}
+                      >
+                        <SelectTrigger className="border border-border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground w-full">
+                          <SelectValue placeholder="Chọn thương hiệu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brands.length === 0 && (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">Không có thương hiệu</div>
+                          )}
+                          {brands.map((b) => (
+                            <SelectItem key={b.name} value={b.name}>
+                              {b.taxCode ? `${b.taxCode} - ${b.name}` : b.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="px-3"><MoreVertical className="w-4 h-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openNewBrandDialog('edit')}>Thêm thương hiệu mới</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditProduct((prev: any) => ({ ...prev, brand: '' }))}>Xóa chọn</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
               {/* Mã SKU: chiếm 2 cột */}
@@ -1624,7 +1761,7 @@ export default function ProductPage() {
                     </div>
                   )}
                   
-                  {/* Upload ảnh đơn */}
+                  {/* Upload ảnh đơn
                   <div className="space-y-2">
                     <label className="text-sm text-gray-600">Thay đổi ảnh chính</label>
                     <input
@@ -1647,7 +1784,7 @@ export default function ProductPage() {
                       }}
                       className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 bg-background border border-border"
                     />
-                  </div>
+                  </div> */}
                   
                   {/* Upload nhiều ảnh */}
                   <div className="space-y-2">

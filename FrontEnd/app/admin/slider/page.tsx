@@ -42,9 +42,9 @@ export default function SliderAdminPage() {
         await uploadToCloudinary(f, { folder });
       }
       toast.success("Upload slider thành công");
-      window.location.reload();
       setFiles([]);
       await load();
+      window.location.reload();
     } catch (e) {
       toast.error("Upload slider thất bại");
     }

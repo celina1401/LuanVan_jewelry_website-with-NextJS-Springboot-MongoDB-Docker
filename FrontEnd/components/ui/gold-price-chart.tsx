@@ -34,7 +34,7 @@ interface GoldPriceHistory {
 }
 
 // Thay thế mock data bằng fetch từ GoldAPI
-const GOLD_API_KEY = "goldapi-1cey8cmsme5bmw4g-io"; // <-- Điền API Key tại đây
+const GOLD_API_KEY = "goldapi-grta9sme89c0ge-io"; // <-- Điền API Key tại đây
 // API dự phòng:
 
 // goldapi-5p9h9smdppd1qi-io         - Vicao              R
@@ -43,11 +43,12 @@ const GOLD_API_KEY = "goldapi-1cey8cmsme5bmw4g-io"; // <-- Điền API Key tại
 // goldapi-40qegsmdtz8uim-io        - BichTram            R
 // goldapi-8raw3zsme5b0qmf-io       - ThaiLe              R
 // goldapi-1cey8cmsme5bmw4g-io      - MinhHao             R
-// goldapi-8raw3zsme5cim88-io       - KKD
-// goldapi-grta9sme89c0ge-io        - AnhPhuc1
+// goldapi-8raw3zsme5cim88-io       - KKD                 R
+// goldapi-grta9sme89c0ge-io        - AnhPhuc1            R
 // goldapi-krl2sme89hruk-io         - AnhPhuc2
 // goldapi-5j959sme9ngfoc-io        - BichTram2
 // goldapi-6v0i89sme9qwd5c-io       - Lam
+// goldapi-d09lbsmelnjfsf-io        - A2    
 
 
 
@@ -60,7 +61,7 @@ export function GoldPriceChart() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = React.useState<string>("");
-  const [exchangeRate, setExchangeRate] = React.useState(25000); // Tỷ giá USD/VND mặc định
+  const [exchangeRate, setExchangeRate] = React.useState(26536); // Tỷ giá USD/VND mặc định - cập nhật theo giá vàng hiện tại
   const [history, setHistory] = React.useState<Array<{ price: number, timestamp: string }>>([]);
   const [filterMode, setFilterMode] = useState<'day' | 'week' | 'month'>('day');
 
@@ -84,25 +85,25 @@ export function GoldPriceChart() {
 
   // Hàm tính giá vàng theo các đơn vị
   function goldPriceInVND(priceUSD: number, exchangeRate: number, purity: number) {
-    // Công thức từ hình ảnh:
+    // Công thức tính giá vàng:
     // 1. USD/oz → USD/g: priceUSD / 31.1035
     // 2. USD/g → VND/g: (priceUSD / 31.1035) * exchangeRate
     // 3. VND/g → VND/lượng: (priceUSD / 31.1035) * exchangeRate * 37.5
     // 4. Áp dụng hệ số tuổi vàng: * purity
-    // 5. Cộng thêm 10% VAT và 3% lợi nhuận
+    // 5. Chuyển đổi sang đơn vị chỉ (1 lượng = 10 chỉ)
     
+    // Tính giá cơ bản theo gram
     const pricePerGramVND = (priceUSD / 31.1035) * exchangeRate;
+    
+    // Tính giá theo lượng và áp dụng hệ số tuổi vàng
     const pricePerLuongVND = pricePerGramVND * 37.5 * purity;
+    
+    // Tính giá theo chỉ
     const pricePerChiVND = pricePerLuongVND / 10;
     
-    // Áp dụng VAT (10%) và lợi nhuận (3%)
-    const vatAndProfit = 1.03// 3% profit
-    const finalPricePerChi = pricePerChiVND * vatAndProfit;
-    const finalPricePerLuong = pricePerLuongVND * vatAndProfit;
-    
     return {
-      chi: Math.round(finalPricePerChi),
-      luong: Math.round(finalPricePerLuong),
+      chi: Math.round(pricePerChiVND),
+      luong: Math.round(pricePerLuongVND),
     };
   }
 
@@ -151,65 +152,16 @@ export function GoldPriceChart() {
         
         setGoldData(results);
         setLastUpdated(new Date().toLocaleString());
-      } catch (err: any) {
-        setError(err.message || 'Lỗi không xác định');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchAllGoldPrices();
-  }, [exchangeRate]);
-
-  // Hàm lấy tỷ giá USD/VND từ Vietcombank
-  async function fetchVietcombankUSDRate(): Promise<number | null> {
-    try {
-      const res = await fetch('/api/vcb-rate');
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.rate || null;
-    } catch {
-      return null;
-    }
-  }
-
-  // Khi load component, tự động lấy tỷ giá Vietcombank và cập nhật mỗi tiếng
-  React.useEffect(() => {
-    function updateRate() {
-      fetchVietcombankUSDRate().then(rate => {
-        if (rate) setExchangeRate(rate);
-      });
-    }
-    updateRate(); // Gọi lần đầu
-    const interval = setInterval(updateRate, 60 * 60 * 1000); // 1 tiếng
-    return () => clearInterval(interval);
-  }, []);
-
-  React.useEffect(() => {
-    async function fetchGoldPrice() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(GOLD_API_URL, {
-          headers: {
-            'x-access-token': GOLD_API_KEY,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!res.ok) throw new Error('Không lấy được giá vàng từ GoldAPI');
-        const data = await res.json();
-        setGoldData(data);
-        setLastUpdated(new Date().toLocaleString());
-        // Gửi giá và timestamp lên API để lưu vào file json mỗi 1 tiếng (nếu chưa có bản ghi trong giờ này)
+        
+        // Ghi lịch sử giá vàng mỗi giờ
         const now = new Date();
-        const currentHour = now.getHours();
         const currentDate = now.toISOString().slice(0, 13); // yyyy-mm-ddThh
-        // Kiểm tra history đã có bản ghi trong giờ này chưa
         const hasThisHour = history.some(h => h.timestamp.slice(0, 13) === currentDate);
         if (!hasThisHour) {
           fetch('/api/gold-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ price: data.price, timestamp: now.toISOString() })
+            body: JSON.stringify({ price: internationalPrice, timestamp: now.toISOString() })
           });
         }
       } catch (err: any) {
@@ -218,8 +170,50 @@ export function GoldPriceChart() {
         setLoading(false);
       }
     }
-    fetchGoldPrice();
+    
+    // Gọi lần đầu
+    fetchAllGoldPrices();
+    
+    // Cập nhật giá vàng mỗi 5 phút để realtime
+    const interval = setInterval(fetchAllGoldPrices, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [exchangeRate, history]);
+
+  // Hàm lấy tỷ giá USD/VND từ Vietcombank
+  async function fetchVietcombankUSDRate(): Promise<number | null> {
+    try {
+      const res = await fetch('/api/vcb-rate');
+      if (!res.ok) {
+        console.error('[Chart] Lỗi response từ API vcb-rate:', res.status);
+        return null;
+      }
+      const data = await res.json();
+      if (data.rate && !isNaN(data.rate) && data.rate > 0) {
+        console.log('[Chart] Lấy được tỷ giá Vietcombank:', data.rate);
+        return data.rate;
+      } else {
+        console.error('[Chart] Tỷ giá không hợp lệ từ API:', data);
+        return null;
+      }
+    } catch (error) {
+      console.error('[Chart] Lỗi khi lấy tỷ giá Vietcombank:', error);
+      return null;
+    }
+  }
+
+  // Khi load component, tự động lấy tỷ giá Vietcombank và cập nhật mỗi 15 phút
+  React.useEffect(() => {
+    function updateRate() {
+      fetchVietcombankUSDRate().then(rate => {
+        if (rate) setExchangeRate(rate);
+      });
+    }
+    updateRate(); // Gọi lần đầu
+    const interval = setInterval(updateRate, 15 * 60 * 1000); // 15 phút
+    return () => clearInterval(interval);
   }, []);
+
+
 
   // Lấy dữ liệu lịch sử giá vàng từ file json
   React.useEffect(() => {
@@ -407,9 +401,10 @@ export function GoldPriceChart() {
       isEmpty: item.isEmpty
     })));
   } else if (filterMode === 'month') {
-    const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    // Để có đúng 30 ngày, lấy dữ liệu từ 29 ngày trước (vì bao gồm cả hôm nay)
+    const oneMonthAgo = new Date(now - 29 * 24 * 60 * 60 * 1000);
     
-    // Lấy dữ liệu từ 30 ngày trước
+    // Lấy dữ liệu từ 29 ngày trước + hôm nay = 30 ngày
     const monthData = history.filter(h => {
       const ts = new Date(h.timestamp).getTime();
       return ts >= oneMonthAgo.getTime();
@@ -612,7 +607,7 @@ export function GoldPriceChart() {
     if (filteredHistory.length > 0) {
       const firstDate = new Date(filteredHistory[0].timestamp);
       const lastDate = new Date(filteredHistory[filteredHistory.length - 1].timestamp);
-      filterInfoText = `Tháng từ ${firstDate.toLocaleDateString('vi-VN')} đến ${lastDate.toLocaleDateString('vi-VN')} (${filteredHistory.length} ngày)`;
+      filterInfoText = `Tháng từ ${firstDate.toLocaleDateString('vi-VN')} đến ${lastDate.toLocaleDateString('vi-VN')} (30 ngày)`;
     } else {
       filterInfoText = `Tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
     }

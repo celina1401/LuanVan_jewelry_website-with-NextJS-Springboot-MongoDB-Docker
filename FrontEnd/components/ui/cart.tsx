@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { getProductImageUrl } from "../../lib/utils"
 import { useUser } from "@clerk/nextjs"
 import { LoginRequiredPopup } from "@/components/ui/login-required-popup"
+import { safeCurrencyFormat } from "../../lib/utils";
 
 export function Cart() {
   const { items, removeItem, updateQuantity } = useCart()
@@ -134,7 +135,7 @@ export function Cart() {
                       {isOutOfStock ? (
                         <span className="text-red-500">Không thể tính giá (hết hàng)</span>
                       ) : calculatedPrices[item.id] !== undefined ? (
-                        `${calculatedPrices[item.id].toLocaleString()}₫`
+                        safeCurrencyFormat(calculatedPrices[item.id])
                       ) : (
                         "Đang tính giá..."
                       )}
@@ -203,7 +204,7 @@ export function Cart() {
         
         <div className="flex justify-between w-full text-lg font-medium">
           <span>Tổng cộng:</span>
-          <span>{totalPrice.toLocaleString()}₫</span>
+          <span>{safeCurrencyFormat(totalPrice)}</span>
         </div>
         <Button 
           className="w-full" 

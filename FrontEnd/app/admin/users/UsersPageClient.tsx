@@ -429,7 +429,7 @@ const { user } = useUser();
               <th className="py-4 px-4 text-left text-gray-900 dark:text-white">Email</th>
               <th className="py-4 px-4 text-left text-gray-900 dark:text-white">Vai trò</th>
               <th className="py-4 px-4 text-left text-gray-900 dark:text-white">SĐT</th>
-              <th className="py-2 px-4 text-left text-gray-900 dark:text-white">Hạng</th>
+              {/* <th className="py-2 px-4 text-left text-gray-900 dark:text-white">Hạng</th> */}
               <th className="py-4 px-4 text-center text-gray-900 dark:text-white">Trạng thái</th>
               <th className="py-4 px-4 text-gray-900 dark:text-white">Chi tiết</th>
               <th className="py-4 px-4 text-gray-900 dark:text-white">Hành động</th>
@@ -471,7 +471,7 @@ const { user } = useUser();
                     <td className="py-2 px-4 text-foreground">{user.email}</td>
                     <td className="py-2 px-4 text-foreground">{user.role}</td>
                     <td className="py-2 px-4 text-foreground">{user.phone || "-"}</td>
-                    <td className="py-2 px-4 text-foreground">{rank}</td>
+                    {/* <td className="py-2 px-4 text-foreground">{rank}</td> */}
 
                                          <td className="py-2 px-4 text-center">
                        <div className="flex items-center justify-center gap-2">
@@ -808,7 +808,7 @@ const { user } = useUser();
                 </ul>
               </li>
 
-              <li>
+              {/* <li>
                 <strong>Số lần mua:</strong>{" "}
                 <input
                   type="number"
@@ -817,14 +817,14 @@ const { user } = useUser();
                   onChange={e => setEditPurchaseCount(+e.target.value)}
                   className="ml-2 w-20 border border-border rounded-lg px-2 py-1"
                 />
-              </li>
+              </li> */}
 
-              <li>
+              {/* <li>
                 <strong>Hạng:</strong>{" "}
                 <span className="font-medium">
                   {getRank(editPurchaseCount)}
                 </span>
-              </li>
+              </li> */}
 
               <li>
                 <strong>Vai trò:</strong>{" "}

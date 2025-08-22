@@ -81,7 +81,7 @@ public class ProductController {
             productWithRating.put("id", product.getId());
             productWithRating.put("name", product.getName());
             productWithRating.put("description", product.getDescription());
-            productWithRating.put("price", product.getPrice());
+            // productWithRating.put("price", product.getPrice());
             productWithRating.put("category", product.getCategory());
             productWithRating.put("goldAge", product.getGoldAge());
             productWithRating.put("karat", product.getKarat());
@@ -148,7 +148,7 @@ public class ProductController {
             result.put("tags", product.getTags());
             result.put("weight", product.getWeight());
             result.put("quantity", product.getQuantity());
-            result.put("price", product.getPrice());
+            // result.put("price", product.getPrice());
             result.put("karat", product.getKarat());
             result.put("material", product.getMaterial());
             result.put("status", product.getStatus());
@@ -196,11 +196,11 @@ public class ProductController {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             Product product = objectMapper.readValue(productJson, Product.class);
-            System.out.println("==> [POST /add] Parse product thành công: " + product.getName());
-            System.out.println("==> [POST /add] Giá trị price: " + product.getPrice());
-            System.out.println("==> [POST /add] Giá trị quantity: " + product.getQuantity());
-            System.out.println("==> [POST /add] Giá trị wage: " + product.getWage());
-            System.out.println("==> [POST /add] Giá trị weight: " + product.getWeight());
+            // System.out.println("==> [POST /add] Parse product thành công: " + product.getName());
+            // System.out.println("==> [POST /add] Giá trị price: " + product.getPrice());
+            // System.out.println("==> [POST /add] Giá trị quantity: " + product.getQuantity());
+            // System.out.println("==> [POST /add] Giá trị wage: " + product.getWage());
+            // System.out.println("==> [POST /add] Giá trị weight: " + product.getWeight());
 
             // Ép kiểu nếu cần (nếu các trường là String)
             try {
@@ -225,7 +225,7 @@ public class ProductController {
             }
 
             // Validate bắt buộc
-            if (product.getName() == null || product.getName().trim().isEmpty() || product.getPrice() <= 0) {
+            if (product.getName() == null || product.getName().trim().isEmpty()) {
                 System.out.println("==> [POST /add] Lỗi: Tên sản phẩm rỗng hoặc giá <= 0");
                 return ResponseEntity.badRequest().body("Tên sản phẩm hoặc giá không hợp lệ.");
             }
@@ -244,6 +244,15 @@ public class ProductController {
                     break;
                 case "bracelet":
                     prefix = "B";
+                    break;
+                case "wristlet":
+                    prefix = "L";
+                    break;
+                case "anklet":
+                    prefix = "A";
+                    break;
+                case "pendant":
+                    prefix = "P";
                     break;
                 default:
                     prefix = "X"; // fallback
@@ -386,8 +395,8 @@ public class ProductController {
             existing.setWeight(product.getWeight());
         if (product.getQuantity() != null)
             existing.setQuantity(product.getQuantity());
-        if (product.getPrice() != null)
-            existing.setPrice(product.getPrice());
+        // if (product.getPrice() != null)
+        //     existing.setPrice(product.getPrice());
         if (product.getStockQuantity() != null) {
             // Nếu stockQuantity mới > stockQuantity cũ thì quantity += phần tăng thêm
             if (product.getStockQuantity() > oldStockQuantity) {
@@ -732,7 +741,7 @@ public class ProductController {
             productInfo.put("name", product.getName());
             productInfo.put("brand", product.getBrand());
             productInfo.put("category", product.getCategory());
-            productInfo.put("price", product.getPrice());
+            // productInfo.put("price", product.getPrice());
             productInfo.put("thumbnailUrl", product.getThumbnailUrl());
             productInfo.put("status", product.getStatus());
             productInfo.put("quantity", product.getQuantity());
@@ -815,7 +824,7 @@ public class ProductController {
                 productWithRating.put("id", product.getId());
                 productWithRating.put("name", product.getName());
                 productWithRating.put("description", product.getDescription());
-                productWithRating.put("price", product.getPrice());
+                // productWithRating.put("price", product.getPrice());
                 productWithRating.put("category", product.getCategory());
                 productWithRating.put("goldAge", product.getGoldAge());
                 productWithRating.put("karat", product.getKarat());

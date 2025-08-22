@@ -1,45 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { makeServiceRequest } from '@/lib/service-urls';
 
 export const runtime = 'nodejs';
-
-const PRODUCT_SERVICE_URLS = [
-  process.env.PRODUCT_SERVICE_URL || 'http://localhost:9004',
-  'http://productservice:9004', // Docker service name
-  'http://host.docker.internal:9004', // Docker host
-  'http://localhost:9004' // Fallback
-];
-
-async function makeProductServiceRequest(path: string, options: RequestInit = {}) {
-  for (const baseUrl of PRODUCT_SERVICE_URLS) {
-    try {
-      const url = `${baseUrl}${path}`;
-      console.log(`Trying to fetch from: ${url}`);
-      
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
-      
-      if (response.ok) {
-        console.log(`Successfully fetched from: ${url}`);
-        return response;
-      }
-    } catch (error) {
-      console.log(`Failed to fetch from ${baseUrl}:`, error);
-      continue;
-    }
-  }
-  
-  throw new Error('All product service URLs failed');
-}
 
 export async function GET(request: NextRequest) {
   try {
     // Gọi ProductService để lấy sản phẩm bán chạy
-    const response = await makeProductServiceRequest('/api/products/best-seller');
+    const response = await makeServiceRequest('product', '/api/products/best-seller', {}, process.env.PRODUCT_SERVICE_URL);
     
     if (!response.ok) {
       throw new Error(`Product service responded with status: ${response.status}`);
@@ -50,7 +17,7 @@ export async function GET(request: NextRequest) {
     // Nếu không có sản phẩm bán chạy, lấy tất cả sản phẩm và chọn 4 sản phẩm đầu
     if (!products || products.length === 0) {
       console.log('No best seller products found, fetching all products...');
-      const allProductsResponse = await makeProductServiceRequest('/api/products/all');
+      const allProductsResponse = await makeServiceRequest('product', '/api/products/all', {}, process.env.PRODUCT_SERVICE_URL);
       
       if (allProductsResponse.ok) {
         const allProducts = await allProductsResponse.json();

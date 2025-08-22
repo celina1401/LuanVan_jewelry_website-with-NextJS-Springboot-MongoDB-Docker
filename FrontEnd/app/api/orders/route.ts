@@ -1,13 +1,6 @@
 // app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-
-// Try multiple possible URLs for the order service
-const ORDER_SERVICE_URLS = [
-  process.env.ORDER_SERVICE_URL || 'http://localhost:9003',
-  'http://orderservice:9003', // Docker service name
-  'http://host.docker.internal:9003', // Docker host
-  'http://localhost:9003' // Fallback
-];
+import { makeServiceRequest } from '@/lib/service-urls';
 
 // Helper function to get auth token from request headers
 function getAuthToken(request: NextRequest): string | null {
@@ -33,34 +26,20 @@ async function makeOrderServiceRequest(
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  // Try multiple URLs
-  let lastError: Error | null = null;
-  
-  for (const baseUrl of ORDER_SERVICE_URLS) {
-    try {
-      const url = `${baseUrl}${path}`;
-      console.log(`Trying to connect to: ${url}`);
-      
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        signal: AbortSignal.timeout(5000), // 5 second timeout per attempt
-      });
-      
-      if (response.ok || (response.status >= 400 && response.status < 500)) {
-        console.log(`Successfully connected to: ${url}`);
-        return response;
-      }
-      
-      lastError = new Error(`HTTP ${response.status} from ${url}`);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown error');
-      console.log(`Failed to connect to ${baseUrl}: ${lastError.message}`);
-      continue;
+  try {
+    const response = await makeServiceRequest('order', path, {
+      ...options,
+      headers,
+      signal: AbortSignal.timeout(5000), // 5 second timeout per attempt
+    }, process.env.ORDER_SERVICE_URL);
+    
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
+      throw new Error('Connection refused - Order service may not be running');
     }
+    throw error;
   }
-  
-  throw lastError || new Error('All order service URLs failed');
 }
 
 export async function GET(request: NextRequest) {

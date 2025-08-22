@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import AddAddressForm, { Address } from "@/app/components/AddAddressForm";
 import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
+import { safeCurrencyFormat } from "@/lib/utils";
 
 
 const paymentMethods = [
@@ -429,8 +430,8 @@ function OrderPageContent() {
         
         while (retryCount < maxRetries) {
           try {
-            console.log(`🔄 Đang kết nối PaymentService cho đơn hàng #${createdOrderId}... (Lần thử ${retryCount + 1}/${maxRetries})`);
-            console.log(`📊 Tham số: orderId=${createdOrderId}, amount=${amountInVND}`);
+            // console.log(`🔄 Đang kết nối PaymentService cho đơn hàng #${createdOrderId}... (Lần thử ${retryCount + 1}/${maxRetries})`);
+            // console.log(`📊 Tham số: orderId=${createdOrderId}, amount=${amountInVND}`);
             
             const res = await fetch(
               `http://localhost:9006/api/payment/vnpay?orderId=${createdOrderId}&amount=${amountInVND}`,
@@ -460,22 +461,22 @@ function OrderPageContent() {
             console.log('✅ Nhận được response từ PaymentService:', data);
 
             if (data.url && data.url.startsWith('http')) {
-              console.log('🔄 Chuyển hướng đến VNPay...');
+              // console.log('🔄 Chuyển hướng đến VNPay...');
               window.location.href = data.url;
               return; // Thoát khỏi function
             } else if (data.paymentUrl && data.paymentUrl.startsWith('http')) {
               // Fallback cho trường hợp backend trả về paymentUrl thay vì url
-              console.log('🔄 Chuyển hướng đến VNPay (fallback)...');
+              // console.log('🔄 Chuyển hướng đến VNPay (fallback)...');
               window.location.href = data.paymentUrl;
               return; // Thoát khỏi function
             } else {
-              console.error('❌ Response không hợp lệ từ PaymentService:', data);
+              // console.error('❌ Response không hợp lệ từ PaymentService:', data);
               throw new Error('Không nhận được URL thanh toán hợp lệ từ PaymentService');
             }
 
           } catch (paymentError) {
             retryCount++;
-            console.error(`❌ Lỗi khi kết nối PaymentService (Lần thử ${retryCount}/${maxRetries}):`, paymentError);
+            // console.error(`❌ Lỗi khi kết nối PaymentService (Lần thử ${retryCount}/${maxRetries}):`, paymentError);
             
             if (retryCount >= maxRetries) {
               // Đã hết số lần thử, hiển thị lỗi cuối cùng
@@ -705,7 +706,7 @@ function OrderPageContent() {
                             <span className="text-red-500 font-medium">Hết hàng</span>
                           ) : (
                             <span className="text-gray-900 dark:text-white">
-                              {Math.round(unitPrice * item.quantity).toLocaleString()}₫
+                              {safeCurrencyFormat(Math.round(unitPrice * item.quantity))}
                             </span>
                           )}
                           {/* Nút xóa sản phẩm */}
@@ -743,13 +744,13 @@ function OrderPageContent() {
                               if (weight && pricePerChi !== null && pricePerChi !== undefined) {
                                 return (
                                   <span>
-                                    (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng: <b className="text-gray-900 dark:text-white">{Math.round(pricePerChi).toLocaleString()}₫</b> + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                    (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng: <b className="text-gray-900 dark:text-white">{safeCurrencyFormat(Math.round(pricePerChi))}</b> + Tiền công: <b className="text-gray-900 dark:text-white">{safeCurrencyFormat(Math.round(wage))}</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{safeCurrencyFormat(Math.round(dynamicPrices[item.id] * item.quantity))}</b>
                                   </span>
                                 );
                               } else if (weight && goldAge) {
                                 return (
                                   <span>
-                                    (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng + Tiền công: <b className="text-gray-900 dark:text-white">{Math.round(wage).toLocaleString()}₫</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{Math.round(dynamicPrices[item.id] * item.quantity).toLocaleString()}₫</b>
+                                    (Khối lượng: <b className="text-gray-900 dark:text-white">{weight}</b> chỉ × Giá vàng + Tiền công: <b className="text-gray-900 dark:text-white">{safeCurrencyFormat(Math.round(wage))}</b>) × Số lượng: <b className="text-gray-900 dark:text-white">{item.quantity}</b> = <b className="text-gray-900 dark:text-white">{safeCurrencyFormat(Math.round(dynamicPrices[item.id] * item.quantity))}</b>
                                   </span>
                                 );
                               } else {
@@ -764,7 +765,7 @@ function OrderPageContent() {
                 </ul>
               )}
               <div className="mt-4 flex flex-col gap-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Tạm tính</span><span className="text-gray-900 dark:text-white">{Math.round(subtotal).toLocaleString()}₫</span></div>
+                <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Tạm tính</span><span className="text-gray-900 dark:text-white">{safeCurrencyFormat(Math.round(subtotal))}</span></div>
                 <div className="flex justify-between"><span className="text-gray-900 dark:text-white">Giao hàng</span><span className="text-gray-900 dark:text-white">{shipping === 0 ? "Miễn phí" : shipping + "₫"}</span></div>
                 
                 {/* 🎯 Membership Discount Display */}
@@ -774,7 +775,7 @@ function OrderPageContent() {
                       Giảm giá hạng {membershipInfo.tierDisplayName} 
                       <span className="text-xs text-gray-500 ml-1">({(membershipInfo.discountRate * 100).toFixed(0)}%)</span>
                     </span>
-                    <span className="text-green-600 font-medium">-{Math.round(discount).toLocaleString()}₫</span>
+                    <span className="text-green-600 font-medium">-{safeCurrencyFormat(Math.round(discount))}</span>
                   </div>
                 )}
                 
@@ -787,7 +788,7 @@ function OrderPageContent() {
                 
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span className="text-gray-900 dark:text-white">Tổng tiền</span>
-                  <span className="text-rose-600">{Math.round(finalTotal).toLocaleString()}₫</span>
+                  <span className="text-rose-600">{safeCurrencyFormat(Math.round(finalTotal))}</span>
                 </div>
 
               </div>

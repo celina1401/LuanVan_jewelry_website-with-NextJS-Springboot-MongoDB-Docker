@@ -4,6 +4,38 @@ import { NextRequest, NextResponse } from 'next/server';
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:9003';
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:9001';
 
+function buildCandidates(primary: string, dockerHostname: string, defaultPort: number): string[] {
+  const candidates = new Set<string>();
+  candidates.add(primary);
+  if (primary.includes('localhost')) {
+    candidates.add(primary.replace('localhost', '127.0.0.1'));
+  }
+  const dockerUrl = `http://${dockerHostname}:${defaultPort}`;
+  candidates.add(dockerUrl);
+  return Array.from(candidates);
+}
+
+async function fetchWithFallback(urlBuilder: (baseUrl: string) => string, init: RequestInit, candidates: string[]): Promise<{ response: Response; baseUrl: string }> {
+  let lastError: any = null;
+  for (const base of candidates) {
+    const url = urlBuilder(base);
+    try {
+      console.log('Making request to Order Service:', url);
+      const response = await fetch(url, init);
+      if (response.ok) {
+        return { response, baseUrl: base };
+      }
+      // If not ok but reachable, return immediately to surface backend error
+      return { response, baseUrl: base };
+    } catch (e) {
+      lastError = e;
+      console.error('Order Service fetch failed for', url, e);
+      continue;
+    }
+  }
+  throw lastError || new Error('All Order Service endpoints failed');
+}
+
 function getAuthToken(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
@@ -50,7 +82,17 @@ export async function PUT(
     const token = getAuthToken(request);
     
     // Build URL with query parameters based on action
-    let url = `${ORDER_SERVICE_URL}/api/orders/${orderId}/${action}`;
+    // Backend expects:
+    // - status: /orders/{orderId}/status
+    // - payment: /orders/{orderId}/payment
+    // - shipping: /orders/{orderNumber}/shipping
+    let pathId = orderId;
+    if (action === 'shipping') {
+      // The UI may pass orderNumber as param in this route for shipping updates
+      // Keep as-is; backend controller maps shipping by orderNumber
+      pathId = orderId; 
+    }
+    let url = `${ORDER_SERVICE_URL}/api/orders/${pathId}/${action}`;
     const queryParams = new URLSearchParams();
     
     if (action === 'status' && updateData.orderStatus) {
@@ -70,8 +112,6 @@ export async function PUT(
       url += `?${queryParams.toString()}`;
     }
     
-    console.log('Making request to Order Service:', url);
-    
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -80,10 +120,17 @@ export async function PUT(
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers,
-    });
+    const candidates = buildCandidates(ORDER_SERVICE_URL, 'orderservice', 9003);
+    const { response } = await fetchWithFallback(
+      (base) => {
+        // Rebuild URL with candidate base
+        const u = new URL(url);
+        const baseUrl = new URL(base);
+        return `${baseUrl.origin}${u.pathname}${u.search}`;
+      },
+      { method: 'PUT', headers },
+      candidates
+    );
 
     if (!response.ok) {
       const errorText = await response.text();

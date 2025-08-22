@@ -11,7 +11,7 @@ import useEmblaCarousel from "embla-carousel-react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useCart } from "../../contexts/cart-context"
 import { useAuth } from "@clerk/nextjs"
-import { translateProductTag, getProductImageUrl } from "../../lib/utils";
+import { translateProductTag, getProductImageUrl, safeCurrencyFormat } from "../../lib/utils";
 
 // Interface cho sản phẩm từ database
 interface Product {
@@ -329,11 +329,11 @@ export function BestSellerProducts() {
                           </div>
                         ) : productGoldPrices[product.id] ? (
                           <p className="text-lg font-semibold text-rose-500">
-                            {productGoldPrices[product.id].toLocaleString()}₫
+                            {safeCurrencyFormat(productGoldPrices[product.id])}
                           </p>
                         ) : (
                           <p className="text-lg font-semibold">
-                            {product.price.toLocaleString()}₫
+                            {safeCurrencyFormat(product.price)}
                           </p>
                         )}
                       </div>

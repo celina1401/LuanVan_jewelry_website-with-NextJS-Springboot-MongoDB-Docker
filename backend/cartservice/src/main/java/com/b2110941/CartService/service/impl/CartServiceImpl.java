@@ -2,17 +2,18 @@ package com.b2110941.CartService.service.impl;
 
 import com.b2110941.CartService.entity.Cart;
 import com.b2110941.CartService.entity.CartItem;
-import com.b2110941.CartService.payload.response.ProductResponse;
 import com.b2110941.CartService.repository.CartRepository;
 import com.b2110941.CartService.service.CartService;
 
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CartServiceImpl implements CartService {
@@ -20,6 +21,7 @@ public class CartServiceImpl implements CartService {
     private CartRepository cartRepository;
 
     @Autowired
+    @Qualifier("loadBalancedRestTemplate")
     private RestTemplate restTemplate;
 
     @Override
@@ -35,40 +37,57 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public Cart addItemToCart(String userId, String productId, int quantity) {
-        // Gọi productservice trực tiếp qua localhost:9004 nếu không dùng Eureka
-        String productServiceUrl = "http://productservice/api/products/" + productId;
-        ProductResponse product = restTemplate.getForObject(productServiceUrl, ProductResponse.class);
-        if (product == null) {
-            throw new RuntimeException("Không lấy được sản phẩm");
-        }
-        Cart cart = cartRepository.findByUserId(userId);
-        if (cart == null) {
-            cart = new Cart();
-            cart.setUserId(userId);
-            cart.setItems(new ArrayList<>());
-        }
-        List<CartItem> items = cart.getItems();
-        CartItem existing = null;
-        for (CartItem item : items) {
-            if (item.getProductId().equals(productId)) {
-                existing = item;
-                break;
+        try {
+            // Sử dụng service discovery thay vì hardcoded localhost
+            String productServiceUrl = "http://productservice/api/products/" + productId;
+            
+            System.out.println("Gọi ProductService: " + productServiceUrl);
+            
+            // Sử dụng Map thay vì ProductResponse để tương thích với Product entity
+            Map<String, Object> product = restTemplate.getForObject(productServiceUrl, Map.class);
+            if (product == null) {
+                throw new RuntimeException("Không lấy được thông tin sản phẩm từ ProductService");
             }
+            
+            System.out.println("Đã lấy được sản phẩm: " + product.get("name"));
+            
+            Cart cart = cartRepository.findByUserId(userId);
+            if (cart == null) {
+                cart = new Cart();
+                cart.setUserId(userId);
+                cart.setItems(new ArrayList<>());
+            }
+            
+            List<CartItem> items = cart.getItems();
+            CartItem existing = null;
+            for (CartItem item : items) {
+                if (item.getProductId().equals(productId)) {
+                    existing = item;
+                    break;
+                }
+            }
+            
+            if (existing != null) {
+                existing.setQuantity(existing.getQuantity() + quantity);
+            } else {
+                CartItem newItem = new CartItem();
+                newItem.setProductId(productId);
+                newItem.setName((String) product.get("name"));
+                // newItem.setPrice((Double) product.get("price"));
+                newItem.setImage((String) product.get("thumbnailUrl"));
+                newItem.setQuantity(quantity);
+                items.add(newItem);
+            }
+            
+            cart.setItems(items);
+            Cart saved = cartRepository.save(cart);
+            return saved;
+            
+        } catch (Exception e) {
+            System.err.println("Lỗi khi thêm sản phẩm vào giỏ hàng: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Không thể thêm sản phẩm vào giỏ hàng: " + e.getMessage());
         }
-        if (existing != null) {
-            existing.setQuantity(existing.getQuantity() + quantity);
-        } else {
-            CartItem newItem = new CartItem();
-            newItem.setProductId(productId);
-            newItem.setName(product.getName());
-            newItem.setPrice(product.getPrice());
-            newItem.setImage(product.getThumbnailUrl());
-            newItem.setQuantity(quantity);
-            items.add(newItem);
-        }
-        cart.setItems(items);
-        Cart saved = cartRepository.save(cart); // Lưu lại cart mới nhất
-        return saved; // Trả về cart mới nhất
     }
 
     @Override

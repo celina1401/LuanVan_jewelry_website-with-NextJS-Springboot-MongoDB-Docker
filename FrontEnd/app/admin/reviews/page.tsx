@@ -328,7 +328,7 @@ const ReviewCard = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 ml-4">
+        {/* <div className="flex items-center gap-2 ml-4">
           <Button
             variant="outline"
             size="sm"
@@ -365,7 +365,7 @@ const ReviewCard = ({
           >
             <Trash2 className="w-4 h-4" />
           </Button>
-        </div>
+        </div> */}
       </div>
     </Card>
   );
